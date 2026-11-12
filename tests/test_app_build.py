@@ -221,8 +221,123 @@ def test_the_deploy_ships_what_the_credential_free_job_built_and_scanned():
     # The artifact lands apart, and only the expected names are taken from it.
     assert steps[download]["with"] == {"name": "app-build", "path": "infrastructure/_app-build"}
     take = names.index("Take the expected app files")
-    assert "_apps.py trees" in steps[take]["run"] and "cp -r" not in steps[take]["run"]
-    assert "rm -rf _app-build" in steps[take]["run"]
+    assert steps[take]["run"] == "bash ../scripts/take-app-build.sh full _app-build"
     assert download < take < names.index("Detection gate (G7)") < names.index("Terraform Apply")
     app_build = (WF / "app-build.yml").read_text()
     assert "infrastructure/*.zip" not in app_build, "upload only the packages the deploy ships"
+
+
+# --- taking the expected files out of the artifact (scripts/take-app-build.sh)
+
+TAKE = REPO / "scripts" / "take-app-build.sh"
+SCANS = [n for t in _apps.trees(_apps.load()) for n in (t["sbom"], _apps.grype_file(t))] + ["grype.json"]
+
+
+def take(tmp_path, mode, files, manifest=None):
+    work = tmp_path / "infrastructure"
+    art = work / "_app-build"
+    art.mkdir(parents=True)
+    for name, body in files.items():
+        (art / name).write_text(body)
+    args = ["bash", str(TAKE), mode, "_app-build"] + ([str(manifest)] if manifest else [])
+    r = subprocess.run(args, cwd=work, capture_output=True, text=True, check=False)
+    return r, work
+
+
+def test_take_copies_the_expected_files_and_nothing_else(tmp_path):
+    files = {n: "scan" for n in SCANS} | {"silk-reeling.zip": "pkg", "opa-compliance.zip": "planted",
+                                          "build.sh": "planted"}
+    r, work = take(tmp_path, "full", files)
+    assert r.returncode == 0, r.stderr
+    assert (work / "silk-reeling.zip").read_text() == "pkg"
+    assert all((work / n).read_text() == "scan" for n in SCANS)
+    assert not (work / "opa-compliance.zip").exists() and not (work / "build.sh").exists()
+    assert not (work / "_app-build").exists()
+
+
+def test_take_leaves_a_missing_scan_missing(tmp_path):
+    work = tmp_path / "infrastructure"
+    work.mkdir()
+    (work / "grype-python.json").write_text("stale")
+    files = {n: "scan" for n in SCANS if n != "grype-python.json"}
+    r, work = take(tmp_path, "deps", files)
+    assert r.returncode == 0 and "grype-python.json is missing" in r.stdout
+    assert not (work / "grype-python.json").exists(), "a stale local copy must not stand in"
+
+
+def test_take_full_fails_without_the_package(tmp_path):
+    r, _ = take(tmp_path, "full", {n: "scan" for n in SCANS})
+    assert r.returncode != 0 and "silk-reeling.zip" in r.stderr
+
+
+def test_take_deps_needs_no_package(tmp_path):
+    r, work = take(tmp_path, "deps", {n: "scan" for n in SCANS})
+    assert r.returncode == 0 and not (work / "silk-reeling.zip").exists()
+
+
+def test_take_refuses_a_symlink(tmp_path):
+    secret = tmp_path / "secret"
+    secret.write_text("secret")
+    work = tmp_path / "infrastructure"
+    (work / "_app-build").mkdir(parents=True)
+    for n in SCANS:
+        (work / "_app-build" / n).write_text("scan")
+    (work / "_app-build" / "grype.json").unlink()
+    (work / "_app-build" / "grype.json").symlink_to(secret)
+    r = subprocess.run(["bash", str(TAKE), "deps", "_app-build"], cwd=work, capture_output=True, text=True, check=False)
+    assert r.returncode == 0 and not (work / "grype.json").exists()
+
+
+@pytest.mark.parametrize("pkg", ["../evil.zip", "/tmp/x.zip", "./a/b.zip", "./x.tar"])
+def test_a_malformed_package_path_is_refused(tmp_path, pkg):
+    doc = json.loads(_apps.MANIFEST.read_text())
+    doc["apps"][1]["package_path"] = pkg
+    bad = tmp_path / "apps.json"
+    bad.write_text(json.dumps(doc))
+    with pytest.raises(SystemExit, match="package_path must be"):
+        _apps.load(bad)
+    r, _ = take(tmp_path / "t", "full", {n: "scan" for n in SCANS}, manifest=bad)
+    assert r.returncode != 0
+
+
+# --- the nightly: pin and apps hold no credentials; refresh only downloads
+
+def test_the_nightly_builds_and_scans_without_cloud_credentials():
+    jobs = yaml.safe_load((WF / "evidence-nightly.yml").read_text())["jobs"]
+    for name in ("pin", "apps"):
+        job = jobs[name]
+        assert job["permissions"] == {"contents": "read"}, name
+        assert "environment" not in job, name
+        for st in job.get("steps", []):
+            assert "configure-aws-credentials" not in st.get("uses", ""), name
+    assert jobs["apps"]["uses"] == "./.github/workflows/app-build.yml"
+    assert jobs["apps"]["needs"] == ["pin"] and jobs["pin"]["needs"] == ["sast"]
+    checkout = next(st for st in jobs["pin"]["steps"] if "actions/checkout" in st.get("uses", ""))
+    assert checkout["with"]["persist-credentials"] is False
+    refresh = jobs["refresh"]
+    assert {"pin", "apps"} <= set(refresh["needs"])
+    runs = " ".join(st.get("run", "") for st in refresh["steps"])
+    for direct in ("build-apps.sh", "scan-sca.sh", "app-source.sh", "npm ci", "pip install", "curl -sfL --retry 3 --retry-delay 5 -o ksi-signal.json"):
+        assert direct not in runs, f"the refresh job runs {direct} itself"
+    assert not any("setup-node" in st.get("uses", "") for st in refresh["steps"])
+    assert set(jobs["alert"]["needs"]) == {"sast", "pin", "apps", "refresh"}
+
+
+def test_the_refresh_binds_to_the_inventory_the_pin_job_verified():
+    jobs = yaml.safe_load((WF / "evidence-nightly.yml").read_text())["jobs"]
+    steps = jobs["refresh"]["steps"]
+    names = [st.get("name", "") for st in steps]
+    verify = steps[names.index("Verify the pinned inventory")]
+    assert "cosign verify-blob" in verify["run"] and '"$SIGNAL_COMMIT" != "$PINNED_COMMIT"' in verify["run"]
+    assert verify["env"]["PINNED_COMMIT"] == "${{ needs.pin.outputs.commit }}"
+    assert (names.index("Download the pinned inventory") < names.index("Verify the pinned inventory")
+            < names.index("Take the expected scan files") < names.index("Detection gate (G7)"))
+    pin_runs = " ".join(st.get("run", "") for st in jobs["pin"]["steps"])
+    assert "cosign verify-blob" in pin_runs and "merge-base --is-ancestor" in pin_runs
+    assert 'echo "commit=${SIGNAL_COMMIT}" >> "$GITHUB_OUTPUT"' in pin_runs
+
+
+def test_app_build_reads_the_manifest_only_at_a_full_commit():
+    job = yaml.safe_load((WF / "app-build.yml").read_text())["jobs"]["build"]
+    step = next(st for st in job["steps"] if st.get("name") == "Choose the app manifest")
+    assert "^[0-9a-f]{40}$" in step["run"] and step["env"]["REF"] == "${{ inputs.manifest-ref }}"

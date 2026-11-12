@@ -202,11 +202,129 @@ jobs:
   # ===========================================================================
   # JOB 2: REFRESH — rebuild, gate, and republish the VDR + trend
   # ===========================================================================
+  # ===========================================================================
+  # PIN: which inventory, and so which app versions, this run is about
+  # ===========================================================================
+  # Public reads and a signature check only, so no credentials: the published
+  # inventory is fetched, verified against the deploy workflow's identity and
+  # checked to descend from main. Its commit decides which manifest the apps
+  # job builds and the refresh job gates on.
+  pin:
+    name: Pin the published inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [sast]
+    permissions:
+      contents: read
+    outputs:
+      commit: ${{ steps.verify.outputs.commit }}
+    steps:
+    # Full history: the ancestry test needs more than a shallow clone.
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Install cosign
+      uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+    # -------------------------------------------------------------------------
+    # BIND TO THE PUBLISHED CANONICAL INVENTORY
+    # -------------------------------------------------------------------------
+    # This is the step that makes a VDR-only refresh legitimate. Reconciliation
+    # invariant (e) requires every artifact to carry one inventory's signal_id.
+    # Rather than rebuild the inventory (which would mean rebuilding and
+    # republishing everything derived from it), the nightly adopts the inventory
+    # that is currently published and deployed.
+    #
+    # That inventory arrives over the public internet, so it is verified before
+    # use: the Sigstore bundle must check out against the deploy workflow's
+    # pinned identity. Fail closed — an unverifiable inventory is not an
+    # inventory, and binding a signed VDR to one would launder a forgery.
+    - name: Fetch and verify the published canonical inventory
+      id: verify
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        curl -sfL --retry 3 --retry-delay 5 -o ksi-signal.json \
+          "${SITE_ORIGIN}/.well-known/ksi-signal.json"
+        curl -sfL --retry 3 --retry-delay 5 -o ksi-signal.bundle \
+          "${SITE_ORIGIN}/.well-known/ksi-signal.bundle"
+        echo "Verifying the published inventory against the deploy workflow's pinned identity..."
+        cosign verify-blob \
+          --bundle ksi-signal.bundle \
+          --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
+          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+          ksi-signal.json
+        SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
+        SIGNAL_ID=$(jq -r '.signal_id' ksi-signal.json)
+        # The value is already trusted (the signature above verified it), but it
+        # is about to become a shell variable and an environment-file line, so
+        # constrain it to the only shape it can legitimately have. A value
+        # carrying a newline could otherwise append arbitrary variables to
+        # $GITHUB_ENV.
+        if ! printf '%s' "$SIGNAL_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+          echo "::error::published inventory carries a malformed commit id"
+          exit 1
+        fi
+        echo "Published inventory ${SIGNAL_ID} was built from commit ${SIGNAL_COMMIT}"
+        echo "SIGNAL_COMMIT=${SIGNAL_COMMIT}" >> "$GITHUB_ENV"
+        echo "commit=${SIGNAL_COMMIT}" >> "$GITHUB_OUTPUT"
+
+    # The published inventory must descend from main. If it does not, something
+    # is serving evidence this repository did not produce, and the correct
+    # response is to stop rather than to sign a fresh VDR on top of it.
+    - name: Assert the published inventory descends from main
+      run: |
+        set -euo pipefail
+        if ! git cat-file -e "${SIGNAL_COMMIT}^{commit}" 2>/dev/null; then
+          echo "::error::published inventory names commit ${SIGNAL_COMMIT}, which is not in this repository"
+          exit 1
+        fi
+        # Compare against a freshly fetched main rather than a remote-tracking
+        # ref, so the test means the same thing however this run was triggered.
+        git fetch --no-tags --quiet origin main
+        if ! git merge-base --is-ancestor "${SIGNAL_COMMIT}" FETCH_HEAD; then
+          echo "::error::published inventory commit ${SIGNAL_COMMIT} is not an ancestor of main"
+          exit 1
+        fi
+        echo "✅ published inventory commit is on main"
+
+    - name: Hand the verified inventory to the refresh job
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: pinned-inventory
+        path: |
+          infrastructure/ksi-signal.json
+          infrastructure/ksi-signal.bundle
+        if-no-files-found: error
+        retention-days: 5
+
+  # ===========================================================================
+  # APPS: build and scan the deployed app versions with no cloud credentials
+  # ===========================================================================
+  # npm install scripts and the scanners' installers are third-party code, so
+  # they run in a job with no AWS credentials, no OIDC token and no environment
+  # (app-build.yml); the refresh job, which holds the nightly role and the
+  # signing token, only downloads the scans.
+  apps:
+    name: Apps
+    needs: [pin]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/app-build.yml
+    with:
+      mode: deps
+      manifest-ref: ${{ needs.pin.outputs.commit }}
+    secrets:
+      app-repo-token: ${{ secrets.SILK_REELING_REPO_TOKEN }}
+
   refresh:
     name: Refresh published VDR
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [sast]
+    needs: [sast, pin, apps]
     # Its own GitHub Environment, with NO required reviewer, because it must run
     # unattended. This is the trade named at the top of this file. The `prod`
     # environment and its reviewer requirement are untouched, and the role this
@@ -240,20 +358,12 @@ jobs:
     # -------------------------------------------------------------------------
     # SETUP
     # -------------------------------------------------------------------------
-    # Full history: the published inventory names the commit it was built from,
-    # and this workflow refuses to bind to an inventory whose commit is not an
-    # ancestor of main. That ancestry test needs more than a shallow clone.
+    # Full history: the deployed commit's manifest is read with git show, and
+    # the reconciliation checks against that commit.
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
-
-    - name: Setup Node.js
-      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: infrastructure/lambda/package-lock.json
 
     - name: Install cosign
       uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
@@ -281,110 +391,58 @@ jobs:
     # -------------------------------------------------------------------------
     # BIND TO THE PUBLISHED CANONICAL INVENTORY
     # -------------------------------------------------------------------------
-    # This is the step that makes a VDR-only refresh legitimate. Reconciliation
-    # invariant (e) requires every artifact to carry one inventory's signal_id.
-    # Rather than rebuild the inventory (which would mean rebuilding and
-    # republishing everything derived from it), the nightly adopts the inventory
-    # that is currently published and deployed.
-    #
-    # That inventory arrives over the public internet, so it is verified before
-    # use: the Sigstore bundle must check out against the deploy workflow's
-    # pinned identity. Fail closed — an unverifiable inventory is not an
-    # inventory, and binding a signed VDR to one would launder a forgery.
-    - name: Fetch and verify the published canonical inventory
+    # The pin job fetched the published inventory, verified it against the deploy
+    # workflow's pinned identity and checked that its commit is on main; the apps
+    # job built and scanned that commit's apps. This job binds to that same
+    # inventory, never a newer one a deploy may have published since, and
+    # verifies it again rather than trusting an artifact.
+    - name: Download the pinned inventory
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: pinned-inventory
+        path: infrastructure/
+
+    - name: Verify the pinned inventory
       working-directory: infrastructure
+      env:
+        PINNED_COMMIT: ${{ needs.pin.outputs.commit }}
       run: |
         set -euo pipefail
-        curl -sfL --retry 3 --retry-delay 5 -o ksi-signal.json \
-          "${SITE_ORIGIN}/.well-known/ksi-signal.json"
-        curl -sfL --retry 3 --retry-delay 5 -o ksi-signal.bundle \
-          "${SITE_ORIGIN}/.well-known/ksi-signal.bundle"
-        echo "Verifying the published inventory against the deploy workflow's pinned identity..."
         cosign verify-blob \
           --bundle ksi-signal.bundle \
           --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
           --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
           ksi-signal.json
         SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
-        SIGNAL_ID=$(jq -r '.signal_id' ksi-signal.json)
-        # The value is already trusted (the signature above verified it), but it
-        # is about to become a shell variable and an environment-file line, so
-        # constrain it to the only shape it can legitimately have. A value
-        # carrying a newline could otherwise append arbitrary variables to
-        # $GITHUB_ENV.
-        if ! printf '%s' "$SIGNAL_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
-          echo "::error::published inventory carries a malformed commit id"
+        if ! printf '%s' "$SIGNAL_COMMIT" | grep -qE '^[0-9a-f]{40}$' || [ "$SIGNAL_COMMIT" != "$PINNED_COMMIT" ]; then
+          echo "::error::the inventory does not name the commit the pin job verified"
           exit 1
         fi
-        echo "Published inventory ${SIGNAL_ID} was built from commit ${SIGNAL_COMMIT}"
         echo "SIGNAL_COMMIT=${SIGNAL_COMMIT}" >> "$GITHUB_ENV"
 
-    # The published inventory must descend from main. If it does not, something
-    # is serving evidence this repository did not produce, and the correct
-    # response is to stop rather than to sign a fresh VDR on top of it.
-    - name: Assert the published inventory descends from main
-      run: |
-        set -euo pipefail
-        if ! git cat-file -e "${SIGNAL_COMMIT}^{commit}" 2>/dev/null; then
-          echo "::error::published inventory names commit ${SIGNAL_COMMIT}, which is not in this repository"
-          exit 1
-        fi
-        # Compare against a freshly fetched main rather than a remote-tracking
-        # ref, so the test means the same thing however this run was triggered.
-        git fetch --no-tags --quiet origin main
-        if ! git merge-base --is-ancestor "${SIGNAL_COMMIT}" FETCH_HEAD; then
-          echo "::error::published inventory commit ${SIGNAL_COMMIT} is not an ancestor of main"
-          exit 1
-        fi
-        echo "✅ published inventory commit is on main"
-
     # -------------------------------------------------------------------------
-    # RESOLVE THE DEPENDENCY TREES THE SCAN INVENTORIES
+    # THE DEPENDENCY SCANS, from the apps job
     # -------------------------------------------------------------------------
-    # Three trees, exactly the ones the deploy job scans:
-    #   _pkg               Silk Reeling's Python deps (Lambda staging dir)
-    #   _silk_src/frontend Silk Reeling's SPA — manifests live in a separate
-    #                      repo, so Dependabot never sees them and this scan is
-    #                      their only CVE coverage
-    #   lambda             the compliance Lambda's own npm tree
-    # plus ../tools/a11y, catalogued straight from its lockfile.
-    #
-    # The app trees come from the same build scripts the deploy runs, in deps
-    # mode (scripts/build-apps.sh deps): the same dependency installs, without
-    # the SPA build, the package or the Cognito lookups that only feed a
-    # deployable artifact, none of which the Syft catalogers read.
-    - name: Install compliance Lambda dependencies
-      working-directory: infrastructure/lambda
-      run: npm ci --omit=dev
+    # Built and scanned without credentials (app-build.yml, deps mode) at the
+    # deployed commit's manifest. The manifest that decides which scans the
+    # detection gate requires is written here, from this repository, not taken
+    # from the artifact; the artifact lands apart and only the expected scan
+    # files are taken from it (scripts/take-app-build.sh). A missing scan stays
+    # missing, and the detection gate fails on it.
+    - name: Download the dependency scans
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: app-build
+        path: infrastructure/_app-build
 
-    - name: Resolve app dependency trees (scan input only)
+    - name: Take the expected scan files
       working-directory: infrastructure
-      env:
-        # build-apps.sh drops the token after the checkouts, before any build runs.
-        APP_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
       run: |
         set -euo pipefail
-        # Scan the app versions production runs: the pins in data/apps.json as of
-        # the deployed commit, not main's, which may carry a bump not yet deployed.
-        # A deployed commit without the manifest has no pin to scan: fail rather
-        # than scan a version production may not run.
+        # The trees production runs: the deployed commit's manifest. A deployed
+        # commit without the manifest has no trees to require: fail.
         git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json
-        bash ../scripts/build-apps.sh deps deployed-apps.json
-
-    # -------------------------------------------------------------------------
-    # THE POINT OF THE NIGHTLY: re-scan against today's vulnerability database
-    # -------------------------------------------------------------------------
-    # Byte-for-byte the deploy job's scan step. Grype pulls a fresh database on
-    # every run, so this catches CVEs newly disclosed against unchanged,
-    # already-deployed dependencies — the detection that has been dark for the
-    # twelve days the deploy could not complete.
-    - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
-      working-directory: infrastructure
-      env:
-        # The trees production runs: the deployed commit's manifest.
-        APPS_MANIFEST: deployed-apps.json
-      # Neither findings nor a failed scan fail this step: the detection gate and the VDR gate do.
-      run: bash ../scripts/scan-sca.sh
+        bash ../scripts/take-app-build.sh deps _app-build deployed-apps.json
 
     # -------------------------------------------------------------------------
     # DETECTION INPUTS AND G7
@@ -819,9 +877,10 @@ jobs:
   alert:
     name: Alert on stale evidence
     runs-on: ubuntu-latest
-    needs: [sast, refresh]
+    needs: [sast, pin, apps, refresh]
     # The one exclusion: a skipped `sast` means the run was deliberately dropped
     # (a post-deploy trigger for a deploy that did not qualify), not that it failed.
+    # A failed pin or apps job skips refresh, which is not success, so it alerts.
     if: always() && needs.sast.result != 'skipped' && (needs.sast.result != 'success' || needs.refresh.result != 'success')
     permissions:
       contents: read

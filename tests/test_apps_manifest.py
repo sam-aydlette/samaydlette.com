@@ -64,8 +64,9 @@ def problems(manifest_path):
             if deploy.count(f'"{a["package_path"]}"') < 2:
                 out.append(f"{i}: package {a['package_path']!r} is not in both tfvars blocks")
     # The deploy builds through the credential-free app-build workflow, which runs build-apps.sh.
-    if ("uses: ./.github/workflows/app-build.yml" not in deploy or 'bash ../scripts/build-apps.sh "$MODE"' not in APP_BUILD.read_text()
-            or "scripts/build-apps.sh deps deployed-apps.json" not in nightly):
+    # Both workflows build through the credential-free app-build workflow, which runs build-apps.sh.
+    if ('bash ../scripts/build-apps.sh "$MODE" app-manifest.json' not in APP_BUILD.read_text()
+            or any("uses: ./.github/workflows/app-build.yml" not in wf for wf in (deploy, nightly))):
         out.append("both workflows must build the apps through build-apps.sh")
     return out
 
@@ -117,17 +118,21 @@ def test_the_script_refuses_anything_but_a_pinned_commit(tmp_path, app, manifest
 
 
 def test_the_nightly_scans_the_deployed_pin_not_mains():
-    step = NIGHTLY.read_text().split("- name: Resolve app dependency trees", 1)[1].split("- name:", 1)[0]
-    assert 'git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json' in step
-    assert "build-apps.sh deps deployed-apps.json" in step
-    assert "cp ../data/apps.json" not in step, "no fallback to main's pin"
+    import yaml
+    jobs = yaml.safe_load(NIGHTLY.read_text())["jobs"]
+    assert jobs["apps"]["with"] == {"mode": "deps", "manifest-ref": "${{ needs.pin.outputs.commit }}"}
+    # The manifest the gate requires is written by the refresh job, from the verified deployed commit.
+    take = next(st for st in jobs["refresh"]["steps"] if st.get("name") == "Take the expected scan files")
+    assert 'git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json' in take["run"]
+    assert "cp ../data/apps.json" not in NIGHTLY.read_text(), "no fallback to main's pin"
 
 
 def test_only_the_checkout_sees_the_repository_token():
     # The workflows hand the token only to build-apps.sh, which drops it after the
     # checkouts and before any build (tests/test_app_build.py runs it).
-    assert "APP_REPO_TOKEN:" not in DEPLOY.read_text(), "the deploy job builds nothing itself"
-    for wf in (APP_BUILD, NIGHTLY):
+    for wf in (DEPLOY, NIGHTLY):
+        assert "APP_REPO_TOKEN:" not in wf.read_text(), f"{wf.name} builds nothing itself"
+    for wf in (APP_BUILD,):
         text = wf.read_text()
         assert text.count("APP_REPO_TOKEN:") == 1, wf.name
         step = "\n".join(ln for ln in text[text.index("APP_REPO_TOKEN:"):].split("- name:", 1)[0].splitlines()

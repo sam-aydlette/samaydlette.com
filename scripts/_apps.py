@@ -8,6 +8,7 @@ the shell scripts call the command line below, and Python imports `load`.
     _apps.py [--manifest PATH] trees        ->  "<dir>\t<cataloger>\t<sbom>\t<grype>" per tree
     _apps.py [--manifest PATH] grype        ->  the per-tree Grype result files, one per line
     _apps.py [--manifest PATH] builds       ->  "<app>\t<build script>\t<source dir>" per built app
+    _apps.py [--manifest PATH] packages     ->  the package file each built app ships, one per line
 
 A malformed manifest exits non-zero with the reason; nothing downstream runs on
 a guess.
@@ -28,6 +29,7 @@ _COMMIT = re.compile(r"[0-9a-f]{40}")
 _DIR = re.compile(r"(\.\./)?[A-Za-z0-9_-][A-Za-z0-9_./-]*")
 _SBOM = re.compile(r"sbom-[a-z0-9-]+\.json")
 _SRC_DIR = re.compile(r"_[a-z0-9_-]+")
+_PACKAGE = re.compile(r"\./([a-z0-9][a-z0-9-]*\.zip)")
 CATALOGERS = {"python", "javascript"}
 
 
@@ -83,6 +85,9 @@ def load(path=MANIFEST):
                 _fail(f"{i!r}: the source directory must be _<name>, not {build['src']!r}")
             if src is None:
                 _fail(f"{i!r} has a build but no source to build from")
+        pkg = a.get("package_path")
+        if pkg is not None and not (isinstance(pkg, str) and _PACKAGE.fullmatch(pkg)):
+            _fail(f"{i!r}: package_path must be ./<name>.zip, not {pkg!r}")
         for t in a.get("sbom_trees", []):
             _tree(t, i)
     for t in doc.get("platform_sbom_trees", []):
@@ -113,6 +118,12 @@ def builds(doc):
     return [(a["id"], a["build"]["script"], a["build"]["src"]) for a in doc["apps"] if a.get("build")]
 
 
+def packages(doc):
+    """The package file (relative to infrastructure/) each built app ships."""
+    return [_PACKAGE.fullmatch(a["package_path"]).group(1)
+            for a in doc["apps"] if a.get("build") and a.get("package_path")]
+
+
 def source(doc, app):
     """(repo, branch, commit) for an app built from another repository."""
     apps = {a["id"]: a for a in doc["apps"]}
@@ -132,6 +143,7 @@ def main(argv=None):
     sub.add_parser("trees")
     sub.add_parser("grype")
     sub.add_parser("builds")
+    sub.add_parser("packages")
     args = ap.parse_args(argv)
     doc = load(args.manifest)
     if args.cmd == "source":
@@ -139,6 +151,9 @@ def main(argv=None):
     elif args.cmd == "trees":
         for t in trees(doc):
             print(t["dir"], t["cataloger"], t["sbom"], grype_file(t), sep="\t")
+    elif args.cmd == "packages":
+        for pkg in packages(doc):
+            print(pkg)
     elif args.cmd == "builds":
         for b in builds(doc):
             print(*b, sep="\t")
