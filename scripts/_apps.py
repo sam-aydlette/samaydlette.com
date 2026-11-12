@@ -7,6 +7,7 @@ the shell scripts call the command line below, and Python imports `load`.
     _apps.py [--manifest PATH] source APP   ->  "<repo> <branch> <commit>"
     _apps.py [--manifest PATH] trees        ->  "<dir>\t<cataloger>\t<sbom>\t<grype>" per tree
     _apps.py [--manifest PATH] grype        ->  the per-tree Grype result files, one per line
+    _apps.py [--manifest PATH] builds       ->  "<app>\t<build script>\t<source dir>" per built app
 
 A malformed manifest exits non-zero with the reason; nothing downstream runs on
 a guess.
@@ -26,6 +27,7 @@ _BRANCH = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_./-]*")
 _COMMIT = re.compile(r"[0-9a-f]{40}")
 _DIR = re.compile(r"(\.\./)?[A-Za-z0-9_-][A-Za-z0-9_./-]*")
 _SBOM = re.compile(r"sbom-[a-z0-9-]+\.json")
+_SRC_DIR = re.compile(r"_[a-z0-9_-]+")
 CATALOGERS = {"python", "javascript"}
 
 
@@ -71,6 +73,16 @@ def load(path=MANIFEST):
                 _fail(f"{i!r} has a malformed branch {src.get('branch')!r}")
             if not _COMMIT.fullmatch(src.get("commit", "")):
                 _fail(f"{i!r} must pin a full 40-character commit, not {src.get('commit')!r}")
+        build = a.get("build")
+        if build is not None:
+            if not isinstance(build, dict) or set(build) != {"script", "src"}:
+                _fail(f"{i!r}: a build has exactly a script and a src")
+            if build["script"] != f"scripts/apps/{i}/build.sh":
+                _fail(f"{i!r}: the build script must be scripts/apps/{i}/build.sh, not {build['script']!r}")
+            if not isinstance(build["src"], str) or not _SRC_DIR.fullmatch(build["src"]):
+                _fail(f"{i!r}: the source directory must be _<name>, not {build['src']!r}")
+            if src is None:
+                _fail(f"{i!r} has a build but no source to build from")
         for t in a.get("sbom_trees", []):
             _tree(t, i)
     for t in doc.get("platform_sbom_trees", []):
@@ -96,6 +108,11 @@ def grype_file(tree):
     return "grype-" + tree["sbom"][len("sbom-"):]
 
 
+def builds(doc):
+    """(app, build script, source dir) for every app the pipeline builds, in manifest order."""
+    return [(a["id"], a["build"]["script"], a["build"]["src"]) for a in doc["apps"] if a.get("build")]
+
+
 def source(doc, app):
     """(repo, branch, commit) for an app built from another repository."""
     apps = {a["id"]: a for a in doc["apps"]}
@@ -114,6 +131,7 @@ def main(argv=None):
     sub.add_parser("source").add_argument("app")
     sub.add_parser("trees")
     sub.add_parser("grype")
+    sub.add_parser("builds")
     args = ap.parse_args(argv)
     doc = load(args.manifest)
     if args.cmd == "source":
@@ -121,6 +139,9 @@ def main(argv=None):
     elif args.cmd == "trees":
         for t in trees(doc):
             print(t["dir"], t["cataloger"], t["sbom"], grype_file(t), sep="\t")
+    elif args.cmd == "builds":
+        for b in builds(doc):
+            print(*b, sep="\t")
     else:
         for t in trees(doc):
             print(grype_file(t))
