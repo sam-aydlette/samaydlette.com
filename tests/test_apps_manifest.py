@@ -27,6 +27,7 @@ DOMAINS = REPO / "docs" / "governance" / "domains.json"
 OFFERING = REPO / "data" / "cds" / "offering.json"
 DEPLOY = REPO / ".github" / "workflows" / "deploy-with-opa.yml"
 NIGHTLY = REPO / ".github" / "workflows" / "evidence-nightly.yml"
+APP_BUILD = REPO / ".github" / "workflows" / "app-build.yml"
 
 
 def problems(manifest_path):
@@ -62,7 +63,9 @@ def problems(manifest_path):
                 out.append(f"{i}: {flag} is not set true in both tfvars blocks")
             if deploy.count(f'"{a["package_path"]}"') < 2:
                 out.append(f"{i}: package {a['package_path']!r} is not in both tfvars blocks")
-    if "scripts/build-apps.sh full" not in deploy or "scripts/build-apps.sh deps deployed-apps.json" not in nightly:
+    # The deploy builds through the credential-free app-build workflow, which runs build-apps.sh.
+    if ("uses: ./.github/workflows/app-build.yml" not in deploy or 'bash ../scripts/build-apps.sh "$MODE"' not in APP_BUILD.read_text()
+            or "scripts/build-apps.sh deps deployed-apps.json" not in nightly):
         out.append("both workflows must build the apps through build-apps.sh")
     return out
 
@@ -123,7 +126,8 @@ def test_the_nightly_scans_the_deployed_pin_not_mains():
 def test_only_the_checkout_sees_the_repository_token():
     # The workflows hand the token only to build-apps.sh, which drops it after the
     # checkouts and before any build (tests/test_app_build.py runs it).
-    for wf in (DEPLOY, NIGHTLY):
+    assert "APP_REPO_TOKEN:" not in DEPLOY.read_text(), "the deploy job builds nothing itself"
+    for wf in (APP_BUILD, NIGHTLY):
         text = wf.read_text()
         assert text.count("APP_REPO_TOKEN:") == 1, wf.name
         step = "\n".join(ln for ln in text[text.index("APP_REPO_TOKEN:"):].split("- name:", 1)[0].splitlines()
