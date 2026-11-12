@@ -11,6 +11,8 @@
 #
 #   mode: full  the deploy: each app's deployable package, plus the trees.
 #   mode: deps  only the dependency trees the scan reads.
+#   manifest-ref: the commit whose data/apps.json to build (the nightly: the
+#                 deployed commit); default, this run's own.
 #
 # The artifact keeps a missing scan missing: scan-sca.sh never writes an empty
 # stand-in, and the caller's detection gate fails on what is absent.
@@ -24,6 +26,11 @@ on:
         description: "full (deployable packages) or deps (dependency trees only)"
         required: true
         type: string
+      manifest-ref:
+        description: "The 40-character commit whose data/apps.json to build; default, this run's"
+        required: false
+        type: string
+        default: ""
       silk-cognito-client-id:
         description: "The Silk Reeling SPA's public Cognito app client ID (full mode)"
         required: false
@@ -62,6 +69,24 @@ jobs:
       working-directory: infrastructure/lambda
       run: npm ci --omit=dev
 
+    # The manifest to build: this run's, or the one at manifest-ref (the nightly
+    # builds the app versions production runs, not main's).
+    - name: Choose the app manifest
+      working-directory: infrastructure
+      env:
+        REF: ${{ inputs.manifest-ref }}
+      run: |
+        set -euo pipefail
+        if [ -z "$REF" ]; then
+          cp ../data/apps.json app-manifest.json
+        elif [[ "$REF" =~ ^[0-9a-f]{40}$ ]]; then
+          git fetch --no-tags --quiet --depth 1 origin "$REF"
+          git show "$REF:data/apps.json" > app-manifest.json
+        else
+          echo "::error::manifest-ref must be a full commit id"
+          exit 1
+        fi
+
     - name: Build apps
       working-directory: infrastructure
       env:
@@ -69,10 +94,12 @@ jobs:
         APP_REPO_TOKEN: ${{ secrets.app-repo-token }}
         SILK_COGNITO_CLIENT_ID: ${{ inputs.silk-cognito-client-id }}
         MODE: ${{ inputs.mode }}
-      run: bash ../scripts/build-apps.sh "$MODE"
+      run: bash ../scripts/build-apps.sh "$MODE" app-manifest.json
 
     - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
       working-directory: infrastructure
+      env:
+        APPS_MANIFEST: app-manifest.json
       # Every tree in data/apps.json, at the scanner versions scan-sca.sh pins.
       # Neither findings nor a failed scan fail this step: the caller's detection gate does.
       run: bash ../scripts/scan-sca.sh

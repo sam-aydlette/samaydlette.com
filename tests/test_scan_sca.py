@@ -153,10 +153,9 @@ def test_the_loader_refuses_a_malformed_manifest(tmp_path, mutate, msg):
 @pytest.mark.parametrize("wf", WORKFLOWS, ids=lambda p: p.name)
 def test_the_workflows_scan_and_gate_only_through_the_shared_scripts(wf):
     text = wf.read_text()
-    # The deploy scans in the credential-free app-build workflow it calls.
-    scans = (REPO / ".github" / "workflows" / "app-build.yml").read_text() if wf.name == "deploy-with-opa.yml" else text
-    assert "run: bash ../scripts/scan-sca.sh" in scans
-    assert ("scan-sca.sh" in text) == (wf.name != "deploy-with-opa.yml")
+    # Both scan in the credential-free app-build workflow they call.
+    assert "run: bash ../scripts/scan-sca.sh" in (REPO / ".github" / "workflows" / "app-build.yml").read_text()
+    assert "scan-sca.sh" not in text and "uses: ./.github/workflows/app-build.yml" in text
     assert "run: bash ../scripts/run-gates.sh detection" in text
     assert "bash ../scripts/run-gates.sh vdr" in text
     for direct in ("syft dir:", "grype sbom:", "SYFT_VERSION", "GRYPE_VERSION", "scripts/detection-gate.py",
@@ -166,10 +165,12 @@ def test_the_workflows_scan_and_gate_only_through_the_shared_scripts(wf):
 
 def test_the_nightly_scans_and_gates_the_deployed_manifest():
     text = WORKFLOWS[1].read_text()
-    for name in ("Scan application and Lambda dependencies (Syft SBOM + Grype)", "Detection gate (G7)"):
-        step = text[text.index(f"- name: {name}"):]
-        step = step[:step.index("\n\n")]
-        assert "APPS_MANIFEST: deployed-apps.json" in step, name
+    step = text[text.index("- name: Detection gate (G7)"):]
+    step = step[:step.index("\n\n")]
+    assert "APPS_MANIFEST: deployed-apps.json" in step
+    assert "manifest-ref: ${{ needs.pin.outputs.commit }}" in text
+    app_build = (REPO / ".github" / "workflows" / "app-build.yml").read_text()
+    assert "APPS_MANIFEST: app-manifest.json" in app_build and 'git show "$REF:data/apps.json" > app-manifest.json' in app_build
 
 
 def test_the_inventory_reads_the_app_sboms_from_the_manifest():

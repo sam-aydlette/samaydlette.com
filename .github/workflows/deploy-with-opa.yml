@@ -984,18 +984,7 @@ jobs:
 
     - name: Take the expected app files
       working-directory: infrastructure
-      run: |
-        set -euo pipefail
-        cp -- _app-build/silk-reeling.zip silk-reeling.zip
-        expected=$(python3 -I ../scripts/_apps.py trees | cut -f3,4 | tr '\t' '\n')
-        for f in $expected grype.json; do
-          if [ -f "_app-build/$f" ]; then
-            cp -- "_app-build/$f" "$f"
-          else
-            echo "::warning::$f is missing from the app build; the detection gate will fail"
-          fi
-        done
-        rm -rf _app-build
+      run: bash ../scripts/take-app-build.sh full _app-build
 
     # -------------------------------------------------------------------------
     # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't
