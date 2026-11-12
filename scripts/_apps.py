@@ -9,6 +9,7 @@ the shell scripts call the command line below, and Python imports `load`.
     _apps.py [--manifest PATH] grype        ->  the per-tree Grype result files, one per line
     _apps.py [--manifest PATH] builds       ->  "<app>\t<build script>\t<source dir>" per built app
     _apps.py [--manifest PATH] packages     ->  the package file each built app ships, one per line
+    _apps.py [--manifest PATH] hooks KIND   ->  "<app>\t<hook script>" per app with that deploy hook
 
 A malformed manifest exits non-zero with the reason; nothing downstream runs on
 a guess.
@@ -31,6 +32,8 @@ _SBOM = re.compile(r"sbom-[a-z0-9-]+\.json")
 _SRC_DIR = re.compile(r"_[a-z0-9_-]+")
 _PACKAGE = re.compile(r"\./([a-z0-9][a-z0-9-]*\.zip)")
 CATALOGERS = {"python", "javascript"}
+# Deploy hook kinds, as app-hooks.sh names them, and each one's script name.
+HOOKS = {"import": "import.sh", "runtime-check": "runtime-check.sh"}
 
 
 def _fail(msg):
@@ -85,6 +88,13 @@ def load(path=MANIFEST):
                 _fail(f"{i!r}: the source directory must be _<name>, not {build['src']!r}")
             if src is None:
                 _fail(f"{i!r} has a build but no source to build from")
+        deploy = a.get("deploy")
+        if deploy is not None:
+            if not isinstance(deploy, dict) or not deploy or set(deploy) - set(HOOKS):
+                _fail(f"{i!r}: deploy names one or more hooks of {sorted(HOOKS)}")
+            for kind, script in deploy.items():
+                if script != f"scripts/apps/{i}/{HOOKS[kind]}":
+                    _fail(f"{i!r}: the {kind} hook must be scripts/apps/{i}/{HOOKS[kind]}, not {script!r}")
         pkg = a.get("package_path")
         if pkg is not None and not (isinstance(pkg, str) and _PACKAGE.fullmatch(pkg)):
             _fail(f"{i!r}: package_path must be ./<name>.zip, not {pkg!r}")
@@ -124,6 +134,13 @@ def packages(doc):
             for a in doc["apps"] if a.get("build") and a.get("package_path")]
 
 
+def hooks(doc, kind):
+    """(app, hook script) for every app with a deploy hook of this kind, in manifest order."""
+    if kind not in HOOKS:
+        _fail(f"no hook kind {kind!r}; one of {sorted(HOOKS)}")
+    return [(a["id"], a["deploy"][kind]) for a in doc["apps"] if kind in (a.get("deploy") or {})]
+
+
 def source(doc, app):
     """(repo, branch, commit) for an app built from another repository."""
     apps = {a["id"]: a for a in doc["apps"]}
@@ -144,6 +161,7 @@ def main(argv=None):
     sub.add_parser("grype")
     sub.add_parser("builds")
     sub.add_parser("packages")
+    sub.add_parser("hooks").add_argument("kind", choices=sorted(HOOKS))
     args = ap.parse_args(argv)
     doc = load(args.manifest)
     if args.cmd == "source":
@@ -154,6 +172,9 @@ def main(argv=None):
     elif args.cmd == "packages":
         for pkg in packages(doc):
             print(pkg)
+    elif args.cmd == "hooks":
+        for h in hooks(doc, args.kind):
+            print(*h, sep="\t")
     elif args.cmd == "builds":
         for b in builds(doc):
             print(*b, sep="\t")

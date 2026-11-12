@@ -56,6 +56,9 @@ def problems(manifest_path):
                 out.append(f"{i}: it has a source but no build, so no workflow would check it out")
             elif not (REPO / a["build"]["script"]).is_file():
                 out.append(f"{i}: build script {a['build']['script']} does not exist")
+        for kind, script in (a.get("deploy") or {}).items():
+            if not (REPO / script).is_file():
+                out.append(f"{i}: {kind} hook {script} does not exist")
         flag = a["terraform_flag"]
         if flag is not None:
             # The plan job and the deploy job each write a tfvars block; both must enable the app.

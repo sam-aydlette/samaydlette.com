@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "purpose": "The apps in the software factory: one authorization boundary and one offering. Each app names its governance domain and owner, its component in the offering, the Terraform flag that enables it, and, for an app built from another repository, the exact commit the pipeline builds, which must be on the named branch of that repository. Changing the commit is how an app ships a new version, through a reviewed pull request here. Each SCA tree names the directory scanned (relative to infrastructure/), the Syft cataloger and the SBOM file; platform_sbom_trees are the factory's own trees, scanned the same way. An app built from another repository names its build: the script (scripts/apps/<id>/build.sh) and the directory its source is checked out to, relative to infrastructure/. Everything reads this file through scripts/_apps.py: build-apps.sh checks every app out at its pin (app-source.sh) and runs each build, full on the deploy and deps on the nightly, scan-sca.sh scans every tree, run-gates.sh passes each scan to the detection gate, and the inventory generator reads the app SBOMs. tests/test_apps_manifest.py checks it against the governance registry, the offering and both workflows.",
+  "purpose": "The apps in the software factory: one authorization boundary and one offering. Each app names its governance domain and owner, its component in the offering, the Terraform flag that enables it, and, for an app built from another repository, the exact commit the pipeline builds, which must be on the named branch of that repository. Changing the commit is how an app ships a new version, through a reviewed pull request here. Each SCA tree names the directory scanned (relative to infrastructure/), the Syft cataloger and the SBOM file; platform_sbom_trees are the factory's own trees, scanned the same way. An app built from another repository names its build: the script (scripts/apps/<id>/build.sh) and the directory its source is checked out to, relative to infrastructure/. Everything reads this file through scripts/_apps.py: build-apps.sh checks every app out at its pin (app-source.sh) and runs each build, full on the deploy and deps on the nightly, app-hooks.sh runs each app's deploy hooks (scripts/apps/<id>/import.sh to adopt its resources into an empty state, runtime-check.sh to compare the running app with Terraform after apply), scan-sca.sh scans every tree, run-gates.sh passes each scan to the detection gate, and the inventory generator reads the app SBOMs. tests/test_apps_manifest.py checks it against the governance registry, the offering and both workflows.",
   "decided_by": "Sam Aydlette",
   "decided_on": "2026-11-10",
   "review_by": "2027-11-10",
@@ -12,6 +12,7 @@
       "component": "samaydlette.com static website",
       "source": null,
       "build": null,
+      "deploy": null,
       "terraform_flag": null,
       "package_path": null,
       "sbom_trees": []
@@ -29,6 +30,10 @@
       "build": {
         "script": "scripts/apps/silk-reeling/build.sh",
         "src": "_silk_src"
+      },
+      "deploy": {
+        "import": "scripts/apps/silk-reeling/import.sh",
+        "runtime-check": "scripts/apps/silk-reeling/runtime-check.sh"
       },
       "terraform_flag": "create_silk_reeling",
       "package_path": "./silk-reeling.zip",
