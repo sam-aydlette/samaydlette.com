@@ -40,9 +40,21 @@ def _fail(msg):
     raise SystemExit(f"_apps: {msg}")
 
 
-def _tree(t, where):
-    if not isinstance(t, dict) or set(t) - {"dir", "cataloger", "sbom", "what"}:
-        _fail(f"{where}: a tree has dir, cataloger, sbom and optionally what")
+def _text(v):
+    """Short, printable, unpadded text. It reaches the IIW CSV, so it may not
+    start with a character a spreadsheet reads as a formula."""
+    return (isinstance(v, str) and 0 < len(v) <= 120 and v.isprintable() and v == v.strip()
+            and not v.startswith(("=", "+", "-", "@")))
+
+
+def _tree(t, where, app=False):
+    extra = {"dependency_of", "diagram_label"} if app else {"what"}
+    if not isinstance(t, dict) or set(t) - {"dir", "cataloger", "sbom"} - extra:
+        _fail(f"{where}: a tree has dir, cataloger, sbom and optionally {' and '.join(sorted(extra))}")
+    for k in extra & set(t) - {"what"}:
+        if not _text(t[k]):
+            _fail(f"{where}: a tree's {k} must be printable text of at most 120 characters "
+                  "that does not start with =, +, - or @")
     if not _DIR.fullmatch(t.get("dir", "")) or "/../" in t["dir"] or t["dir"].endswith("/.."):
         _fail(f"{where}: malformed tree dir {t.get('dir')!r}")
     if t.get("cataloger") not in CATALOGERS:
@@ -99,7 +111,7 @@ def load(path=MANIFEST):
         if pkg is not None and not (isinstance(pkg, str) and _PACKAGE.fullmatch(pkg)):
             _fail(f"{i!r}: package_path must be ./<name>.zip, not {pkg!r}")
         for t in a.get("sbom_trees", []):
-            _tree(t, i)
+            _tree(t, i, app=True)
     for t in doc.get("platform_sbom_trees", []):
         _tree(t, "platform")
     sboms = [t["sbom"] for t in trees(doc)]
@@ -116,6 +128,19 @@ def trees(doc):
 def app_sboms(doc):
     """The SBOM files of the apps' own trees, which the inventory ingests."""
     return [t["sbom"] for a in doc["apps"] for t in a.get("sbom_trees", [])]
+
+
+def app_sbom_text(doc):
+    """{sbom file: {"dependency_of", "diagram_label"}} for the apps' own trees: how
+    the inventory describes each package it reads from that SBOM. A tree that
+    names neither is described by its app's component in the offering."""
+    out = {}
+    for a in doc["apps"]:
+        for t in a.get("sbom_trees", []):
+            what = t.get("dependency_of", a["component"])
+            out[t["sbom"]] = {"dependency_of": what,
+                              "diagram_label": t.get("diagram_label", f"Open-source dependency of the {what}")}
+    return out
 
 
 def grype_file(tree):

@@ -10,10 +10,8 @@
 #   - terraform output -json            → ARNs of deployed AWS resources
 #   - terraform show -json              → full state, used for resource discovery
 #   - lambda/package-lock.json          → npm packages inside the compliance Lambda
-#   - sbom-python.json (CycloneDX)      → Silk Reeling Lambda's Python/PyPI deps
-#                                         (Syft `syft dir:_pkg`, written by deploy)
-#   - sbom-js.json     (CycloneDX)      → Silk Reeling SPA's npm deps
-#                                         (Syft `syft dir:_silk_src/frontend`)
+#   - sbom-*.json      (CycloneDX)      → each app's dependency trees, as named in
+#                                         data/apps.json (Syft, via scripts/scan-sca.sh)
 #   - ../website/**/*.html              → static HTML artifacts (sha256-hashed)
 #   - validations.json                  → OPA results from scripts/terraform-plan.sh
 #   - GITHUB_* env vars                 → SLSA-style build provenance (when in CI)
@@ -370,8 +368,8 @@ IIW_DEFAULTS = {
         "iiw_asset_type": "Software Package (npm)",
     },
     "pypi_package": {
-        "function": "Python dependency of the Silk Reeling application (PyPI)",
-        "diagram_label": "Open-source Python dependency of the Silk Reeling app",
+        "function": "Python dependency of an app in the factory (PyPI)",
+        "diagram_label": "Open-source Python dependency of an app in the factory",
         "public": False,
         "baseline_configuration": "lockfile integrity hash; Dependabot-monitored",
         "iiw_asset_type": "Software Package (PyPI)",
@@ -1237,17 +1235,19 @@ def build_npm_components(lock_path, function=None, lifecycle="runtime",
     return components
 
 
-def build_sbom_components(sbom_path, existing_components=None):
+def build_sbom_components(sbom_path, existing_components=None,
+                          dependency_of="application", diagram_label=None):
     """Read a CycloneDX JSON SBOM and emit software components for the inventory.
 
-    Used to ingest the Silk Reeling app's dependency trees — the Python (PyPI)
-    Lambda deps (sbom-python.json) and the SPA's npm deps (sbom-js.json) — which
-    the deploy workflow's Syft SCA step writes as CycloneDX into the same
-    working directory this script runs from. Using the already-resolved SBOM as
+    Used to ingest each app's dependency trees (data/apps.json), which
+    scripts/scan-sca.sh writes as CycloneDX into the same working directory
+    this script runs from. The manifest says how each tree's packages are
+    described: `dependency_of` (what they are a dependency of) and
+    `diagram_label`. Using the already-resolved SBOM as
     the source of truth means we don't re-resolve dependency trees here.
 
     Graceful like the other loaders: returns [] when the path is missing, empty,
-    or not valid JSON, so this is a no-op when the Silk Reeling app wasn't built.
+    or not valid JSON, so this is a no-op when an app wasn't built.
 
     Type choice: each component is typed by its PURL ecosystem -- 'pkg:pypi/...'
     becomes 'pypi_package', 'pkg:npm/...' becomes 'npm_package' -- and the IIW
@@ -1292,18 +1292,17 @@ def build_sbom_components(sbom_path, existing_components=None):
         ecosystem = purl_ecosystem(purl) or "unknown"
         # Type by the PURL's actual ecosystem, and derive role-aware IIW facts so
         # the FedRAMP IIW (Appendix M) reports each package's real ecosystem and
-        # role: an SPA npm dependency, a Silk Reeling PyPI dependency, and the
+        # role: an app's npm dependency, an app's PyPI dependency, and the
         # compliance-Lambda npm dependency must not read identically. These are
         # set before apply_iiw_defaults, which only fills missing keys.
         if ecosystem == "pypi":
-            ptype, asset_type = "pypi_package", "Software Package (PyPI)"
-            role = "Dependency of the Silk Reeling application Lambda (PyPI)"
+            ptype, eco_label = "pypi_package", "PyPI"
         elif ecosystem == "npm":
-            ptype, asset_type = "npm_package", "Software Package (npm)"
-            role = "Dependency of the Silk Reeling single-page application (npm)"
+            ptype, eco_label = "npm_package", "npm"
         else:
-            ptype, asset_type = "npm_package", f"Software Package ({ecosystem})"
-            role = f"Dependency of the Silk Reeling application ({ecosystem})"
+            ptype, eco_label = "npm_package", ecosystem
+        asset_type = f"Software Package ({eco_label})"
+        role = f"Dependency of the {dependency_of} ({eco_label})"
         component = {
             "component_id": component_id_for_sbom(ecosystem, name, version),
             "type": ptype,
@@ -1315,6 +1314,7 @@ def build_sbom_components(sbom_path, existing_components=None):
                 "sbom_source": sbom_path.name,
                 "iiw_asset_type": asset_type,
                 "function": role,
+                "diagram_label": diagram_label or f"Open-source dependency of the {dependency_of}",
             },
         }
         apply_mas_defaults(component)
@@ -1746,6 +1746,7 @@ def main():
     # infrastructure/ directory) for each app tree in data/apps.json. One that is
     # absent because its app wasn't built is skipped by build_sbom_components.
     app_sboms = [cwd / name for name in _apps.app_sboms(_apps.load())]
+    app_sbom_text = _apps.app_sbom_text(_apps.load())
     validations_path = cwd / "validations.json"
     schema_id = "https://samaydlette.com/.well-known/ksi-signal.schema.json"
     output_path = cwd / "ksi-signal.json"
@@ -1786,11 +1787,12 @@ def main():
         lifecycle="build-time",
         existing_components=components))
     # Ingest each app's resolved dependency trees from the Syft CycloneDX SBOMs
-    # (for Silk Reeling, its Python (PyPI) and SPA (npm) packages), so the
+    # named in data/apps.json, so the
     # canonical inventory covers more than the compliance Lambda's npm packages.
-    # Each call dedupes by PURL against components already collected.
+    # The manifest says how each tree's packages are described. Each call
+    # dedupes by PURL against components already collected.
     for sbom in app_sboms:
-        components.extend(build_sbom_components(sbom, components))
+        components.extend(build_sbom_components(sbom, components, **app_sbom_text[sbom.name]))
     components.extend(build_html_components(website_root))
     components.extend(build_external_components())
 
