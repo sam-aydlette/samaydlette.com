@@ -54,9 +54,10 @@ def test_every_domain_is_owned_by_a_declared_role():
 
 
 def test_every_role_owns_something():
+    # The senior official owns no domain: it accepts risk (CR26 SDR-CSO-FRR).
     reg = _load(REGISTRY)
     owning = {d["owner_role"] for d in reg["domains"]}
-    assert {r["id"] for r in reg["roles"]} == owning
+    assert {r["id"] for r in reg["roles"]} == owning | {"role:senior-official"}
 
 
 def test_every_catalog_family_maps_to_exactly_one_declared_domain():

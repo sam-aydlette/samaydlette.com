@@ -38,7 +38,7 @@ DECISION_FIELDS = ("decided_by", "decided_on", "review_by")
 # The fields infrastructure/schemas/decisions.schema.json allows. An unknown
 # field is refused: a misspelt review_by would otherwise read as absent.
 TOP_KEYS = {"$comment", "_note", "schema", "decisions"}
-RECORD_KEYS = {"id", "former_id", "title", "status", "disposition", "justification", *DECISION_FIELDS,
+RECORD_KEYS = {"id", "former_id", "title", "status", "disposition", "justification", *DECISION_FIELDS, "accepted_by",
                "closed_on", "original_detection_date", "planned_completion", "remediation_plan",
                "vendor_dependency", "point_of_contact", "controls", "applies_to", "vuln_fields", "source"}
 APPLIES_KEYS = {"check_ids", "vuln_ids", "resources"}
