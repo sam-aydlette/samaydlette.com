@@ -59,7 +59,19 @@ def test_committed_register_loads_and_matches_its_schema():
 
 
 def test_every_gate_has_a_check():
-    assert set(_gates.CHECKS.values()) == set(_gates.GATES)
+    assert set(_gates.CHECKS.values()) == set(_gates.GATES) | {_gates.PIPELINE}
+
+
+def test_a_pipeline_gate_cannot_claim_a_mode_its_script_does_not_read(tmp_path):
+    cfg = good()
+    entry(cfg, "frr.claims").update(mode="detect-and-recover", reason="fixture", review_by="2099-01-01")
+    with pytest.raises(SystemExit, match="frr.claims: a pipeline gate does not read its mode"):
+        _gates.load_gate_modes(write(tmp_path, cfg), today=TODAY)
+
+
+def test_pipeline_gates_are_not_published_as_method_gates():
+    view = _gates.published_view(_gates.load_gate_modes(REGISTER, today=TODAY))
+    assert {c["gate"] for c in view["checks"]} == set(_gates.GATES)
 
 
 def test_t53_mode_changed_without_a_decision_record_fails_the_build():
@@ -369,6 +381,71 @@ def _reconcile(tmp_path, e, monkeypatch, capsys):
     return code != 0, capsys.readouterr().err
 
 
+def _script(tmp_path, args, cwd=None):
+    r = subprocess.run([sys.executable, *args], capture_output=True, text=True, cwd=cwd, env=_env(tmp_path))
+    return r.returncode != 0, r.stdout + r.stderr
+
+
+def _opa_plan(tmp_path, e):
+    """The deploy's OPA evaluation of a Terraform plan (scripts/terraform-plan.sh)."""
+    if not shutil.which("opa"):
+        pytest.skip("opa is not on PATH")
+    r = subprocess.run(["opa", "eval", "--strict-builtin-errors", "-d", str(REPO / "infrastructure" / "policy"),
+                        "-i", str(_fixture(e)), "data.terraform.compliance.compliance_report"],
+                       capture_output=True, text=True, check=True)
+    report = json.loads(r.stdout)["result"][0]["expressions"][0]["value"]
+    return report["compliant"] is False, json.dumps(report["violations"])
+
+
+def _exceptions(tmp_path, e, monkeypatch, capsys):
+    ex = _load("exceptions_registry", "check-exceptions.py")
+    monkeypatch.setattr(ex, "REGISTER", _fixture(e))
+    return ex.main() != 0, capsys.readouterr().err
+
+
+def _sia(tmp_path, e):
+    sia = _load("sia_registry", "sia.py")
+    ev = sia.evaluate(sia.load_questions(str(REPO / "data" / "sia-questions.json")),
+                      (_fixture(e) / "body.md").read_text(), sia.parse_diff((_fixture(e) / "change.diff").read_text()))
+    return bool(ev["errors"]), "\n".join(ev["errors"])
+
+
+def _claims(tmp_path, e):
+    """The committed rule records with the fixture record in place of the one with its frr_id."""
+    record = json.loads(_fixture(e).read_text())
+    doc = json.loads((REPO / "data" / "frr-records.json").read_text())
+    doc["records"] = [record if r["frr_id"] == record["frr_id"] else r for r in doc["records"]]
+    (tmp_path / "records.json").write_text(json.dumps(doc))
+    return _script(tmp_path, [str(REPO / "scripts" / "_frr.py"), "--records", str(tmp_path / "records.json"), "--claims"])
+
+
+def _pipeline(check, tmp_path, e, monkeypatch, capsys):
+    s = REPO / "scripts"
+    fx = str(_fixture(e))
+    if check == "opa.plan":
+        return _opa_plan(tmp_path, e)
+    if check == "policy.annotations":
+        if not shutil.which("opa"):
+            pytest.skip("opa is not on PATH")
+        return _script(tmp_path, [str(s / "check-policy-annotations.py"), "--policy-dir", fx])
+    if check == "policy.wasm-safe":
+        return _script(tmp_path, [str(s / "check-wasm-safe.py"), fx])
+    if check == "exceptions.register":
+        return _exceptions(tmp_path, e, monkeypatch, capsys)
+    if check == "scn.tag":
+        return _sia(tmp_path, e)
+    if check == "inventory.signal":
+        return _script(tmp_path, [str(s / "validate-ksi-signal.py"), fx])
+    if check == "frr.claims":
+        return _claims(tmp_path, e)
+    if check == "redaction.published":
+        return _script(tmp_path, [str(s / "check-published-redaction.py"), "--root", fx])
+    if check == "freshness.published":
+        return _script(tmp_path, [str(s / "check-evidence-freshness.py"), "--url",
+                                  (_fixture(e) / "vdr-report.json").as_uri()])
+    raise AssertionError(f"no runner for {check}")
+
+
 # What each check's own failure says, so a fixture that fails for another reason does not count.
 MARKERS = {
     "vdr.kev": "KEV (CISA Known Exploited Vulnerability)",
@@ -379,6 +456,15 @@ MARKERS = {
     "detection.zap.missing": "No ZAP report at zap-report.json",
     "detection.zap.stale": "ZAP report is",
     "reconcile.i.unreadable": "tag:GetResources not permitted",
+    "opa.plan": "public_access_not_fully_blocked",
+    "policy.annotations": "resource_types",
+    "policy.wasm-safe": "format is not a string literal",
+    "exceptions.register": "expired on 2026-01-01",
+    "scn.tag": "`pipeline` must be answered",
+    "inventory.signal": "duplicate native_id",
+    "frr.claims": "SCN-CSO-EVA",
+    "redaction.published": "account ID(s)",
+    "freshness.published": "vdr-report.json",
 }
 
 
@@ -392,6 +478,8 @@ def _marker(check):
 
 def _run(check, tmp_path, monkeypatch, capsys):
     e = entry(good(), check)
+    if e["gate"] == _gates.PIPELINE:
+        return _pipeline(check, tmp_path, e, monkeypatch, capsys)
     if check.startswith("vdr.") or check.startswith("detection.zap."):
         return _builder(tmp_path, e)
     if check.startswith("detection."):
@@ -439,7 +527,12 @@ def test_every_fixture_exists():
 # The command each check's script runs under in the workflows.
 RUNS = {"vdr.": "run-gates.sh vdr", "detection.zap.": "run-gates.sh vdr", "detection.": "run-gates.sh detection",
         "vuln-gate.": "scripts/vuln-gate.py", "runtime-divergence.": "scripts/check-runtime-divergence.py",
-        "reconcile.": "scripts/reconcile.py --artifacts-dir . --live"}
+        "reconcile.": "scripts/reconcile.py --artifacts-dir . --live", "opa.plan": "scripts/terraform-plan.sh",
+        "policy.annotations": "scripts/check-policy-annotations.py", "policy.wasm-safe": "scripts/check-wasm-safe.py",
+        "exceptions.register": "scripts/check-exceptions.py", "scn.tag": "scripts/sia.py",
+        "inventory.signal": "scripts/validate-ksi-signal.py", "frr.claims": "scripts/_frr.py --claims",
+        "redaction.published": "scripts/check-published-redaction.py",
+        "freshness.published": "scripts/check-evidence-freshness.py"}
 
 
 def _jobs(text):
@@ -458,16 +551,25 @@ def _jobs(text):
 
 
 def test_each_checks_stages_match_the_workflows():
+    """A step in the deploy job runs before or after `terraform apply`. A job the
+    deploy job needs runs on every pull request and again before the deploy. The
+    SCN workflow runs on pull requests."""
     deploy = _jobs((WORKFLOWS / "deploy-with-opa.yml").read_text())
     nightly = (WORKFLOWS / "evidence-nightly.yml").read_text()
+    scn = (WORKFLOWS / "scn-tag.yml").read_text()
     apply_at = next(i for i, line in enumerate(deploy["deploy"]) if "terraform apply" in line and "run:" in line)
+    needs = next(line for line in deploy["deploy"] if line.strip().startswith("needs:"))
+    needed = {j.strip() for j in needs.split("[", 1)[1].split("]", 1)[0].split(",")}
     for e in good()["checks"]:
         cmd = next(v for k, v in RUNS.items() if e["check"].startswith(k))
         found = set()
         for i, line in enumerate(deploy["deploy"]):
             if cmd in line:
                 found.add("pre-apply" if i < apply_at else "post-apply")
-        if any(cmd in line for job, lines in deploy.items() if job != "deploy" for line in lines):
+        for job, lines in deploy.items():
+            if job != "deploy" and any(cmd in line for line in lines):
+                found |= {"pr", "pre-apply"} if job in needed else {"pr"}
+        if cmd in scn:
             found.add("pr")
         if cmd in nightly:
             found.add("nightly")
@@ -479,6 +581,7 @@ def test_each_checks_stages_match_the_workflows():
     ("stages", ["pre-apply", "pre-apply"], "stages must be"),
     ("stages", ["on-a-whim"], "stages must be"),
     ("owner", "Sam", "owner must be a governance role"),
+    ("owner", "role:Risk Owner", "owner must be a governance role"),
     ("fixture", "/etc/passwd", "fixture must be a path under tests/fixtures/"),
     ("fixture", "tests/fixtures/../../etc", "fixture must be a path under tests/fixtures/"),
 ])

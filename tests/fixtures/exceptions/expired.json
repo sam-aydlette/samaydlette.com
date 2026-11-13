@@ -1,0 +1,9 @@
+[
+  {
+    "resource": "aws_s3_bucket.fixture",
+    "rule_id": "fixture_rule",
+    "justification": "Fixture: an exception past its expiry.",
+    "expiry": "2026-01-01",
+    "ticket": "DEC-000"
+  }
+]
