@@ -4,7 +4,8 @@
 infrastructure/schemas/gate-modes.json records, for every check that implements
 one of the method's gates G1-G7, the mode it runs in and the decision behind
 that mode. Each gate script asks this module for its mode instead of carrying
-one in code:
+one in code. The register also lists the pipeline's other gates (gate
+"pipeline"), which always block and do not read a mode:
 
     block               a failure stops the build or the publication
     detect-and-recover  a failure is published, queued for a person and given a
@@ -43,6 +44,10 @@ BLOCK = "block"
 DETECT_AND_RECOVER = "detect-and-recover"
 MODES = (BLOCK, DETECT_AND_RECOVER)
 GATES = ("G1", "G2", "G3", "G4", "G5", "G6", "G7")
+# A pipeline gate is not one of the method's gates G1-G7. Its script does not
+# read a mode, so its entry must say block: the register cannot promise a mode
+# the code does not have.
+PIPELINE = "pipeline"
 
 # Where a check runs: on a pull request, in the deploy before or after
 # `terraform apply`, or in the unattended nightly. tests/test_gate_modes.py
@@ -52,7 +57,7 @@ STAGES = ("pr", "pre-apply", "post-apply", "nightly")
 # tests check it is one). A known-bad input the check must reject: a path under
 # tests/fixtures/, run by tests/test_gate_modes.py. A reconcile fixture is an
 # overlay: the files that differ from tests/fixtures/clean/.
-OWNER_RE = re.compile(r"^role:[a-z0-9-]+-owner$")
+OWNER_RE = re.compile(r"^role:[a-z0-9]+(-[a-z0-9]+)*$")
 FIXTURE_RE = re.compile(r"^tests/fixtures/[A-Za-z0-9_./-]+$")
 
 # Every check a gate script consults, with the gate it implements. A check here
@@ -84,6 +89,15 @@ CHECKS = {
     "detection.previous-vdr": "G7",
     "detection.checkov": "G7",
     "detection.tfsec": "G7",
+    "opa.plan": PIPELINE,
+    "policy.annotations": PIPELINE,
+    "policy.wasm-safe": PIPELINE,
+    "exceptions.register": PIPELINE,
+    "scn.tag": PIPELINE,
+    "inventory.signal": PIPELINE,
+    "frr.claims": PIPELINE,
+    "redaction.published": PIPELINE,
+    "freshness.published": PIPELINE,
 }
 
 TOP_KEYS = {"$schema", "version", "description", "method_reference", "checks"}
@@ -151,12 +165,14 @@ def validate_gate_modes(cfg, where="(in memory)", today=None):
                 _fail(where, f"{name}: {key} must be one of {list(MODES)}, got {e[key]!r}")
         if e["method_default"] != BLOCK:
             _fail(where, f"{name}: the method's default for every gate is block")
+        if e["gate"] == PIPELINE and e["mode"] != BLOCK:
+            _fail(where, f"{name}: a pipeline gate does not read its mode and always blocks; its mode must be block")
         stages = e["stages"]
         if (not isinstance(stages, list) or not stages or len(set(map(str, stages))) != len(stages)
                 or any(x not in STAGES for x in stages)):
             _fail(where, f"{name}: stages must be a non-empty list of distinct values from {list(STAGES)}")
         if not isinstance(e["owner"], str) or not OWNER_RE.fullmatch(e["owner"]):
-            _fail(where, f"{name}: owner must be a governance role (role:<domain>-owner)")
+            _fail(where, f"{name}: owner must be a governance role (role:<name>)")
         fx = e["fixture"]
         if not isinstance(fx, str) or not FIXTURE_RE.fullmatch(fx) or ".." in fx.split("/"):
             _fail(where, f"{name}: fixture must be a path under tests/fixtures/")
@@ -230,7 +246,8 @@ def published_view(register):
     """What an output records about the modes it ran under."""
     return {"version": register["version"], "sha256": register["sha256"],
             "checks": [{k: e[k] for k in ("check", "gate", "mode", "method_default", "review_by")}
-                       for e in sorted(register["checks"].values(), key=lambda x: (x["gate"], x["check"]))]}
+                       for e in sorted(register["checks"].values(), key=lambda x: (x["gate"], x["check"]))
+                       if e["gate"] in GATES]}
 
 
 def read_events(path):

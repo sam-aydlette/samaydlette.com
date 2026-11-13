@@ -11,7 +11,7 @@
     {"id": "role:identity-owner", "title": "Identity and access owner"},
     {"id": "role:observability-owner", "title": "Observability and response owner"},
     {"id": "role:vulnerability-owner", "title": "Vulnerability and supply chain owner"},
-    {"id": "role:risk-owner", "title": "Risk and authorization owner"},
+    {"id": "role:security-officer", "title": "Security officer"},
     {"id": "role:website-owner", "title": "Website application owner"},
     {"id": "role:silk-reeling-owner", "title": "Silk Reeling application owner"}
   ],
@@ -48,9 +48,9 @@
     },
     {
       "id": "risk",
-      "name": "Risk and authorization",
-      "description": "Deciding and recording risk: the system security plan, the plan of action and milestones, risk acceptances, policy, and training.",
-      "owner_role": "role:risk-owner"
+      "name": "Security risk",
+      "description": "Remediating or mitigating risk against the baseline; where the baseline is not met or risk remains above it, proposing acceptance and representing that risk transparently as it applies to the mission. The provider's senior official accepts it, and each agency's authorizing official decides whether it is acceptable for their own use. Covers the system security plan, the plan of action and milestones, policy, and training.",
+      "owner_role": "role:security-officer"
     },
     {
       "id": "website",

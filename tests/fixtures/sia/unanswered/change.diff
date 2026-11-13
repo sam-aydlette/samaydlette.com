@@ -1,0 +1,6 @@
+diff --git a/.github/workflows/deploy-with-opa.yml b/.github/workflows/deploy-with-opa.yml
+--- a/.github/workflows/deploy-with-opa.yml
++++ b/.github/workflows/deploy-with-opa.yml
+@@ -1,1 +1,2 @@
+ name: Deploy Website with OPA Compliance
++# fixture: an unanswered pipeline change

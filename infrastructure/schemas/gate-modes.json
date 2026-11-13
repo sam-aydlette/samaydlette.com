@@ -1,7 +1,7 @@
 {
   "$schema": "./gate-modes.schema.json",
-  "version": "2026-11-13.1",
-  "description": "The mode each gate check runs in, and the decision behind it (REQ-GAT-1, REQ-GAT-4). The method's default is block. A detect-and-recover check publishes its failure, queues it and starts a recovery clock instead of stopping the run. Each check also names where it runs (stages), who a failure is routed to (owner) and the known-bad input it must reject (fixture; tests/test_gate_modes.py runs each one). Read by scripts/_gates.py, which fails the build on a missing decision field, a non-default mode with no reason or a lapsed review date, or an unrecorded check.",
+  "version": "2026-11-13.2",
+  "description": "The mode each gate check runs in, and the decision behind it (REQ-GAT-1, REQ-GAT-4). The method's default is block. A detect-and-recover check publishes its failure, queues it and starts a recovery clock instead of stopping the run. Entries with gate pipeline are the pipeline's other gates: their scripts do not read a mode, so they always block. Each check also names where it runs (stages), who a failure is routed to (owner) and the known-bad input it must reject (fixture; tests/test_gate_modes.py runs each one). Read by scripts/_gates.py, which fails the build on a missing decision field, a non-default mode with no reason or a lapsed review date, or an unrecorded check.",
   "method_reference": "website/research/vulnerability-evidence.html#gates",
   "checks": [
     {
@@ -121,6 +121,33 @@
      "stages": ["pre-apply", "nightly"], "owner": "role:platform-owner", "fixture": "tests/fixtures/detection/checkov-fallback.sarif"},
     {"check": "detection.tfsec", "gate": "G7", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-04", "review_by": "2027-11-04",
-     "stages": ["pre-apply", "nightly"], "owner": "role:platform-owner", "fixture": "tests/fixtures/detection/tfsec-no-results.json"}
+     "stages": ["pre-apply", "nightly"], "owner": "role:platform-owner", "fixture": "tests/fixtures/detection/tfsec-no-results.json"},
+    {"check": "opa.plan", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["pr", "pre-apply"], "owner": "role:platform-owner", "fixture": "tests/fixtures/plans/s3-public-access-open.json"},
+    {"check": "policy.annotations", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["pr", "pre-apply"], "owner": "role:platform-owner", "fixture": "tests/fixtures/policy-annotations/no-resource-types"},
+    {"check": "policy.wasm-safe", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["pr", "pre-apply"], "owner": "role:platform-owner", "fixture": "tests/fixtures/wasm-safe/concat-nonliteral"},
+    {"check": "exceptions.register", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["pr", "pre-apply"], "owner": "role:security-officer", "fixture": "tests/fixtures/exceptions/expired.json"},
+    {"check": "scn.tag", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["pr"], "owner": "role:platform-owner", "fixture": "tests/fixtures/sia/unanswered"},
+    {"check": "inventory.signal", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["post-apply"], "owner": "role:platform-owner", "fixture": "tests/fixtures/inventory/duplicate-native-id.json"},
+    {"check": "frr.claims", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["post-apply"], "owner": "role:security-officer", "fixture": "tests/fixtures/claims/unresolved-evidence.json"},
+    {"check": "redaction.published", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["post-apply", "nightly"], "owner": "role:platform-owner", "fixture": "tests/fixtures/redaction/bad"},
+    {"check": "freshness.published", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
+     "stages": ["nightly"], "owner": "role:observability-owner", "fixture": "tests/fixtures/freshness/stale"}
   ]
 }

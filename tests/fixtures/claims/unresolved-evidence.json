@@ -1,0 +1,11 @@
+{
+  "frr_id": "SCN-CSO-EVA",
+  "status": "Implemented",
+  "implementation": "Every pull request into main carries a security impact analysis: yes/no answers to the governed questions in data/sia-questions.json, adapted from the NIST SP 800-128 template. The scn-tag check reads the diff, requires an answer (and a reason for each no) to every question the diff touches, derives the type in this rule's order (class change, then routine recurring, transformative, adaptive; with not significant for changes that touch no security-relevant path) and fails when the declared SCN-Type disagrees or a class change is proposed. main requires the check on every pull request.",
+  "evidence": [
+    {
+      "kind": "step",
+      "ref": "deploy-with-opa.yml#No such step"
+    }
+  ]
+}
