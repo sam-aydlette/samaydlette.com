@@ -524,12 +524,13 @@ def test_every_fixture_exists():
         assert p.exists() or p.with_name(p.name + ".error").exists(), e["fixture"]
 
 
-# The command each check's script runs under in the workflows.
+# The command each check's script runs under in the workflows. A check on the
+# runner runs under `make gates STAGE=<stage>`.
 RUNS = {"vdr.": "run-gates.sh vdr", "detection.zap.": "run-gates.sh vdr", "detection.": "run-gates.sh detection",
         "vuln-gate.": "scripts/vuln-gate.py", "runtime-divergence.": "scripts/check-runtime-divergence.py",
         "reconcile.": "scripts/reconcile.py --artifacts-dir . --live", "opa.plan": "scripts/terraform-plan.sh",
-        "policy.annotations": "scripts/check-policy-annotations.py", "policy.wasm-safe": "scripts/check-wasm-safe.py",
-        "exceptions.register": "scripts/check-exceptions.py", "scn.tag": "scripts/sia.py",
+        "policy.annotations": "make gates STAGE=pr", "policy.wasm-safe": "make gates STAGE=pr",
+        "exceptions.register": "make gates STAGE=pr", "scn.tag": "scripts/sia.py",
         "inventory.signal": "scripts/validate-ksi-signal.py", "frr.claims": "scripts/_frr.py --claims",
         "redaction.published": "scripts/check-published-redaction.py",
         "freshness.published": "scripts/check-evidence-freshness.py"}
@@ -584,9 +585,45 @@ def test_each_checks_stages_match_the_workflows():
     ("owner", "role:Risk Owner", "owner must be a governance role"),
     ("fixture", "/etc/passwd", "fixture must be a path under tests/fixtures/"),
     ("fixture", "tests/fixtures/../../etc", "fixture must be a path under tests/fixtures/"),
+    ("run", "scripts/check-exceptions.py; rm -rf /", "run must be a script under scripts/"),
+    ("run", "../check-exceptions.py", "run must be a script under scripts/"),
 ])
 def test_a_bad_stage_owner_or_fixture_fails(tmp_path, field, value, msg):
     cfg = good()
     entry(cfg, "vdr.kev")[field] = value
     with pytest.raises(SystemExit, match=msg):
         _gates.load_gate_modes(write(tmp_path, cfg), today=TODAY)
+
+
+# ---- one runner: make gates STAGE=<stage> -------------------------------------------
+
+def test_the_pr_stage_runs_exactly_the_registered_scripts():
+    runs, missing = _gates.stage_runs(_gates.load_gate_modes(), "pr")
+    assert runs == ["scripts/check-policy-annotations.py", "scripts/check-wasm-safe.py",
+                    "scripts/check-exceptions.py"]
+    assert missing == ["opa.plan", "scn.tag"]
+
+
+def test_every_run_script_exists_and_its_check_names_its_stages():
+    for e in _gates.load_gate_modes()["checks"].values():
+        if "run" in e:
+            assert (REPO / e["run"]).is_file(), e["run"]
+            assert e["stages"], e["check"]
+
+
+def test_an_unknown_stage_is_refused():
+    with pytest.raises(SystemExit, match="unknown stage"):
+        _gates.stage_runs(_gates.load_gate_modes(), "whenever")
+
+
+def test_the_runner_runs_every_gate_and_fails_if_any_failed(tmp_path):
+    # A stand-in interpreter: the register lookup runs for real, every gate script fails.
+    stub = tmp_path / "py"
+    stub.write_text(f'#!/bin/sh\ncase "$1" in *_gates.py) exec {sys.executable} "$@";; esac\nexit 1\n')
+    stub.chmod(0o755)
+    env = {k: v for k, v in os.environ.items() if k not in ("GATE_EVENTS_FILE", "GATE_MODES_FILE")}
+    out = subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "stage", "pr"],
+                         env={**env, "PYTHON": str(stub)}, capture_output=True, text=True)
+    assert out.returncode == 1
+    assert "3 gate(s) failed" in out.stderr
+
