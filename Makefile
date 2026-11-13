@@ -32,7 +32,7 @@
 # =============================================================================
 
 .PHONY: help dev-setup check check-full test lint typecheck fmt test-policies \
-        reconcile essay-check preview require-tools require-artifacts check-claims
+        reconcile essay-check preview require-tools require-artifacts check-claims gates
 
 VENV     := .venv
 VENV_PY  := $(VENV)/bin/python
@@ -62,6 +62,8 @@ help:
 	@echo "                     needs generated artifacts (see 'make check-full')"
 	@echo "  make check-claims - the deploy's rule-claims gate: fails while a record"
 	@echo "                     claims more than its fields support (incl. unapproved)"
+	@echo "  make gates STAGE=pr - every gate the gate register lists for STAGE,"
+	@echo "                     the same runner CI uses (scripts/run-gates.sh stage)"
 	@echo "  make test        - Python unit/integration suite (tests/)"
 	@echo "  make lint        - ruff check scripts/ tests/"
 	@echo "  make typecheck   - mypy scripts/"
@@ -129,6 +131,12 @@ check-full: check require-artifacts
 # operator's approval fails it, and that is a decision, not a build error.
 check-claims:
 	$(PY) scripts/_frr.py --claims
+
+# The gates the register (infrastructure/schemas/gate-modes.json) lists for a
+# stage, run the same way here and in CI.
+gates:
+	@[ -n "$(STAGE)" ] || { echo "usage: make gates STAGE=pr|pre-apply|post-apply|nightly" >&2; exit 2; }
+	PYTHON=$(PY) bash scripts/run-gates.sh stage $(STAGE)
 
 require-artifacts:
 	@missing=""; \

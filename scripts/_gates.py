@@ -59,6 +59,10 @@ STAGES = ("pr", "pre-apply", "post-apply", "nightly")
 # overlay: the files that differ from tests/fixtures/clean/.
 OWNER_RE = re.compile(r"^role:[a-z0-9]+(-[a-z0-9]+)*$")
 FIXTURE_RE = re.compile(r"^tests/fixtures/[A-Za-z0-9_./-]+$")
+# The script `make gates STAGE=<stage>` (scripts/run-gates.sh stage) runs for a
+# check, from the repository root. Only a script under scripts/ with no
+# arguments, so the register cannot carry a shell command.
+RUN_RE = re.compile(r"^scripts/[a-z0-9_-]+\.py$")
 
 # Every check a gate script consults, with the gate it implements. A check here
 # with no entry in the register, or an entry for a check not here, fails the load.
@@ -102,8 +106,8 @@ CHECKS = {
 
 TOP_KEYS = {"$schema", "version", "description", "method_reference", "checks"}
 ENTRY_KEYS = {"check", "gate", "mode", "method_default", "reason", "decided_by", "decided_on", "review_by",
-              "stages", "owner", "fixture"}
-REQUIRED_ENTRY_KEYS = ENTRY_KEYS - {"reason"}
+              "stages", "owner", "fixture", "run"}
+REQUIRED_ENTRY_KEYS = ENTRY_KEYS - {"reason", "run"}
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 # Set by the workflows. When present, every detect-and-recover event is appended
@@ -176,6 +180,8 @@ def validate_gate_modes(cfg, where="(in memory)", today=None):
         fx = e["fixture"]
         if not isinstance(fx, str) or not FIXTURE_RE.fullmatch(fx) or ".." in fx.split("/"):
             _fail(where, f"{name}: fixture must be a path under tests/fixtures/")
+        if "run" in e and (not isinstance(e["run"], str) or not RUN_RE.fullmatch(e["run"])):
+            _fail(where, f"{name}: run must be a script under scripts/ (scripts/<name>.py)")
         if not isinstance(e["decided_by"], str) or not e["decided_by"].strip():
             _fail(where, f"{name}: decided_by must name who decided the mode")
         _date(where, name, "decided_on", e["decided_on"])
@@ -250,6 +256,20 @@ def published_view(register):
                        if e["gate"] in GATES]}
 
 
+def stage_runs(register, stage):
+    """(scripts to run, checks not on the runner yet) for a stage, in register order."""
+    if stage not in STAGES:
+        raise SystemExit(f"::error::unknown stage {stage!r}; one of {list(STAGES)}")
+    runs, missing = [], []
+    for name, e in register["checks"].items():
+        if stage in e["stages"]:
+            if "run" not in e:
+                missing.append(name)
+            elif e["run"] not in runs:
+                runs.append(e["run"])
+    return runs, missing
+
+
 def read_events(path):
     """Events a run recorded, for the status beacon. Missing file: none."""
     p = Path(path)
@@ -267,10 +287,17 @@ def read_events(path):
 
 
 if __name__ == "__main__":
-    # `python3 scripts/_gates.py` validates the register; `... status FILE`
-    # prints {gates, gate_events} for the nightly status beacon.
+    # `python3 scripts/_gates.py` validates the register; `... stage STAGE`
+    # lists the scripts that stage runs; `... status FILE` prints
+    # {gates, gate_events} for the nightly status beacon.
     reg = load_gate_modes()
-    if len(sys.argv) >= 3 and sys.argv[1] == "status":
+    if len(sys.argv) == 3 and sys.argv[1] == "stage":
+        # For scripts/run-gates.sh: the scripts to run, one per line; the rest to stderr.
+        runs, missing = stage_runs(reg, sys.argv[2])
+        if missing:
+            print(f"not on the runner yet ({sys.argv[2]}): {', '.join(missing)}", file=sys.stderr)
+        print("\n".join(runs))
+    elif len(sys.argv) >= 3 and sys.argv[1] == "status":
         print(json.dumps({"gates": {"version": reg["version"], "sha256": reg["sha256"]},
                           "gate_events": read_events(sys.argv[2])}))
     else:

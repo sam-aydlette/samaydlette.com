@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # The detection gate and the VDR build, with the inputs every workflow passes.
 #
-# Usage (from infrastructure/):
-#   run-gates.sh detection
-#   run-gates.sh vdr [EXTRA BUILDER ARGS...]
+# Usage:
+#   run-gates.sh stage STAGE        (any directory; `make gates STAGE=...`)
+#   run-gates.sh detection          (from infrastructure/)
+#   run-gates.sh vdr [EXTRA BUILDER ARGS...]   (from infrastructure/)
+#
+# `stage` runs every gate the gate register (infrastructure/schemas/gate-modes.json)
+# lists for STAGE with a `run` script, from the repository root, the same way
+# locally and in CI. It runs them all, then fails if any failed. Checks for the
+# stage that have no `run` yet are named on stderr.
 #
 # The deploy and the nightly gather the same detection inputs under the same
 # names, so the argument lists live here once. The per-tree Grype files come
@@ -16,13 +22,30 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 manifest="${APPS_MANIFEST:-$here/../data/apps.json}"
 
 if [ "$#" -lt 1 ]; then
-  echo "usage: $0 detection | vdr [args...]" >&2
+  echo "usage: $0 stage STAGE | detection | vdr [args...]" >&2
   exit 2
 fi
 cmd="$1"
 shift
 
 case "$cmd" in
+  stage)
+    [ "$#" -eq 1 ] || { echo "run-gates: stage takes one argument (pr, pre-apply, post-apply, nightly)" >&2; exit 2; }
+    py="${PYTHON:-python3}"
+    root="$here/.."
+    listed=$("$py" "$here/_gates.py" stage "$1") || exit 1
+    [ -n "$listed" ] || { echo "::error::the gate register lists no runnable gate for stage $1" >&2; exit 1; }
+    failed=()
+    while IFS= read -r script; do
+      echo "== $script"
+      (cd "$root" && "$py" "$script") || failed+=("$script")
+    done <<< "$listed"
+    if [ "${#failed[@]}" -gt 0 ]; then
+      echo "::error::stage $1: ${#failed[@]} gate(s) failed: ${failed[*]}" >&2
+      exit 1
+    fi
+    echo "stage $1: all gates passed"
+    ;;
   detection)
     [ "$#" -eq 0 ] || { echo "run-gates: detection takes no arguments" >&2; exit 2; }
     listed=$(python3 -I "$here/_apps.py" --manifest "$manifest" grype) || exit 1

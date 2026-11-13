@@ -55,7 +55,8 @@ def _files(root: Path, top: str) -> list[Path]:
 def _code(root: Path, include_tests: bool) -> dict[Path, str]:
     """Files whose text can name a data file or a script: things that run."""
     found: list[Path] = []
-    for name in ("Makefile", "package.json", "update-cache-version.js"):
+    # The gate register lists the scripts `make gates` runs (scripts/run-gates.sh stage).
+    for name in ("Makefile", "package.json", "update-cache-version.js", "infrastructure/schemas/gate-modes.json"):
         if (root / name).is_file():
             found.append(root / name)
     for top in (".github", "infrastructure", "policies", "scripts", "tools", "website/assets/js"):

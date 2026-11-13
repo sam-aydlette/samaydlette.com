@@ -226,25 +226,17 @@ jobs:
         chmod +x regal
         ./regal lint --format github infrastructure/policy
 
-    # Control lineage has one source of truth: each rule's METADATA is diffed
-    # against the KSI catalog, so a rule cannot claim a NIST control its
-    # declared KSIs do not carry.
-    - name: Policy annotation ↔ KSI catalog diff
-      run: python3 scripts/check-policy-annotations.py
-
-    # Exceptions-as-code hygiene: an expired exception no longer suppresses at
-    # eval time AND fails the build here, so the register cannot rot.
-    - name: Exception register expiry check
-      run: python3 scripts/check-exceptions.py
-
-    # Known Go-vs-Wasm builtin divergences (%q, %v-on-sets, host time) are
-    # banned at lint time; the parity test catches what the corpus exercises,
-    # this catches the rest before it exists. It also requires every sprintf
-    # format to be a literal (or concat of literals) with no precision
-    # specifier: the condition the closed sprintf-js finding rested on, kept
-    # as a guard.
-    - name: Wasm-safe builtin check
-      run: python3 scripts/check-wasm-safe.py
+    # The pull-request gates the gate register (infrastructure/schemas/gate-modes.json)
+    # lists with a `run` script, through the same runner as `make gates` locally:
+    # - policy.annotations: each rule's METADATA is diffed against the KSI
+    #   catalog, so a rule cannot claim a NIST control its KSIs do not carry;
+    # - exceptions.register: an expired exception no longer suppresses at eval
+    #   time and fails the build here, so the register cannot rot;
+    # - policy.wasm-safe: known Go-vs-Wasm builtin divergences (%q, %v-on-sets,
+    #   host time) are banned, and every sprintf format must be a literal with
+    #   no precision specifier.
+    - name: Gates for the pr stage (make gates STAGE=pr)
+      run: make gates STAGE=pr
 
     # Real-bug lint (pyflakes + bugbear, not cosmetic style) and lenient type
     # check. Config in pyproject.toml. Catches the class of latent bug the panel
