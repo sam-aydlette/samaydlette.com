@@ -1,0 +1,1 @@
+aws resourcegroupstaggingapi get-resources failed: AccessDeniedException: not authorized to perform tag:GetResources

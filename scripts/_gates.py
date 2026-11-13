@@ -44,6 +44,17 @@ DETECT_AND_RECOVER = "detect-and-recover"
 MODES = (BLOCK, DETECT_AND_RECOVER)
 GATES = ("G1", "G2", "G3", "G4", "G5", "G6", "G7")
 
+# Where a check runs: on a pull request, in the deploy before or after
+# `terraform apply`, or in the unattended nightly. tests/test_gate_modes.py
+# checks each entry's stages against the workflows.
+STAGES = ("pr", "pre-apply", "post-apply", "nightly")
+# Who a failure is routed to: a role from docs/governance/domains.json (the
+# tests check it is one). A known-bad input the check must reject: a path under
+# tests/fixtures/, run by tests/test_gate_modes.py. A reconcile fixture is an
+# overlay: the files that differ from tests/fixtures/clean/.
+OWNER_RE = re.compile(r"^role:[a-z0-9-]+-owner$")
+FIXTURE_RE = re.compile(r"^tests/fixtures/[A-Za-z0-9_./-]+$")
+
 # Every check a gate script consults, with the gate it implements. A check here
 # with no entry in the register, or an entry for a check not here, fails the load.
 CHECKS = {
@@ -76,7 +87,8 @@ CHECKS = {
 }
 
 TOP_KEYS = {"$schema", "version", "description", "method_reference", "checks"}
-ENTRY_KEYS = {"check", "gate", "mode", "method_default", "reason", "decided_by", "decided_on", "review_by"}
+ENTRY_KEYS = {"check", "gate", "mode", "method_default", "reason", "decided_by", "decided_on", "review_by",
+              "stages", "owner", "fixture"}
 REQUIRED_ENTRY_KEYS = ENTRY_KEYS - {"reason"}
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -139,6 +151,15 @@ def validate_gate_modes(cfg, where="(in memory)", today=None):
                 _fail(where, f"{name}: {key} must be one of {list(MODES)}, got {e[key]!r}")
         if e["method_default"] != BLOCK:
             _fail(where, f"{name}: the method's default for every gate is block")
+        stages = e["stages"]
+        if (not isinstance(stages, list) or not stages or len(set(map(str, stages))) != len(stages)
+                or any(x not in STAGES for x in stages)):
+            _fail(where, f"{name}: stages must be a non-empty list of distinct values from {list(STAGES)}")
+        if not isinstance(e["owner"], str) or not OWNER_RE.fullmatch(e["owner"]):
+            _fail(where, f"{name}: owner must be a governance role (role:<domain>-owner)")
+        fx = e["fixture"]
+        if not isinstance(fx, str) or not FIXTURE_RE.fullmatch(fx) or ".." in fx.split("/"):
+            _fail(where, f"{name}: fixture must be a path under tests/fixtures/")
         if not isinstance(e["decided_by"], str) or not e["decided_by"].strip():
             _fail(where, f"{name}: decided_by must name who decided the mode")
         _date(where, name, "decided_on", e["decided_on"])

@@ -272,3 +272,218 @@ def test_event_detail_cannot_forge_a_workflow_command(tmp_path, monkeypatch, cap
     err = capsys.readouterr().err
     assert err.count("\n") == 1 and "::error::forged" not in err
     assert "\n" not in _gates.read_events(tmp_path / "e.jsonl")[0]["detail"]
+
+
+# ---- every check names its stages, owner and a known-bad input it rejects ----------
+
+DOMAINS = REPO / "docs" / "governance" / "domains.json"
+CLEAN = REPO / "tests" / "fixtures" / "clean"
+WORKFLOWS = REPO / ".github" / "workflows"
+
+
+def _fixture(e):
+    return REPO / e["fixture"]
+
+
+def _env(tmp_path):
+    env = {k: v for k, v in os.environ.items() if k not in ("GITHUB_ACTIONS", "GATE_MODES_FILE", "GITHUB_SHA")}
+    env[_gates.EVENTS_ENV] = str(tmp_path / "events.jsonl")
+    return env
+
+
+def _builder(tmp_path, e):
+    """The VDR builder (vdr.*, detection.zap.*) on a fixture directory."""
+    work = tmp_path / "w"
+    shutil.copytree(_fixture(e), work)
+    sig = "ksi-signal.json" if (work / "ksi-signal.json").exists() else "absent.json"
+    args = [sys.executable, str(REPO / "scripts" / "build-vdr-report.py"), "--grype", "grype.json",
+            "--kev", "kev.json", "--previous-vdr", "previous-vdr.json", "--ksi-signal", sig,
+            "--checkov-yaml", "absent.yaml", "--opa", "absent.json", "--md-output", "", "--output", "out.json"]
+    if e["check"].startswith("detection.zap."):
+        args += ["--zap", "zap-report.json"]
+    r = subprocess.run(args, cwd=work, capture_output=True, text=True, env=_env(tmp_path))
+    out = (work / "out.json").read_text() if (work / "out.json").exists() else ""
+    return r.returncode != 0, r.stderr + out
+
+
+def _detection(tmp_path, e):
+    """The detection gate on its good inputs with one feed swapped for the fixture."""
+    det = REPO / "tests" / "fixtures" / "detection"
+    good = {"kev": "kev.json", "epss": "epss.csv", "grype": "grype.json", "dependabot": "dependabot.json",
+            "previous-vdr": "previous-vdr.json", "checkov": "checkov.sarif", "tfsec": "tfsec.json"}
+    feed = e["check"].split(".", 1)[1]
+    work = tmp_path / "w"
+    work.mkdir()
+    for src in det.iterdir():
+        shutil.copy(src, work / src.name)
+    args = [sys.executable, str(REPO / "scripts" / "detection-gate.py"), "--now", "2026-11-04T12:00:00+00:00",
+            "--output", "detection.json"]
+    for f, name in {**good, feed: _fixture(e).name}.items():
+        args += [f"--{f}", name]
+    r = subprocess.run(args, cwd=work, capture_output=True, text=True, env=_env(tmp_path))
+    return r.returncode != 0, r.stderr
+
+
+def _vuln_gate(tmp_path, e):
+    r = subprocess.run([sys.executable, str(REPO / "scripts" / "vuln-gate.py"), "--vdr", str(_fixture(e))],
+                       capture_output=True, text=True, env=_env(tmp_path))
+    return r.returncode != 0, r.stderr
+
+
+def _divergence(tmp_path, e, monkeypatch):
+    rd = _load("rd_registry", "check-runtime-divergence.py")
+    monkeypatch.setenv(_gates.EVENTS_ENV, str(tmp_path / "events.jsonl"))
+    code, lines = rd.evaluate(json.loads(_fixture(e).read_text()), 48,
+                              now=datetime(2026, 11, 4, 12, tzinfo=timezone.utc))
+    return code == rd.BLOCK, "\n".join(lines)
+
+
+def _reconcile(tmp_path, e, monkeypatch, capsys):
+    """reconcile.py on the clean set with the fixture laid over it."""
+    rec = _load("rec_registry", "reconcile.py")
+    work = tmp_path / "w"
+    shutil.copytree(CLEAN, work)
+    for src in _fixture(e).iterdir():
+        shutil.copy(src, work / src.name)
+    commit = json.loads((CLEAN / "ksi-signal.json").read_text())["provenance"]["source"]["commit"]
+    argv = ["reconcile.py", "--artifacts-dir", str(work), "--dashboard", str(work / "viewer.html"),
+            "--checkov", str(work / ".checkov.yaml"), "--decisions", str(work / "decisions.json"),
+            "--expect-commit", commit]
+    if (work / "live-tags.error").exists():
+        denied = (work / "live-tags.error").read_text().strip()
+
+        def refuse():
+            raise RuntimeError(denied)
+        monkeypatch.setattr(rec, "enumerate_live_arns", lambda: set(json.loads((work / "live-arns.json").read_text())))
+        monkeypatch.setattr(rec, "enumerate_live_tags", refuse)
+        argv.append("--live")
+    else:
+        argv += ["--live-fixture", str(work / "live-arns.json")]
+        if (work / "live-tags.json").exists():
+            argv += ["--live-tags-fixture", str(work / "live-tags.json")]
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.delenv("GATE_MODES_FILE", raising=False)
+    monkeypatch.setenv(_gates.EVENTS_ENV, str(tmp_path / "events.jsonl"))
+    monkeypatch.setattr(sys, "argv", argv)
+    code = rec.main()
+    return code != 0, capsys.readouterr().err
+
+
+# What each check's own failure says, so a fixture that fails for another reason does not count.
+MARKERS = {
+    "vdr.kev": "KEV (CISA Known Exploited Vulnerability)",
+    "vdr.top-impact-lev-irv": "N5+LEV+IRV",
+    "vdr.past-deadline": "past Class C SLA",
+    "vuln-gate.unhandled": "CVE-2099-0004",
+    "runtime-divergence.diverged": "KSI-FIXTURE-01",
+    "detection.zap.missing": "No ZAP report at zap-report.json",
+    "detection.zap.stale": "ZAP report is",
+    "reconcile.i.unreadable": "tag:GetResources not permitted",
+}
+
+
+def _marker(check):
+    if check in MARKERS:
+        return MARKERS[check]
+    if check.startswith("reconcile."):
+        return f"✗ ({check.split('.')[1]})"
+    return f"G7 {check}"
+
+
+def _run(check, tmp_path, monkeypatch, capsys):
+    e = entry(good(), check)
+    if check.startswith("vdr.") or check.startswith("detection.zap."):
+        return _builder(tmp_path, e)
+    if check.startswith("detection."):
+        return _detection(tmp_path, e)
+    if check == "vuln-gate.unhandled":
+        return _vuln_gate(tmp_path, e)
+    if check.startswith("runtime-divergence."):
+        return _divergence(tmp_path, e, monkeypatch)
+    return _reconcile(tmp_path, e, monkeypatch, capsys)
+
+
+@pytest.mark.parametrize("check", sorted(_gates.CHECKS))
+def test_each_check_rejects_its_registered_fixture(check, tmp_path, monkeypatch, capsys):
+    """Run under the committed register: a block check stops the run for its own
+    reason; a detect-and-recover check records an event for itself."""
+    blocked, text = _run(check, tmp_path, monkeypatch, capsys)
+    if _gates.blocks(_gates.load_gate_modes(REGISTER), check):
+        assert blocked and _marker(check) in text, text
+    else:
+        assert check in {ev["check"] for ev in _gates.read_events(tmp_path / "events.jsonl")}, text
+
+
+def test_the_clean_reconcile_set_passes_so_each_overlay_fails_for_its_own_change(monkeypatch, capsys, tmp_path):
+    rec = _load("rec_clean", "reconcile.py")
+    commit = json.loads((CLEAN / "ksi-signal.json").read_text())["provenance"]["source"]["commit"]
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.setattr(sys, "argv", ["reconcile.py", "--artifacts-dir", str(CLEAN), "--dashboard",
+                                      str(CLEAN / "viewer.html"), "--checkov", str(CLEAN / ".checkov.yaml"),
+                                      "--decisions", str(CLEAN / "decisions.json"), "--expect-commit", commit,
+                                      "--live-fixture", str(CLEAN / "live-arns.json")])
+    assert rec.main() == 0, capsys.readouterr().err
+
+
+def test_every_owner_is_a_governance_role():
+    roles = {d["owner_role"] for d in json.loads(DOMAINS.read_text())["domains"]}
+    assert {e["owner"] for e in good()["checks"]} <= roles
+
+
+def test_every_fixture_exists():
+    for e in good()["checks"]:
+        p = _fixture(e)
+        assert p.exists() or p.with_name(p.name + ".error").exists(), e["fixture"]
+
+
+# The command each check's script runs under in the workflows.
+RUNS = {"vdr.": "run-gates.sh vdr", "detection.zap.": "run-gates.sh vdr", "detection.": "run-gates.sh detection",
+        "vuln-gate.": "scripts/vuln-gate.py", "runtime-divergence.": "scripts/check-runtime-divergence.py",
+        "reconcile.": "scripts/reconcile.py --artifacts-dir . --live"}
+
+
+def _jobs(text):
+    """{job: [lines]} for a workflow, split on its top-level job keys."""
+    jobs, cur, inside = {}, None, False
+    for line in text.splitlines():
+        if line.startswith("jobs:"):
+            inside = True
+            continue
+        if inside and line[:2] == "  " and line[2:3] not in (" ", "#") and line.rstrip().endswith(":"):
+            cur = line.strip()[:-1]
+            jobs[cur] = []
+        elif cur:
+            jobs[cur].append(line)
+    return jobs
+
+
+def test_each_checks_stages_match_the_workflows():
+    deploy = _jobs((WORKFLOWS / "deploy-with-opa.yml").read_text())
+    nightly = (WORKFLOWS / "evidence-nightly.yml").read_text()
+    apply_at = next(i for i, line in enumerate(deploy["deploy"]) if "terraform apply" in line and "run:" in line)
+    for e in good()["checks"]:
+        cmd = next(v for k, v in RUNS.items() if e["check"].startswith(k))
+        found = set()
+        for i, line in enumerate(deploy["deploy"]):
+            if cmd in line:
+                found.add("pre-apply" if i < apply_at else "post-apply")
+        if any(cmd in line for job, lines in deploy.items() if job != "deploy" for line in lines):
+            found.add("pr")
+        if cmd in nightly:
+            found.add("nightly")
+        assert found == set(e["stages"]), (e["check"], found)
+
+
+@pytest.mark.parametrize("field,value,msg", [
+    ("stages", [], "stages must be"),
+    ("stages", ["pre-apply", "pre-apply"], "stages must be"),
+    ("stages", ["on-a-whim"], "stages must be"),
+    ("owner", "Sam", "owner must be a governance role"),
+    ("fixture", "/etc/passwd", "fixture must be a path under tests/fixtures/"),
+    ("fixture", "tests/fixtures/../../etc", "fixture must be a path under tests/fixtures/"),
+])
+def test_a_bad_stage_owner_or_fixture_fails(tmp_path, field, value, msg):
+    cfg = good()
+    entry(cfg, "vdr.kev")[field] = value
+    with pytest.raises(SystemExit, match=msg):
+        _gates.load_gate_modes(write(tmp_path, cfg), today=TODAY)

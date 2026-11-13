@@ -12,7 +12,10 @@
       "reason": "Stricter than the method. G1 blocks every known-exploited finding, dispositioned or not, from the first evaluation; the method blocks only once the KEV due date has passed or when a new resource would deploy with one.",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:vulnerability-owner",
+      "fixture": "tests/fixtures/gates/g1-kev"
     },
     {
       "check": "vdr.top-impact-lev-irv",
@@ -21,7 +24,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:vulnerability-owner",
+      "fixture": "tests/fixtures/gates/g2-top-impact"
     },
     {
       "check": "vdr.past-deadline",
@@ -30,7 +36,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:vulnerability-owner",
+      "fixture": "tests/fixtures/gates/g3-past-deadline"
     },
     {
       "check": "vuln-gate.unhandled",
@@ -39,7 +48,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:vulnerability-owner",
+      "fixture": "tests/fixtures/gates/vuln-gate-unhandled.json"
     },
     {
       "check": "runtime-divergence.diverged",
@@ -49,7 +61,10 @@
       "reason": "A deploy may proceed past a fresh divergence only with --allow-divergence and a stated reason, which the deploy log records (break-glass for a deploy that is itself the fix).",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["pre-apply"],
+      "owner": "role:observability-owner",
+      "fixture": "tests/fixtures/gates/runtime-divergence-diverged.json"
     },
     {
       "check": "reconcile.a",
@@ -58,7 +73,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/reconcile/a"
     },
     {
       "check": "reconcile.b",
@@ -67,7 +85,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/broken"
     },
     {
       "check": "reconcile.c",
@@ -76,7 +97,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/broken"
     },
     {
       "check": "reconcile.d",
@@ -85,7 +109,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/broken"
     },
     {
       "check": "reconcile.h",
@@ -94,7 +121,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/reconcile/h"
     },
     {
       "check": "reconcile.i",
@@ -103,7 +133,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/reconcile/i"
     },
     {
       "check": "reconcile.j",
@@ -112,7 +145,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/reconcile/j"
     },
     {
       "check": "reconcile.e",
@@ -121,7 +157,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/broken"
     },
     {
       "check": "reconcile.f",
@@ -130,7 +169,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/reconcile/f"
     },
     {
       "check": "reconcile.l",
@@ -139,7 +181,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/reconcile/l"
     },
     {
       "check": "reconcile.i.unreadable",
@@ -149,7 +194,10 @@
       "reason": "Was a rollout-time warning while the roles lacked tag:GetResources. Both roles now read tags (the deploy and the nightly both report invariant i checked), so a denied read is a detection failure and blocks.",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:platform-owner",
+      "fixture": "tests/fixtures/reconcile/i-unreadable"
     },
     {
       "check": "runtime-divergence.observer-fault",
@@ -159,7 +207,10 @@
       "reason": "The runtime evaluator could not reach a verdict: its signal is unreadable, stale, undated, degraded or has no divergence block. Blocking deploys on it would also block the deploy that repairs the evaluator. The fault is published in the runtime signal and queued by the trust center (runtime_unassessed, runtime_stale) with its opening time.",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-05-04"
+      "review_by": "2027-05-04",
+      "stages": ["pre-apply"],
+      "owner": "role:observability-owner",
+      "fixture": "tests/fixtures/gates/runtime-divergence-observer-fault.json"
     },
     {
       "check": "detection.zap.missing",
@@ -169,7 +220,10 @@
       "reason": "No DAST report reaches the build yet. The weekly ZAP scan is being wired into the nightly and the deploy; when it lands, this returns to block. Until then a missing report is published in the status beacon and queued.",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2026-12-04"
+      "review_by": "2026-12-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:vulnerability-owner",
+      "fixture": "tests/fixtures/gates/zap-missing"
     },
     {
       "check": "detection.zap.stale",
@@ -178,7 +232,10 @@
       "method_default": "block",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
+      "review_by": "2027-11-04",
+      "stages": ["post-apply", "nightly"],
+      "owner": "role:vulnerability-owner",
+      "fixture": "tests/fixtures/gates/zap-stale"
     }
   ]
 }

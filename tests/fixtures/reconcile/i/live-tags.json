@@ -1,0 +1,3 @@
+{"arn:aws:lambda:us-east-2:123456789012:function:app": {
+  "DataSensitivity": "public", "MissionCriticality": "moderate", "InternetReachable": "true",
+  "AgencyScope": "none", "OwnerRole": "role:platform-owner", "Archetype": "compute"}}

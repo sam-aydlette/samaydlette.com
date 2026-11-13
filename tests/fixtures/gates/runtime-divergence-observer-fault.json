@@ -1,0 +1,3 @@
+{"emitted_at": "2026-11-01T00:00:00+00:00",
+ "divergence": {"status": "converged",
+                "compared_against": {"signal_id": "fixture", "commit": "0000000"}}}
