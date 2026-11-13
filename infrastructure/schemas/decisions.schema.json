@@ -30,6 +30,7 @@
         },
         "justification": {"type": "string", "minLength": 1},
         "decided_by": {"type": "string", "minLength": 1},
+        "accepted_by": {"type": "string", "pattern": "^role:[a-z0-9]+(-[a-z0-9]+)*$", "description": "The governance role that accepted the risk: the senior official (CR26 SDR-CSO-FRR, \"accepted by a senior official\")."},
         "decided_on": {"$ref": "#/$defs/date"},
         "review_by": {"$ref": "#/$defs/date"},
         "closed_on": {"$ref": "#/$defs/date"},

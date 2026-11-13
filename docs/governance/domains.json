@@ -12,6 +12,7 @@
     {"id": "role:observability-owner", "title": "Observability and response owner"},
     {"id": "role:vulnerability-owner", "title": "Vulnerability and supply chain owner"},
     {"id": "role:security-officer", "title": "Security officer"},
+    {"id": "role:senior-official", "title": "Senior official"},
     {"id": "role:website-owner", "title": "Website application owner"},
     {"id": "role:silk-reeling-owner", "title": "Silk Reeling application owner"}
   ],
