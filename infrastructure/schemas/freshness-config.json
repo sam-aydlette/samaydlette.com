@@ -1,14 +1,14 @@
 {
   "$schema": "./freshness-config.schema.json",
   "version": "1.0",
-  "description": "Governed freshness windows for every output published under /.well-known/ (REQ-PUB-2, REQ-GOV-1). The single source for the maximum age of each artifact: scripts/build-trust-center.py, scripts/check-evidence-freshness.py and the evidence SLA watchdog (infrastructure/watchdog.tf and infrastructure/watchdog/) all read it, and each fails closed if it is missing or invalid. Signatures (.bundle), schemas and the human-readable .md renderings are published with the artifact they accompany and are covered through it. It is also the publish list: published_by names the workflow that uploads each artifact, and scripts/published-set.py derives from it what the deploy scans, uploads and checks after upload.",
+  "description": "Governed freshness windows for every output published under /.well-known/ (REQ-PUB-2, REQ-GOV-1). The single source for the maximum age of each artifact: scripts/build-trust-center.py, scripts/check-evidence-freshness.py and the evidence SLA watchdog (infrastructure/watchdog.tf and infrastructure/watchdog/) all read it, and each fails closed if it is missing or invalid. Signatures (.bundle), schemas and the human-readable .md renderings are published with the artifact they accompany and are covered through it. It is also the publish list: published_by names the workflow that uploads each artifact, and scripts/published-set.py derives from it what the deploy scans, uploads and checks after upload. generator names the code that writes each artifact (a script, the runtime Lambda, or a workflow whose own step writes it); tests/test_evidence_registry.py checks that each exists and runs in the workflows that publish the artifact, and that every artifact the rule register cites as evidence is listed here.",
   "decided_by": "Operator",
   "decided_on": "2026-11-03",
   "review_by": "2027-11-03",
   "rationale": "Nightly evidence (the VDR, its trend and attestation) must be under 24 hours old, the reporting policy. The runtime signal and the nightly's status beacon get 26 hours: one daily (or twice-daily) run plus one late run. Artifacts regenerated only on a deploy, which is human-initiated and human-approved, get 30 days, the monthly continuous-monitoring cadence: older than that, the inventory has not been re-derived from live state within a reporting month. The operator-run independent corroboration gets the same 30 days.",
   "artifacts": [
     {
-      "path": ".well-known/vdr-report.json",
+      "path": ".well-known/vdr-report.json", "generator": "scripts/build-vdr-report.py",
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -24,7 +24,7 @@
       "markdown": true
     },
     {
-      "path": ".well-known/vdr-trend.json",
+      "path": ".well-known/vdr-trend.json", "generator": "scripts/build-vdr-trend.py",
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -39,7 +39,7 @@
       ]
     },
     {
-      "path": ".well-known/vdr-report.json.intoto.jsonl",
+      "path": ".well-known/vdr-report.json.intoto.jsonl", "generator": "scripts/build-provenance.py",
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -53,7 +53,7 @@
       "note": "Provenance attestation; a DSSE envelope with no timestamp of its own, so the object's last-modified time is used."
     },
     {
-      "path": ".well-known/vdr-detail-report.json",
+      "path": ".well-known/vdr-detail-report.json", "generator": "scripts/build-cr26-vdr.py",
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -70,7 +70,7 @@
       "note": "CR26 Vulnerability Detail Report (VER-RPT-VDT), rebuilt from every VDR report."
     },
     {
-      "path": ".well-known/vdr-accepted-vulnerabilities.json",
+      "path": ".well-known/vdr-accepted-vulnerabilities.json", "generator": "scripts/build-cr26-vdr.py",
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -87,7 +87,7 @@
       "note": "CR26 Accepted Vulnerability Info (VER-RPT-AVI), rebuilt from every VDR report."
     },
     {
-      "path": ".well-known/vdr-history.json",
+      "path": ".well-known/vdr-history.json", "generator": "scripts/build-cr26-vdr.py",
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -103,7 +103,7 @@
       "note": "CR26 historical vulnerability activity (VER-TFR-MRH; Class C SHOULD update at least every 14 days), rebuilt from every VDR report."
     },
     {
-      "path": ".well-known/vdr-status.json",
+      "path": ".well-known/vdr-status.json", "generator": ".github/workflows/evidence-nightly.yml",
       "cadence": "nightly",
       "max_age_hours": 26,
       "timestamp": {
@@ -118,7 +118,7 @@
       "note": "The nightly's status beacon, signed by the nightly workflow's identity. The deploy gives nightly KSI method credit only when that signature verifies; if the nightly cannot sign, it publishes the beacon without a bundle and earns no credit. The watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
     },
     {
-      "path": ".well-known/ksi-signal-runtime.json",
+      "path": ".well-known/ksi-signal-runtime.json", "generator": "infrastructure/lambda/index.js",
       "cadence": "runtime",
       "max_age_hours": 26,
       "timestamp": {
@@ -132,7 +132,7 @@
       "note": "Signed in-band (provenance.attestation) by the runtime Lambda, which runs daily; 26 hours tolerates one late run."
     },
     {
-      "path": ".well-known/ksi-signal.json",
+      "path": ".well-known/ksi-signal.json", "generator": "scripts/build-ksi-signal.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -147,7 +147,7 @@
       "json_schema": "schemas/ksi-signal.schema.json"
     },
     {
-      "path": ".well-known/ksi-signal.json.intoto.jsonl",
+      "path": ".well-known/ksi-signal.json.intoto.jsonl", "generator": "scripts/build-provenance.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -159,7 +159,7 @@
       ]
     },
     {
-      "path": ".well-known/opa-policy-bundle.tar.gz",
+      "path": ".well-known/opa-policy-bundle.tar.gz", "generator": ".github/workflows/deploy-with-opa.yml",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -172,7 +172,7 @@
       ]
     },
     {
-      "path": ".well-known/iiw.csv",
+      "path": ".well-known/iiw.csv", "generator": "scripts/build-iiw.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -185,7 +185,7 @@
       ]
     },
     {
-      "path": ".well-known/iiw.csv.intoto.jsonl",
+      "path": ".well-known/iiw.csv.intoto.jsonl", "generator": "scripts/build-provenance.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -197,7 +197,7 @@
       ]
     },
     {
-      "path": ".well-known/ongoing-certification-report.json",
+      "path": ".well-known/ongoing-certification-report.json", "generator": "scripts/build-ocr.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -212,7 +212,7 @@
       "markdown": true
     },
     {
-      "path": ".well-known/certification-overview-package.json",
+      "path": ".well-known/certification-overview-package.json", "generator": "scripts/build-cds-overview.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -227,7 +227,7 @@
       "markdown": true
     },
     {
-      "path": ".well-known/availability.json",
+      "path": ".well-known/availability.json", "generator": "scripts/build-availability.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -242,7 +242,7 @@
       "markdown": true
     },
     {
-      "path": ".well-known/policy-index.json",
+      "path": ".well-known/policy-index.json", "generator": "scripts/build-policy-index.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -256,7 +256,7 @@
       "markdown": true
     },
     {
-      "path": ".well-known/security-decision-record.json",
+      "path": ".well-known/security-decision-record.json", "generator": "scripts/build-sdr.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -271,7 +271,7 @@
       "markdown": true
     },
     {
-      "path": ".well-known/security-decision-record.json.intoto.jsonl",
+      "path": ".well-known/security-decision-record.json.intoto.jsonl", "generator": "scripts/build-provenance.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -283,7 +283,7 @@
       ]
     },
     {
-      "path": ".well-known/certification-package-overview.json",
+      "path": ".well-known/certification-package-overview.json", "generator": "scripts/build-cpo.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -298,7 +298,7 @@
       "markdown": true
     },
     {
-      "path": ".well-known/boundary-map.json",
+      "path": ".well-known/boundary-map.json", "generator": "scripts/build-boundary-graph.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -312,7 +312,7 @@
       ]
     },
     {
-      "path": ".well-known/reconcile-report.json",
+      "path": ".well-known/reconcile-report.json", "generator": "scripts/reconcile.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -326,7 +326,7 @@
       ]
     },
     {
-      "path": ".well-known/trust-center.json",
+      "path": ".well-known/trust-center.json", "generator": "scripts/build-trust-center.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -340,7 +340,7 @@
       ]
     },
     {
-      "path": ".well-known/boundary-corroboration.json",
+      "path": ".well-known/boundary-corroboration.json", "generator": "tools/boundary-map/corroborate.py",
       "cadence": "operator",
       "max_age_hours": 720,
       "timestamp": {
@@ -356,7 +356,7 @@
       "note": "Run by the operator (tools/boundary-map/corroborate.py), committed, and signed and published by the deploy."
     },
     {
-      "path": ".well-known/conformance-results.json",
+      "path": ".well-known/conformance-results.json", "generator": "scripts/build-conformance.py",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
