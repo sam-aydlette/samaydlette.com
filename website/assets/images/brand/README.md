@@ -1,10 +1,8 @@
 # Site mark
 
-`logo.svg` is the source. It reduces the header's `> Sam Aydlette` to its two
-parts, in the header's own colours: the blue prompt and an amber block cursor,
-on the dark theme's terminal background. A green baseline sits under them, the
-signed evidence the prompt stands on. In the SVG the cursor blinks, unless the
-viewer has asked for reduced motion.
+`logo.svg` is the source: "SA" in JetBrains Mono Bold, the site's monospace
+face, in light text on the dark theme's background. The letters are outlines,
+not text, so the mark renders the same without the font.
 
 The raster copies are rendered from it, never edited by hand:
 
@@ -12,7 +10,9 @@ The raster copies are rendered from it, never edited by hand:
 - `apple-touch-icon.png` (180 px).
 - `/favicon.ico` (16, 32, 48 and 64 px), at the site root, where browsers ask for it.
 
-To re-render after changing the SVG: wrap it in a page that sizes an `<img>` to
-the viewport, screenshot that page with headless Chromium at 512x512
-(`--default-background-color=00000000 --force-prefers-reduced-motion`, so the
-cursor is caught lit), then resize it with Pillow (LANCZOS) for the other sizes.
+To change the letters, instance the variable font at weight 700 with fontTools
+(`varLib.instancer`), draw the glyphs with `SVGPathPen` and centre their ink box
+in the tile. To re-render the rasters, wrap the SVG in a page that sizes an
+`<img>` to the viewport, screenshot that page with headless Chromium at 512x512
+(`--default-background-color=00000000`), then resize it with Pillow (LANCZOS)
+for the other sizes.
