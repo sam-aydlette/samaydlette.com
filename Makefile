@@ -135,7 +135,7 @@ check-claims:
 # The gates the register (infrastructure/schemas/gate-modes.json) lists for a
 # stage, run the same way here and in CI.
 gates:
-	@[ -n "$(STAGE)" ] || { echo "usage: make gates STAGE=pr|pre-apply|post-apply|nightly" >&2; exit 2; }
+	@[ -n "$(STAGE)" ] || { echo "usage: make gates STAGE=pr|pre-apply|post-apply|pre-publish|nightly" >&2; exit 2; }
 	PYTHON=$(PY) bash scripts/run-gates.sh stage $(STAGE)
 
 require-artifacts:

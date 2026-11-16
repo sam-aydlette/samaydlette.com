@@ -578,7 +578,7 @@
         },
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Publication redaction gate (no AWS account ID)"
+          "ref": "deploy-with-opa.yml#Gates for the pre-publish stage (make gates STAGE=pre-publish)"
         }
       ],
       "acceptance": {
@@ -972,7 +972,7 @@
       "evidence": [
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#FedRAMP rule claims supported by evidence"
+          "ref": "deploy-with-opa.yml#Gates for the post-apply stage (make gates STAGE=post-apply)"
         },
         {
           "kind": "artifact",
@@ -1002,7 +1002,7 @@
       "evidence": [
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Reconciliation gate (fail closed on drift)"
+          "ref": "deploy-with-opa.yml#Gates for the post-apply stage (make gates STAGE=post-apply)"
         }
       ],
       "acceptance": {
@@ -1791,7 +1791,7 @@
         },
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Vulnerability gate (fix or categorize every vuln)"
+          "ref": "deploy-with-opa.yml#Gates for the post-apply stage (make gates STAGE=post-apply)"
         },
         {
           "kind": "artifact",
@@ -2123,7 +2123,7 @@
         },
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Vulnerability gate (fix or categorize every vuln)"
+          "ref": "deploy-with-opa.yml#Gates for the post-apply stage (make gates STAGE=post-apply)"
         },
         {
           "kind": "decision",

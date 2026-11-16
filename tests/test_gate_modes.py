@@ -9,6 +9,7 @@ each rejected by the gate's own entry point, for that gate's reason.
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -551,6 +552,11 @@ def _jobs(text):
     return jobs
 
 
+def _runs(cmd, line):
+    """`cmd` appears in `line` as a whole command: STAGE=pr does not match STAGE=pre-apply."""
+    return re.search(re.escape(cmd) + r"(?![\w-])", line) is not None
+
+
 def test_each_checks_stages_match_the_workflows():
     """A step in the deploy job runs before or after `terraform apply`. A job the
     deploy job needs runs on every pull request and again before the deploy. The
@@ -565,14 +571,15 @@ def test_each_checks_stages_match_the_workflows():
         cmd = next(v for k, v in RUNS.items() if e["check"].startswith(k))
         found = set()
         for i, line in enumerate(deploy["deploy"]):
-            if cmd in line:
+            if _runs(cmd, line):
                 found.add("pre-apply" if i < apply_at else "post-apply")
-            # The runner runs a check with a `run` script in the stages it lists.
+            # The runner runs a check with a `run` script in the stages it lists;
+            # pre-publish is the deploy's last gate, before it uploads.
             for st in e["stages"] if "run" in e else ():
-                if f"make gates STAGE={st}" in line and line.strip().startswith("run:"):
-                    found.add("pre-apply" if i < apply_at else "post-apply")
+                if _runs(f"make gates STAGE={st}", line) and line.strip().startswith("run:"):
+                    found.add(st if st == "pre-publish" else "pre-apply" if i < apply_at else "post-apply")
         for job, lines in deploy.items():
-            if job != "deploy" and any(cmd in line for line in lines):
+            if job != "deploy" and any(_runs(cmd, line) for line in lines):
                 found |= {"pr", "pre-apply"} if job in needed else {"pr"}
         if cmd in scn:
             found.add("pr")
@@ -620,6 +627,15 @@ def test_pre_apply_runs_only_what_needs_the_deploy_context():
     assert covered == ["opa.plan", "policy.annotations", "policy.wasm-safe", "exceptions.register"]
 
 
+def test_post_apply_and_pre_publish_run_the_deploys_later_gates():
+    # The VDR's own checks run inside its build, not as separate scripts.
+    runs, missing, covered = _gates.stage_runs(_gates.load_gate_modes(), "post-apply")
+    assert sorted(runs) == ["scripts/run-gates.sh claims", "scripts/run-gates.sh ksi",
+                            "scripts/run-gates.sh reconcile", "scripts/run-gates.sh vuln"]
+    assert all(m.startswith(("vdr.", "detection.zap.")) for m in missing) and covered == []
+    assert _gates.stage_runs(_gates.load_gate_modes(), "pre-publish") == (["scripts/run-gates.sh redaction"], [], [])
+
+
 def test_every_run_script_exists_and_its_check_names_its_stages():
     for e in _gates.load_gate_modes()["checks"].values():
         if "run" in e:
@@ -657,9 +673,16 @@ def test_the_runner_runs_a_shell_gate_with_its_subcommand(tmp_path):
             del c["run"]
     path = tmp_path / "gate-modes.json"
     path.write_text(json.dumps(reg))
-    out = subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "stage", "nightly"],
-                         env={**env, "PYTHON": str(stub), "GATE_MODES_FILE": str(path)},
-                         capture_output=True, text=True, cwd=tmp_path)
+    # The gate writes its report in infrastructure/; leave the tree as it was.
+    written = REPO / "infrastructure" / "detection.json"
+    existed = written.exists()
+    try:
+        out = subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "stage", "nightly"],
+                             env={**env, "PYTHON": str(stub), "GATE_MODES_FILE": str(path)},
+                             capture_output=True, text=True, cwd=tmp_path)
+    finally:
+        if not existed:
+            written.unlink(missing_ok=True)
     assert out.returncode == 1
     assert "== scripts/run-gates.sh detection" in out.stdout
     assert "1 gate(s) failed: scripts/run-gates.sh detection" in out.stderr

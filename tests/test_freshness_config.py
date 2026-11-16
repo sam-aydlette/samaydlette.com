@@ -140,8 +140,10 @@ def test_every_artifact_the_pipelines_publish_has_a_governed_window():
     cfg = good()
     listed = {a["path"].removeprefix(".well-known/") for a in cfg["artifacts"]}
     deploy_text = (REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text()
-    for step in ("Publication redaction gate (no AWS account ID)", "Publish all signed artifacts to /.well-known/",
-                 "Post-publish round-trip verify"):
+    runner = (REPO / "scripts" / "run-gates.sh").read_text()
+    redaction = runner[runner.index("  redaction)"):]
+    assert "published-set.py" in redaction[:redaction.index(";;")] and "--by deploy" in redaction[:redaction.index(";;")]
+    for step in ("Publish all signed artifacts to /.well-known/", "Post-publish round-trip verify"):
         body = deploy_text[deploy_text.index(f"- name: {step}"):]
         body = body[:body.find("\n    - name:")]
         assert "published-set.py" in body and "--by deploy" in body, step
