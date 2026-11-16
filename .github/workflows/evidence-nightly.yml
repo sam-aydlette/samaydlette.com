@@ -340,15 +340,6 @@ jobs:
     env:
       GATE_EVENTS_FILE: /tmp/gate-events.jsonl
       GATE_RESULTS_FILE: /tmp/gate-results.jsonl
-    # Which gate stopped the run, handed to the alert job. A failed vulnerability
-    # gate and a skipped reconciliation are different problems: the first means
-    # stale evidence, the second means nothing compared the live site against its
-    # documentation. The alert has to be able to say which.
-    outputs:
-      vuln_gate: ${{ steps.vulngate.outcome }}
-      vuln_findings: ${{ steps.vulngate.outputs.findings }}
-      detection: ${{ steps.detection.outcome }}
-      reconcile: ${{ steps.reconcile.outcome }}
     permissions:
       contents: read
       # Sigstore keyless signing via the GitHub Actions OIDC provider, and the
@@ -554,24 +545,12 @@ jobs:
     # vulnerability that is not remediated or dispositioned false-positive /
     # operational-requirement in data/decisions.json. When a newly
     # disclosed CVE lands, THIS is what stops it publishing, and the alert job
-    # is what tells a human to disposition it.
-    #
-    # The ids the gate names are exported as a JSON list so the alert can put
-    # each one in front of a person with its advisory and any open Dependabot
-    # PR. The gate's own exit status is what fails the step; capturing its
-    # output changes nothing about what passes.
+    # is what tells a human to disposition it: its issue links this run, whose
+    # log names each finding.
     - name: Vulnerability gate (fix or categorize every vuln)
       id: vulngate
       working-directory: infrastructure
-      run: |
-        set +e
-        bash ../scripts/run-gates.sh vuln > vuln-gate.out 2>&1
-        rc=$?
-        set -e
-        cat vuln-gate.out
-        findings=$(sed -n 's/^  ✗ \([^ ]*\) .*/\1/p' vuln-gate.out | jq -Rsc 'split("\n") | map(select(length > 0))')
-        echo "findings=${findings}" >> "$GITHUB_OUTPUT"
-        exit "$rc"
+      run: bash ../scripts/run-gates.sh vuln
 
     - name: Build VDR vuln trend ledger (RA-5(6))
       working-directory: infrastructure
@@ -850,6 +829,15 @@ jobs:
             --content-type application/json --cache-control "no-cache"
         fi
 
+    - name: Upload the gate results for the alert job
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: gate-results-nightly
+        path: /tmp/gate-results.jsonl
+        if-no-files-found: ignore
+        retention-days: 7
+
   # ===========================================================================
   # JOB 3: ALERT — the job that has to work
   # ===========================================================================
@@ -860,156 +848,57 @@ jobs:
   # Nothing was raised, nothing looked wrong, and the published evidence rotted.
   #
   # This job takes the opposite defaults:
-  #   - no event gating whatsoever; a failed run alerts on every trigger
-  #   - one issue, reopened and commented, instead of a new issue per failure
-  #     (the deploy path has left 15+ identical open issues, which is the same
-  #     as no alert at all)
-  #   - assigned to the repository owner, so it reaches a person rather than a
-  #     notifications tab
-  #   - states the freshness deadline, so the message carries its own urgency
+  #   - no event gating whatsoever; every run that was not deliberately dropped
+  #     reports, so a passing gate also closes its issue
+  #   - one issue per failing gate (scripts/gate-alerts.py), labelled with the
+  #     owners the gate register names, reopened and commented rather than
+  #     duplicated (the deploy path once left 99 identical open issues, which is
+  #     the same as no alert at all); a run that failed outside any gate keeps
+  #     one fallback issue
   #
   # RESIDUAL RISK, recorded rather than hidden: this alert rides on the same
   # scheduled workflow it is alerting about. If GitHub disables the cron — which
   # it does after 60 days with no repository activity — neither the refresh nor
-  # this alert runs, and the silence looks identical to success. An alert that
-  # cannot detect its own absence needs an out-of-band watchdog; that is a
-  # follow-up, not something this workflow can solve from the inside.
+  # this alert runs, and the silence looks identical to success. The evidence
+  # watchdog (infrastructure/watchdog.tf) pages on that from outside.
   # ===========================================================================
   alert:
-    name: Alert on stale evidence
+    name: Gate alerts
     runs-on: ubuntu-latest
     needs: [sast, pin, apps, refresh]
     # The one exclusion: a skipped `sast` means the run was deliberately dropped
     # (a post-deploy trigger for a deploy that did not qualify), not that it failed.
-    # A failed pin or apps job skips refresh, which is not success, so it alerts.
-    if: always() && needs.sast.result != 'skipped' && (needs.sast.result != 'success' || needs.refresh.result != 'success')
+    if: always() && !cancelled() && needs.sast.result != 'skipped'
     permissions:
       contents: read
       issues: write
-      # Read-only: find open Dependabot PRs for the packages the gate named.
-      pull-requests: read
 
     steps:
-    - name: Raise or update the stale-evidence issue
-      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-      # Job results reach the script through the environment rather than by
-      # `${{ }}` interpolation into the script body. These particular values are
-      # a fixed vocabulary and could not carry an injection, but templating
-      # workflow context straight into executable script is the habit that
-      # causes those bugs, so the safe form is the one written down here.
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    # None to download (every gate job skipped) leaves every gate "not run":
+    # no issue changes, and a failed run still raises the fallback issue.
+    - name: Download the gate results
+      continue-on-error: true
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        pattern: gate-results-*
+        path: gate-results
+
+    # Job results reach the step through the environment, not by `${{ }}`
+    # interpolation into the script. A failed pin or apps job skips refresh,
+    # which is not success, so the run counts as failed.
+    - name: Open, update or close the gate alert issues
       env:
+        GH_TOKEN: ${{ github.token }}
         SAST_RESULT: ${{ needs.sast.result }}
         REFRESH_RESULT: ${{ needs.refresh.result }}
-        VULN_GATE: ${{ needs.refresh.outputs.vuln_gate }}
-        VULN_FINDINGS: ${{ needs.refresh.outputs.vuln_findings }}
-        RECONCILE: ${{ needs.refresh.outputs.reconcile }}
-        DETECTION: ${{ needs.refresh.outputs.detection }}
-      with:
-        script: |
-          const TITLE = 'Evidence nightly failed — published compliance reporting is going stale';
-          const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
-          // Step outcomes: success | failure | cancelled | skipped, or empty when
-          // the job never reached the step.
-          const vulnGate = process.env.VULN_GATE || 'not reached';
-          const reconcile = process.env.RECONCILE || 'not reached';
-          const detection = process.env.DETECTION || 'not reached';
-          const causes = [];
-          if (detection === 'failure') {
-            causes.push(`**Detection failed (G7).** A scanner or feed the VDR depends on was missing, malformed or stale, so nothing was built or published. The "Detection gate (G7)" step names each input and why; the status beacon's \`detection\` block records it.`);
-          }
-          if (reconcile === 'failure') {
-            causes.push(`**The live reconciliation found drift.** The live site and its published documentation disagree. The "Reconciliation gate" step names the failing invariant.`);
-          } else if (reconcile !== 'success') {
-            causes.push(`**The live reconciliation did not run (\`${reconcile}\`).** Nothing compared the live site against its published documentation in this run. That is a separate problem from stale evidence: treat drift as unchecked until a run shows this gate passing.`);
-          }
-          if (vulnGate === 'failure') {
-            const runbook = `${context.payload.repository.html_url}/blob/main/docs/runbooks/vuln-gate-failure.md`;
-            let findings = [];
-            try { findings = JSON.parse(process.env.VULN_FINDINGS || '[]'); } catch (e) { findings = []; }
-            // Open Dependabot PRs, matched to each finding by package name.
-            const openPRs = (await github.paginate(github.rest.pulls.list, {
-              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100,
-            })).filter(p => p.head.ref.startsWith('dependabot/'));
-            const lines = findings.map(id => {
-              const ghsa = (id.match(/GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}/) || [])[0];
-              const pkg = (id.match(/pkg:[^/]+\/(.+)@[^@]+$/) || [])[1];
-              const pr = pkg && openPRs.find(p => p.title.includes(` ${pkg} `));
-              const parts = [`- \`${id}\``];
-              if (ghsa) parts.push(`[advisory](https://github.com/advisories/${ghsa})`);
-              parts.push(pr ? `open Dependabot PR: #${pr.number}` : 'no open Dependabot PR');
-              return parts.join(' — ');
-            });
-            causes.push([
-              `**The vulnerability gate failed** on ${findings.length || 'one or more'} finding(s) with no fix and no disposition:`,
-              ``,
-              ...(lines.length ? lines : ['- (the run log\'s "Vulnerability gate" step names them)']),
-              ``,
-              `Fix each (a Dependabot PR plus a deploy clears it: the nightly scans the *published* commit), or record a decision for it in data/decisions.json. Remediation clocks run from first detection. Runbook: ${runbook}`,
-            ].join('\n'));
-          }
-          if (causes.length === 0) {
-            causes.push(`**Both gates passed or were not reached.** Check, in order: the freshness assertion at the end (published but not served), the setup steps before the gates, and the SAST job.`);
-          }
-          const body = [
-            `The nightly VDR refresh did not complete, so \`/.well-known/vdr-report.json\` is not being updated.`,
-            ``,
-            `Published compliance reporting must be under 24 hours old. Every hour this stays broken is an hour the site is serving evidence that does not meet that policy.`,
-            ``,
-            `| | |`,
-            `|---|---|`,
-            `| Run | [${context.runId}](${runUrl}) |`,
-            `| Trigger | \`${context.eventName}\` |`,
-            `| Commit | ${context.sha} |`,
-            `| SAST job | \`${process.env.SAST_RESULT}\` |`,
-            `| Refresh job | \`${process.env.REFRESH_RESULT}\` |`,
-            `| Detection gate (G7) | \`${detection}\` |`,
-            `| Vulnerability gate | \`${vulnGate}\` |`,
-            `| Reconciliation gate (live drift check) | \`${reconcile}\` |`,
-            ``,
-            ...causes.flatMap(c => [c, ``]),
-            `This issue is reused rather than duplicated — each failure adds a comment. It will not close itself; close it once a run succeeds.`,
-          ].join('\n');
-
-          // One issue, not one per night. Search by exact title among open issues.
-          const existing = await github.paginate(github.rest.issues.listForRepo, {
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            state: 'all',
-            per_page: 100,
-            labels: 'evidence-freshness',
-          });
-          // Prefer an open issue, then the oldest. The lookup once created a
-          // second issue while an identical open one existed (#330, #336) for a
-          // reason the logs did not show, so record what it matched.
-          const matches = existing
-            .filter(i => i.title === TITLE && !i.pull_request)
-            .sort((a, b) => (a.state === b.state ? a.number - b.number : a.state === 'open' ? -1 : 1));
-          core.info(`Issue lookup: ${existing.length} labelled, ${matches.length} matching [${matches.map(i => `#${i.number}:${i.state}`).join(', ')}]`);
-          const match = matches[0];
-
-          if (match) {
-            if (match.state === 'closed') {
-              await github.rest.issues.update({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: match.number, state: 'open',
-              });
-            }
-            await github.rest.issues.createComment({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: match.number, body,
-            });
-            core.notice(`Updated issue #${match.number}`);
-          } else {
-            const created = await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: TITLE,
-              body,
-              labels: ['compliance', 'evidence-freshness', 'urgent'],
-              assignees: [context.repo.owner],
-            });
-            core.notice(`Created issue #${created.data.number}`);
-          }
+      run: |
+        failed=false
+        if [ "$SAST_RESULT" != success ] || [ "$REFRESH_RESULT" != success ]; then failed=true; fi
+        cat gate-results/*/gate-results.jsonl > /tmp/gate-results.jsonl 2>/dev/null || true
+        python3 scripts/gate-alerts.py nightly /tmp/gate-results.jsonl nightly --run-failed "$failed"
 
     # Independent of why the run failed, report how stale the published evidence
     # actually is right now. This is the number the policy is about, and it puts
