@@ -673,9 +673,16 @@ def test_the_runner_runs_a_shell_gate_with_its_subcommand(tmp_path):
             del c["run"]
     path = tmp_path / "gate-modes.json"
     path.write_text(json.dumps(reg))
-    out = subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "stage", "nightly"],
-                         env={**env, "PYTHON": str(stub), "GATE_MODES_FILE": str(path)},
-                         capture_output=True, text=True, cwd=tmp_path)
+    # The gate writes its report in infrastructure/; leave the tree as it was.
+    written = REPO / "infrastructure" / "detection.json"
+    existed = written.exists()
+    try:
+        out = subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "stage", "nightly"],
+                             env={**env, "PYTHON": str(stub), "GATE_MODES_FILE": str(path)},
+                             capture_output=True, text=True, cwd=tmp_path)
+    finally:
+        if not existed:
+            written.unlink(missing_ok=True)
     assert out.returncode == 1
     assert "== scripts/run-gates.sh detection" in out.stdout
     assert "1 gate(s) failed: scripts/run-gates.sh detection" in out.stderr
