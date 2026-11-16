@@ -1138,13 +1138,6 @@ jobs:
              validation_results: [.validations[].result] | group_by(.) | map({(.[0]): length}) | add}' \
           ksi-signal.json
 
-    # Inventory gate: block the deploy if the emitted canonical inventory is
-    # malformed (invalid/duplicate identifiers). The inventory is the join layer
-    # the whole architecture rests on, so this runs BEFORE signing/publishing.
-    - name: Gate KSI signal (PURL validity, native_id uniqueness, typing)
-      working-directory: infrastructure
-      run: python3 ../scripts/validate-ksi-signal.py ksi-signal.json
-
     # -------------------------------------------------------------------------
     # SIGN THE KSI SIGNAL (Sigstore keyless via GitHub OIDC)
     # -------------------------------------------------------------------------
@@ -1235,15 +1228,6 @@ jobs:
         bash ../scripts/run-gates.sh vdr --opa validations.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
-
-    # Vulnerability gate (Task T): fail the build on any scanner-reported
-    # vulnerability (Grype SCA, ZAP DAST, Dependabot) that is not remediated or
-    # dispositioned false-positive / operational-requirement in
-    # data/decisions.json. Risk-adjustment does not pass.
-    - name: Vulnerability gate (fix or categorize every vuln)
-      working-directory: infrastructure
-      run: |
-        python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/decisions.json
 
     # Append this run's CVE-keyed summary to the rolling vuln trend ledger
     # (RA-5(6)). Fetch the published ledger first so history persists across
@@ -1396,14 +1380,6 @@ jobs:
         # differs from the assessor's signed record, or a signed record is missing.
         python3 ../scripts/_assessor.py --sdr security-decision-record.json
 
-    # The rule register may claim only what its fields support
-    # (policies/compliance/claims.rego): resolving evidence, an Impractical
-    # record's reasons, the operator's approval of every stand-in and scope cut,
-    # and FRC-CSX-VVK checked against this build's KSI method count.
-    - name: FedRAMP rule claims supported by evidence
-      working-directory: infrastructure
-      run: python3 ../scripts/_frr.py --claims --ksi-short ksi-short.json
-
     - name: Build Certification Package Overview (CPO)
       working-directory: infrastructure
       run: |
@@ -1438,23 +1414,20 @@ jobs:
           "${states[@]}" --offering ../data/cds/offering.json --vdr vdr-report.json \
           --trust-root-plan trust-root-plan.json --commit "$GITHUB_SHA" --output boundary-map.json
 
-    # Reconciliation gate (assessment keystone, Task 1). Fails closed if any
-    # cross-artifact invariant breaks: live-resource completeness (deny-by-default),
-    # every VDR finding's component resolves to the inventory, every Checkov suppression is
-    # categorized by an in-force decision record, every VDR finding resolves
-    # to one, one identical impact level everywhere (signal, VDR, SDR, CPO, trust
-    # center), the VDR, SDR and CPO bound to one signal_id, and the staged artifacts carry this run's
-    # commit. Runs after all artifacts are built and signed but BEFORE anything is
-    # published (Task 1.5): nothing reaches /.well-known/ until this passes, so a
-    # gate failure can never leave a partial/stale served set (root of P-1).
-    - name: Reconciliation gate (fail closed on drift)
-      working-directory: infrastructure
+    # The gates the register (infrastructure/schemas/gate-modes.json) lists for
+    # post-apply, through the same runner as `make gates` locally, each with its
+    # arguments in scripts/run-gates.sh: the inventory gate (the KSI signal is
+    # well formed), the vulnerability gate (every vulnerability fixed or
+    # categorized in data/decisions.json), the rule claims gate (the register
+    # claims only what its fields support) and the reconciliation gate (every
+    # cross-artifact invariant, live). They run after the artifacts they read are
+    # built, and before the trust center, which reports the reconciliation
+    # result. Nothing is published unless they all pass. The VDR's own checks
+    # (vdr.*, detection.zap.*) run inside its build.
+    - name: Gates for the post-apply stage (make gates STAGE=post-apply)
       env:
-        GITHUB_SHA: ${{ github.sha }}
-      run: |
-        echo "Running cross-artifact reconciliation gate..."
-        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "$GITHUB_SHA" \
-          --report reconcile-report.json
+        EXPECT_COMMIT: ${{ github.sha }}
+      run: make gates STAGE=post-apply
 
     # The trust center's data (the Authorizing Official's entry point): what needs
     # a decision, how decisions are made, and the record of those made. Built
@@ -1525,12 +1498,9 @@ jobs:
     # signal is read here but published by the runtime Lambda.
     # The list comes from the governed config (scripts/published-set.py), the
     # same one the upload step reads, so the two cannot drift apart.
-    - name: Publication redaction gate (no AWS account ID)
-      working-directory: infrastructure
-      run: |
-        files=$(python3 ../scripts/published-set.py scan --by deploy)
-        # shellcheck disable=SC2086  # a word list by design
-        python3 ../scripts/check-published-redaction.py $files
+    # Run through `make gates STAGE=pre-publish` (scripts/run-gates.sh redaction).
+    - name: Gates for the pre-publish stage (make gates STAGE=pre-publish)
+      run: make gates STAGE=pre-publish
 
     # PUBLISH PHASE — every artifact was built and signed before the gate; this
     # uploads them as one block so the served /.well-known/ set is always

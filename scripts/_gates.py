@@ -50,9 +50,9 @@ GATES = ("G1", "G2", "G3", "G4", "G5", "G6", "G7")
 PIPELINE = "pipeline"
 
 # Where a check runs: on a pull request, in the deploy before or after
-# `terraform apply`, or in the unattended nightly. tests/test_gate_modes.py
-# checks each entry's stages against the workflows.
-STAGES = ("pr", "pre-apply", "post-apply", "nightly")
+# `terraform apply` or just before it publishes, or in the unattended nightly.
+# tests/test_gate_modes.py checks each entry's stages against the workflows.
+STAGES = ("pr", "pre-apply", "post-apply", "pre-publish", "nightly")
 # Who a failure is routed to: a role from docs/governance/domains.json (the
 # tests check it is one). A known-bad input the check must reject: a path under
 # tests/fixtures/, run by tests/test_gate_modes.py. A reconcile fixture is an

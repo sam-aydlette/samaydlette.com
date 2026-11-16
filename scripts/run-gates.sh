@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# The detection gate and the VDR build, with the inputs every workflow passes.
+# The gates and the VDR build, with the inputs every workflow passes.
 #
 # Usage:
 #   run-gates.sh stage STAGE        (any directory; `make gates STAGE=...`)
 #   run-gates.sh detection          (from infrastructure/)
 #   run-gates.sh vdr [EXTRA BUILDER ARGS...]   (from infrastructure/)
+#   run-gates.sh ksi | vuln | claims | reconcile | redaction   (from infrastructure/)
 #
 # `stage` runs every gate the gate register (infrastructure/schemas/gate-modes.json)
 # lists for STAGE with a `run` script, from infrastructure/ (where the workflows
@@ -18,13 +19,18 @@
 # from the app manifest (APPS_MANIFEST, default data/apps.json), the same list
 # scripts/scan-sca.sh scanned. Each workflow adds only what differs: the deploy
 # passes its OPA results to the VDR, the nightly the published inventory.
+#
+# ksi, vuln, claims and reconcile are the deploy's post-apply gates over the
+# artifacts it built; redaction is its pre-publish gate over exactly what it
+# uploads. reconcile expects the commit in EXPECT_COMMIT (the deploy passes its
+# own), or HEAD locally. They run under PYTHON (default python3).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 manifest="${APPS_MANIFEST:-$here/../data/apps.json}"
 
 if [ "$#" -lt 1 ]; then
-  echo "usage: $0 stage STAGE | detection | vdr [args...]" >&2
+  echo "usage: $0 stage STAGE | detection | vdr [args...] | ksi | vuln | claims | reconcile | redaction" >&2
   exit 2
 fi
 cmd="$1"
@@ -32,10 +38,11 @@ shift
 
 case "$cmd" in
   stage)
-    [ "$#" -eq 1 ] || { echo "run-gates: stage takes one argument (pr, pre-apply, post-apply, nightly)" >&2; exit 2; }
+    [ "$#" -eq 1 ] || { echo "run-gates: stage takes one argument (pr, pre-apply, post-apply, pre-publish, nightly)" >&2; exit 2; }
     py="${PYTHON:-python3}"
     # The gates run from infrastructure/: make a relative interpreter path absolute first.
     case "$py" in */*) py="$(cd "$(dirname "$py")" && pwd)/$(basename "$py")" ;; esac
+    export PYTHON="$py"
     root="$here/.."
     listed=$("$py" "$here/_gates.py" stage "$1") || exit 1
     [ -n "$listed" ] || { echo "::error::the gate register lists no runnable gate for stage $1" >&2; exit 1; }
@@ -82,6 +89,26 @@ case "$cmd" in
       --runtime-signal ksi-signal-runtime.json \
       --output vdr-report.json \
       "$@"
+    ;;
+  ksi)
+    "${PYTHON:-python3}" "$here/validate-ksi-signal.py" ksi-signal.json
+    ;;
+  vuln)
+    "${PYTHON:-python3}" "$here/vuln-gate.py" --vdr vdr-report.json --register "$here/../data/decisions.json"
+    ;;
+  claims)
+    "${PYTHON:-python3}" "$here/_frr.py" --claims --ksi-short ksi-short.json
+    ;;
+  reconcile)
+    commit="${EXPECT_COMMIT:-$(git rev-parse HEAD)}"
+    "${PYTHON:-python3}" "$here/reconcile.py" --artifacts-dir . --live --expect-commit "$commit" \
+      --report reconcile-report.json
+    ;;
+  redaction)
+    # Exactly the files the upload step publishes, from the same governed list.
+    files=$("${PYTHON:-python3}" "$here/published-set.py" scan --by deploy)
+    # shellcheck disable=SC2086  # a word list by design
+    "${PYTHON:-python3}" "$here/check-published-redaction.py" $files
     ;;
   *)
     echo "run-gates: unknown command $cmd" >&2

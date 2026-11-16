@@ -1,9 +1,10 @@
 """One publish list (scripts/published-set.py).
 
-The deploy's redaction gate, upload and round-trip check all read the governed
-freshness config through published-set.py. These tests run the real workflow
-steps against a fake `aws`, so a step that stops reading the list, or a list
-that names a file the build did not make, fails here.
+The deploy's redaction gate (scripts/run-gates.sh redaction, its pre-publish
+stage), upload and round-trip check all read the governed freshness config
+through published-set.py. These tests run the real gate and workflow steps
+against a fake `aws`, so a step that stops reading the list, or a list that
+names a file the build did not make, fails here.
 """
 
 import json
@@ -20,7 +21,6 @@ WORKFLOW = REPO / ".github" / "workflows" / "deploy-with-opa.yml"
 sys.path.insert(0, str(REPO / "scripts"))
 import _freshness  # noqa: E402
 
-GATE = "Publication redaction gate (no AWS account ID)"
 UPLOAD = "Publish all signed artifacts to /.well-known/"
 ROUND_TRIP = "Post-publish round-trip verify"
 
@@ -82,6 +82,16 @@ def _step(name, cwd, env, replace=()):
                           capture_output=True, text=True, check=False)
 
 
+def _gate(infra, env):
+    """The deploy's redaction gate, with the scanner replaced by echo: prints what it would scan."""
+    stub = infra.parent / "py"
+    stub.write_text(f'#!/bin/sh\ncase "$1" in *check-published-redaction.py) shift; echo "$@";; '
+                    f'*) exec {sys.executable} "$@";; esac\n')
+    stub.chmod(0o755)
+    return subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "redaction"], cwd=infra,
+                          env={**env, "PYTHON": str(stub)}, capture_output=True, text=True, check=False)
+
+
 def _rows(text):
     return [line.split("\t") for line in text.splitlines() if line]
 
@@ -115,11 +125,12 @@ def test_the_gate_scans_exactly_the_text_the_deploy_uploads(tmp_path):
     assert _step(UPLOAD, infra, env).returncode == 0
     text = {r[0] for r in _rows((tmp_path / "uploads").read_text())
             if not r[0].endswith((".bundle", ".tar.gz"))}
-    gate = _step(GATE, infra, env, [("python3 ../scripts/check-published-redaction.py", "echo")])
+    gate = _gate(infra, env)
     assert gate.returncode == 0, gate.stderr
     assert set(gate.stdout.split()) == text and len(text) == 28
     # Never a directory scan: the deploy downloads live files it does not publish.
-    assert "--root" not in _run_block(GATE)
+    script = (REPO / "scripts" / "run-gates.sh").read_text()
+    assert "--root" not in script[script.index("  redaction)"):]
 
 
 def test_an_absent_corroboration_is_neither_scanned_nor_uploaded(tmp_path):
@@ -128,7 +139,7 @@ def test_an_absent_corroboration_is_neither_scanned_nor_uploaded(tmp_path):
     assert _step(UPLOAD, infra, env).returncode == 0
     keys = {r[1] for r in _rows((tmp_path / "uploads").read_text())}
     assert len(keys) == 46 and not any("corroboration" in k for k in keys)
-    gate = _step(GATE, infra, env, [("python3 ../scripts/check-published-redaction.py", "echo")])
+    gate = _gate(infra, env)
     assert "boundary-corroboration.json" not in gate.stdout.split()
 
 
@@ -140,7 +151,7 @@ def test_a_listed_file_the_build_did_not_make_stops_the_upload(tmp_path, absent)
     out = _step(UPLOAD, infra, env)
     assert out.returncode != 0 and absent in out.stderr
     assert not (tmp_path / "uploads").exists(), "nothing is uploaded when the list is incomplete"
-    gate = _step(GATE, infra, env, [("python3 ../scripts/check-published-redaction.py", "echo")])
+    gate = _gate(infra, env)
     # The gate scans text only, so a missing signature is the upload's to catch.
     assert (gate.returncode != 0) is (not absent.endswith(".bundle"))
 
