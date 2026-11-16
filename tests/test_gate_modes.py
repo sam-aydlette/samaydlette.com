@@ -650,7 +650,7 @@ def test_the_runner_runs_a_shell_gate_with_its_subcommand(tmp_path):
     stub = tmp_path / "py"
     stub.write_text(f'#!/bin/sh\ncase "$1" in *_gates.py) exec {sys.executable} "$@";; esac\nexit 0\n')
     stub.chmod(0o755)
-    env = {k: v for k, v in os.environ.items() if k not in ("GATE_EVENTS_FILE", "GATE_MODES_FILE")}
+    env = {k: v for k, v in os.environ.items() if k not in ("GATE_EVENTS_FILE", "GATE_MODES_FILE", "GITHUB_ACTIONS")}
     reg = json.loads(_gates.DEFAULT_PATH.read_text())
     for c in reg["checks"]:
         if "run" in c and c["run"] != "scripts/run-gates.sh detection":
