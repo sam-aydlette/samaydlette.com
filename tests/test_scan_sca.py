@@ -156,7 +156,8 @@ def test_the_workflows_scan_and_gate_only_through_the_shared_scripts(wf):
     # Both scan in the credential-free app-build workflow they call.
     assert "run: bash ../scripts/scan-sca.sh" in (REPO / ".github" / "workflows" / "app-build.yml").read_text()
     assert "scan-sca.sh" not in text and "uses: ./.github/workflows/app-build.yml" in text
-    assert "run: bash ../scripts/run-gates.sh detection" in text
+    # The nightly calls detection directly; the deploy through the gate runner.
+    assert "run: bash ../scripts/run-gates.sh detection" in text or "run: make gates STAGE=pre-apply" in text
     assert "bash ../scripts/run-gates.sh vdr" in text
     for direct in ("syft dir:", "grype sbom:", "SYFT_VERSION", "GRYPE_VERSION", "scripts/detection-gate.py",
                    "python3 ../scripts/build-vdr-report.py"):

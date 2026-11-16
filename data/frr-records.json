@@ -1783,7 +1783,7 @@
       "evidence": [
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+          "ref": "deploy-with-opa.yml#Gates for the pre-apply stage (make gates STAGE=pre-apply)"
         },
         {
           "kind": "step",
@@ -1820,7 +1820,7 @@
         },
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+          "ref": "deploy-with-opa.yml#Gates for the pre-apply stage (make gates STAGE=pre-apply)"
         },
         {
           "kind": "artifact",
@@ -1844,7 +1844,7 @@
         },
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+          "ref": "deploy-with-opa.yml#Gates for the pre-apply stage (make gates STAGE=pre-apply)"
         },
         {
           "kind": "artifact",

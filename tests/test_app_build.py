@@ -222,7 +222,7 @@ def test_the_deploy_ships_what_the_credential_free_job_built_and_scanned():
     assert steps[download]["with"] == {"name": "app-build", "path": "infrastructure/_app-build"}
     take = names.index("Take the expected app files")
     assert steps[take]["run"] == "bash ../scripts/take-app-build.sh full _app-build"
-    assert download < take < names.index("Detection gate (G7)") < names.index("Terraform Apply")
+    assert download < take < names.index("Gates for the pre-apply stage (make gates STAGE=pre-apply)") < names.index("Terraform Apply")
     app_build = (WF / "app-build.yml").read_text()
     assert "infrastructure/*.zip" not in app_build, "upload only the packages the deploy ships"
 
