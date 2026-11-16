@@ -1,6 +1,6 @@
 {
   "$schema": "./gate-modes.schema.json",
-  "version": "2026-11-16.2",
+  "version": "2026-11-16.3",
   "description": "The mode each gate check runs in, and the decision behind it (REQ-GAT-1, REQ-GAT-4). The method's default is block. A detect-and-recover check publishes its failure, queues it and starts a recovery clock instead of stopping the run. Entries with gate pipeline are the pipeline's other gates: their scripts do not read a mode, so they always block. Each check also names where it runs (stages), who a failure is routed to (owner) and the known-bad input it must reject (fixture; tests/test_gate_modes.py runs each one). Read by scripts/_gates.py, which fails the build on a missing decision field, a non-default mode with no reason or a lapsed review date, or an unrecorded check.",
   "method_reference": "website/research/vulnerability-evidence.html#gates",
   "checks": [
@@ -150,6 +150,6 @@
      "stages": ["pre-publish", "nightly"], "owner": "role:platform-owner", "fixture": "tests/fixtures/redaction/bad", "run": "scripts/run-gates.sh redaction"},
     {"check": "freshness.published", "gate": "pipeline", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
-     "stages": ["nightly"], "owner": "role:observability-owner", "fixture": "tests/fixtures/freshness/stale"}
+     "stages": ["nightly"], "owner": "role:observability-owner", "fixture": "tests/fixtures/freshness/stale", "run": "scripts/run-gates.sh freshness"}
   ]
 }

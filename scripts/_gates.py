@@ -296,10 +296,37 @@ def read_events(path):
     return out
 
 
+def stage_results(register, stage, path):
+    """Each check the register lists for a stage, with its owner and its result
+    this run: pass or fail from the runner's results file (GATE_RESULTS_FILE,
+    written by scripts/run-gates.sh), "not run" when its run script did not
+    report, or "not on the runner" when it has none. A run that reported twice
+    counts its last result."""
+    if stage not in STAGES:
+        raise SystemExit(f"::error::unknown stage {stage!r}; one of {list(STAGES)}")
+    reported = {}
+    p = Path(path)
+    if p.is_file():
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            r = json.loads(line)
+            if isinstance(r, dict) and r.get("result") in ("pass", "fail") and isinstance(r.get("run"), str):
+                reported[r["run"]] = r["result"]
+    out = []
+    for name, e in register["checks"].items():
+        if stage not in e["stages"]:
+            continue
+        result = "not on the runner" if "run" not in e else reported.get(e["run"], "not run")
+        out.append({"check": name, "gate": e["gate"], "owner": e["owner"], "result": result})
+    return out
+
+
 if __name__ == "__main__":
     # `python3 scripts/_gates.py` validates the register; `... stage STAGE`
-    # lists the scripts that stage runs; `... status FILE` prints
-    # {gates, gate_events} for the nightly status beacon.
+    # lists the scripts that stage runs; `... status EVENTS [RESULTS STAGE]`
+    # prints {gates, gate_events, gate_results} for the nightly status beacon.
     reg = load_gate_modes()
     if len(sys.argv) == 3 and sys.argv[1] == "stage":
         # For scripts/run-gates.sh: the scripts to run, one per line; the rest to stderr.
@@ -309,8 +336,9 @@ if __name__ == "__main__":
         if missing:
             print(f"not on the runner yet ({sys.argv[2]}): {', '.join(missing)}", file=sys.stderr)
         print("\n".join(runs))
-    elif len(sys.argv) >= 3 and sys.argv[1] == "status":
+    elif len(sys.argv) in (3, 5) and sys.argv[1] == "status":
         print(json.dumps({"gates": {"version": reg["version"], "sha256": reg["sha256"]},
-                          "gate_events": read_events(sys.argv[2])}))
+                          "gate_events": read_events(sys.argv[2]),
+                          "gate_results": stage_results(reg, sys.argv[4], sys.argv[3]) if len(sys.argv) == 5 else None}))
     else:
         print(f"gate-mode register {reg['version']}: {len(reg['checks'])} checks, sha256 {reg['sha256'][:12]}")
