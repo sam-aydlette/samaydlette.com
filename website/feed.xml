@@ -9,6 +9,14 @@
     <atom:link href="https://samaydlette.com/feed.xml" rel="self" type="application/rss+xml"/>
     <!-- BEGIN generated: feed items. Built by scripts/build-feed.py; do not edit by hand. -->
     <item>
+      <title>The Network Perimeter Is Not the Boundary</title>
+      <link>https://samaydlette.com/pages/article-30.html</link>
+      <guid>https://samaydlette.com/pages/article-30.html</guid>
+      <pubDate>Sun, 15 Nov 2026 00:00:00 +0000</pubDate>
+      <category>cybersec_strategy</category>
+      <description>A network address says where traffic comes from, never who is on the other end, and software agents are about to make that impossible to ignore. I argue that the boundary is the list of relationships between identified things, and that the network is an enforcement point for rules defined elsewhere: the least discerning one.</description>
+    </item>
+    <item>
       <title>Vulnerability Evidence as a Product</title>
       <link>https://samaydlette.com/research/vulnerability-evidence.html</link>
       <guid>https://samaydlette.com/research/vulnerability-evidence.html</guid>
