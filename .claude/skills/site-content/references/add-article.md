@@ -10,6 +10,7 @@ A small task (CLAUDE.md §1). Do these steps and nothing else. Copy markup from 
   - `.article-date`: long form, for example `September 25, 2026`
   - `.article-category`: reuse an existing category unless the operator names a new one
   - `h1.article-title`
+  - the preview tags in `<head>`: `canonical` and `og:url` (this page's URL), `og:title` (the `h1`), and `description` and `og:description` (the index card's summary). `tests/test_preview_tags.py` fails if any still names the page you copied
   - the body inside `.article-content`, keeping the `.disclaimer` block first and verbatim
 - Remove the template's figures and series nav unless they apply.
 - Images go in `website/assets/images/` with alt text. Inline SVG follows the `article-29.html` pattern (`role="img"`, `aria-labelledby` pointing at `<title>` and `<desc>`).
