@@ -583,7 +583,8 @@ def test_each_checks_stages_match_the_workflows():
                 found |= {"pr", "pre-apply"} if job in needed else {"pr"}
         if cmd in scn:
             found.add("pr")
-        if cmd in nightly:
+        # The nightly calls a check's runner command at the point it needs.
+        if _runs(cmd, nightly) or ("run" in e and _runs(e["run"].removeprefix("scripts/"), nightly)):
             found.add("nightly")
         assert found == set(e["stages"]), (e["check"], found)
 
@@ -687,3 +688,52 @@ def test_the_runner_runs_a_shell_gate_with_its_subcommand(tmp_path):
     assert "== scripts/run-gates.sh detection" in out.stdout
     assert "1 gate(s) failed: scripts/run-gates.sh detection" in out.stderr
 
+
+
+# ---- one monitor: each gate run's result, per check, for the status beacon ----------
+
+def test_the_runner_records_each_gates_result(tmp_path):
+    # Every gate script fails (stub interpreter); each run is recorded as a fail.
+    stub = tmp_path / "py"
+    stub.write_text(f'#!/bin/sh\ncase "$1" in *_gates.py) exec {sys.executable} "$@";; esac\nexit 1\n')
+    stub.chmod(0o755)
+    results = tmp_path / "results.jsonl"
+    env = {k: v for k, v in os.environ.items() if k not in ("GATE_EVENTS_FILE", "GATE_MODES_FILE")}
+    subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "stage", "pr"],
+                   env={**env, "PYTHON": str(stub), "GATE_RESULTS_FILE": str(results)}, capture_output=True, text=True)
+    rows = [json.loads(line) for line in results.read_text().splitlines()]
+    assert [(r["run"], r["result"]) for r in rows] == [
+        ("scripts/check-policy-annotations.py", "fail"), ("scripts/check-wasm-safe.py", "fail"),
+        ("scripts/check-exceptions.py", "fail")]
+
+
+@pytest.mark.parametrize("files,result", [(["clean.json"], "pass"), (["leaky.json"], "fail")])
+def test_a_runner_command_records_its_own_result(tmp_path, files, result):
+    (tmp_path / "clean.json").write_text('{"a": 1}')
+    (tmp_path / "leaky.json").write_text('{"arn": "arn:aws:iam::123456789012:role/x"}')
+    results = tmp_path / "results.jsonl"
+    out = subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "redaction", *files], cwd=tmp_path,
+                         env={**os.environ, "PYTHON": sys.executable, "GATE_RESULTS_FILE": str(results)},
+                         capture_output=True, text=True)
+    assert (out.returncode == 0) is (result == "pass")
+    row = json.loads(results.read_text())
+    assert row["run"] == "scripts/run-gates.sh redaction" and row["result"] == result
+
+
+def test_the_beacon_reports_every_nightly_check_with_its_owner(tmp_path):
+    results = tmp_path / "results.jsonl"
+    results.write_text("\n".join(json.dumps(r) for r in [
+        {"run": "scripts/run-gates.sh vuln", "result": "fail"},
+        {"run": "scripts/run-gates.sh vuln", "result": "pass"},       # the last result counts
+        {"run": "scripts/run-gates.sh reconcile", "result": "fail"},
+        {"run": "scripts/run-gates.sh detection", "result": "maybe"},  # not a result: ignored
+    ]) + "\n")
+    reg = _gates.load_gate_modes()
+    got = {r["check"]: r for r in _gates.stage_results(reg, "nightly", results)}
+    assert set(got) == {n for n, e in reg["checks"].items() if "nightly" in e["stages"]}
+    assert got["vuln-gate.unhandled"]["result"] == "pass"
+    assert got["reconcile.a"]["result"] == "fail" and got["reconcile.a"]["owner"] == reg["checks"]["reconcile.a"]["owner"]
+    assert got["detection.kev"]["result"] == "not run"
+    assert got["vdr.kev"]["result"] == "not on the runner"
+    assert all(r["result"] == "not run" or r["result"] == "not on the runner"
+               for r in _gates.stage_results(reg, "nightly", tmp_path / "absent.jsonl"))

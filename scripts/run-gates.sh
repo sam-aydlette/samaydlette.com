@@ -5,7 +5,8 @@
 #   run-gates.sh stage STAGE        (any directory; `make gates STAGE=...`)
 #   run-gates.sh detection          (from infrastructure/)
 #   run-gates.sh vdr [EXTRA BUILDER ARGS...]   (from infrastructure/)
-#   run-gates.sh ksi | vuln | claims | reconcile | redaction   (from infrastructure/)
+#   run-gates.sh ksi | vuln | claims | reconcile | freshness   (from infrastructure/)
+#   run-gates.sh redaction [FILES...]   (from infrastructure/)
 #
 # `stage` runs every gate the gate register (infrastructure/schemas/gate-modes.json)
 # lists for STAGE with a `run` script, from infrastructure/ (where the workflows
@@ -23,18 +24,38 @@
 # ksi, vuln, claims and reconcile are the deploy's post-apply gates over the
 # artifacts it built; redaction is its pre-publish gate over exactly what it
 # uploads. reconcile expects the commit in EXPECT_COMMIT (the deploy passes its
-# own), or HEAD locally. They run under PYTHON (default python3).
+# own), or HEAD locally. They run under PYTHON (default python3). redaction
+# scans FILES when given (the nightly's own set), else what the deploy uploads.
+# freshness is the nightly's: the served VDR is the one this run built.
+#
+# When GATE_RESULTS_FILE is set, each gate run appends {run, result, at} to it
+# as one JSON line; scripts/_gates.py status reads it into per-check results
+# for the status beacon.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 manifest="${APPS_MANIFEST:-$here/../data/apps.json}"
 
 if [ "$#" -lt 1 ]; then
-  echo "usage: $0 stage STAGE | detection | vdr [args...] | ksi | vuln | claims | reconcile | redaction" >&2
+  echo "usage: $0 stage STAGE | detection | vdr [args...] | ksi | vuln | claims | reconcile | redaction [files...] | freshness" >&2
   exit 2
 fi
 cmd="$1"
 shift
+
+# A gate's result, for the status beacon. The run is a fixed string from this
+# script or the register, never user input.
+record() {
+  [ -n "${GATE_RESULTS_FILE:-}" ] || return 0
+  local result=fail
+  [ "$2" -eq 0 ] && result=pass
+  printf '{"run": "%s", "result": "%s", "at": "%s"}\n' "$1" "$result" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    >> "$GATE_RESULTS_FILE"
+}
+case "$cmd" in
+  detection|ksi|vuln|claims|reconcile|redaction|freshness)
+    trap 'record "scripts/run-gates.sh $cmd" $?' EXIT ;;
+esac
 
 case "$cmd" in
   stage)
@@ -52,7 +73,8 @@ case "$cmd" in
       read -r script sub <<< "$run"
       case "$script" in
         *.sh) (cd "$root/infrastructure" && bash "$root/$script" ${sub:+"$sub"}) || failed+=("$run") ;;
-        *)    (cd "$root/infrastructure" && "$py" "$root/$script" ${sub:+"$sub"}) || failed+=("$run") ;;
+        *)    rc=0; (cd "$root/infrastructure" && "$py" "$root/$script" ${sub:+"$sub"}) || rc=$?
+              record "$run" "$rc"; [ "$rc" -eq 0 ] || failed+=("$run") ;;
       esac
     done <<< "$listed"
     if [ "${#failed[@]}" -gt 0 ]; then
@@ -105,10 +127,20 @@ case "$cmd" in
       --report reconcile-report.json
     ;;
   redaction)
-    # Exactly the files the upload step publishes, from the same governed list.
-    files=$("${PYTHON:-python3}" "$here/published-set.py" scan --by deploy)
-    # shellcheck disable=SC2086  # a word list by design
-    "${PYTHON:-python3}" "$here/check-published-redaction.py" $files
+    if [ "$#" -gt 0 ]; then
+      "${PYTHON:-python3}" "$here/check-published-redaction.py" "$@"
+    else
+      # Exactly the files the deploy's upload step publishes, from the same governed list.
+      files=$("${PYTHON:-python3}" "$here/published-set.py" scan --by deploy)
+      # shellcheck disable=SC2086  # a word list by design
+      "${PYTHON:-python3}" "$here/check-published-redaction.py" $files
+    fi
+    ;;
+  freshness)
+    built=$(sha256sum vdr-report.json | awk '{print $1}')
+    "${PYTHON:-python3}" "$here/check-evidence-freshness.py" \
+      --url "${SITE_ORIGIN:-https://samaydlette.com}/.well-known/vdr-report.json" \
+      --expect-sha256 "$built" --retries 12 --retry-delay 20
     ;;
   *)
     echo "run-gates: unknown command $cmd" >&2

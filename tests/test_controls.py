@@ -175,7 +175,7 @@ def test_the_nightly_verifies_the_published_sdr_and_cpo_before_reconciling():
     fetch = next(s for s in steps if "for art in security-decision-record certification-package-overview" in s.get("run", ""))
     assert "cosign verify-blob" in fetch["run"] and '--certificate-identity "${DEPLOY_SIGNER_IDENTITY}"' in fetch["run"]
     assert "set -euo pipefail" in fetch["run"]
-    gate = next(s for s in steps if "scripts/reconcile.py" in s.get("run", ""))
+    gate = next(s for s in steps if "run-gates.sh reconcile" in s.get("run", ""))
     assert steps.index(fetch) < steps.index(gate)
 
 

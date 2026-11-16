@@ -164,7 +164,7 @@ def test_nightly_gates_exactly_what_it_publishes_and_redacts_the_beacon():
     assert names[i + 1] == "Publish VDR + trend to /.well-known/"
     gate_step = text[text.index("- name: Publication redaction gate"):]
     gate_step = gate_step[:gate_step.find("\n    - name:")]
-    gated = set(gate_step.split("check-published-redaction.py", 1)[1].split())
+    gated = set(gate_step.split("run-gates.sh redaction", 1)[1].split())
     step = text[text.index("- name: Publish VDR + trend to /.well-known/"):]
     step = step[:step.find("\n    - name:")]
     published = set(re.findall(r"^\s*put ([\w.-]+)\s", step, re.M))
