@@ -112,7 +112,9 @@ env:
   # an artifact it fetched over the public internet, so it verifies that artifact
   # against this pinned identity before trusting a single byte of it.
   DEPLOY_SIGNER_IDENTITY: 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main'
-  COSIGN_OIDC_ISSUER: https://token.actions.githubusercontent.com
+  # Not named COSIGN_*: cosign reads COSIGN_<FLAG> variables as flags, and as
+  # --oidc-issuer this one makes cosign v3 sign-blob refuse to run.
+  CERT_OIDC_ISSUER: https://token.actions.githubusercontent.com
 
 jobs:
   # ===========================================================================
@@ -255,7 +257,7 @@ jobs:
         cosign verify-blob \
           --bundle ksi-signal.bundle \
           --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
-          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+          --certificate-oidc-issuer "${CERT_OIDC_ISSUER}" \
           ksi-signal.json
         SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
         SIGNAL_ID=$(jq -r '.signal_id' ksi-signal.json)
@@ -411,7 +413,7 @@ jobs:
         cosign verify-blob \
           --bundle ksi-signal.bundle \
           --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
-          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+          --certificate-oidc-issuer "${CERT_OIDC_ISSUER}" \
           ksi-signal.json
         SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
         if ! printf '%s' "$SIGNAL_COMMIT" | grep -qE '^[0-9a-f]{40}$' || [ "$SIGNAL_COMMIT" != "$PINNED_COMMIT" ]; then
@@ -483,7 +485,7 @@ jobs:
           cosign verify-blob \
             --bundle "$art.bundle" \
             --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
-            --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            --certificate-oidc-issuer "${CERT_OIDC_ISSUER}" \
             "$art.json"
         done
 
@@ -515,7 +517,7 @@ jobs:
         curl -sfL --retry 3 --retry-delay 5 -o conformance-results.bundle "${SITE_ORIGIN}/.well-known/conformance-results.bundle"
         cosign verify-blob --bundle conformance-results.bundle \
           --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
-          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" conformance-results.json
+          --certificate-oidc-issuer "${CERT_OIDC_ISSUER}" conformance-results.json
         jq -c '{profile_version, summary}' conformance-results.json
 
     # The builder evaluates policies/triage.rego for every decision and fails
@@ -645,7 +647,7 @@ jobs:
             for identity in "${DEPLOY_SIGNER_IDENTITY}" \
                 "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main"; do
               if cosign verify-blob --bundle "previous-$name.bundle" --certificate-identity "$identity" \
-                   --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" "previous-$name.json" 2>/dev/null; then ok=1; break; fi
+                   --certificate-oidc-issuer "${CERT_OIDC_ISSUER}" "previous-$name.json" 2>/dev/null; then ok=1; break; fi
             done
             [ "$ok" -eq 1 ] || { echo "::error::previous $name.json does not verify; refusing to carry it forward"; exit 1; }
             prev+=("$flag" "previous-$name.json")
@@ -685,7 +687,7 @@ jobs:
         cosign verify-blob-attestation --new-bundle-format \
           --bundle vdr-report.json.intoto.jsonl --type slsaprovenance1 \
           --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main" \
-          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+          --certificate-oidc-issuer "${CERT_OIDC_ISSUER}" \
           vdr-report.json
         # 2) the dependency-free consumer checks the bindings (subject==artifact,
         #    inventory sha256, generator, commit) — fail closed.
