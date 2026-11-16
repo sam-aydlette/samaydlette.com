@@ -136,12 +136,18 @@ def test_the_workflows_no_longer_substitute_empty_documents():
                          "echo '{\"findings\":[]}'", "\"version\": \"fallback\"", "\"version\":\"fallback\"",
                          "echo '{\"results\": []}'", "> grype-python.json || true"):
             assert stand_in not in text, f"{wf} still writes {stand_in}"
-        assert "scripts/run-gates.sh detection" in text and "fetch-detection-feeds.sh" in text
+        # The deploy runs detection through the gate runner, which runs the
+        # register's `run` for it: scripts/run-gates.sh detection.
+        runs_detection = "scripts/run-gates.sh detection" in text or "run: make gates STAGE=pre-apply" in text
+        assert runs_detection and "fetch-detection-feeds.sh" in text
+    reg = json.loads((REPO / "infrastructure" / "schemas" / "gate-modes.json").read_text())
+    assert {c.get("run") for c in reg["checks"] if c["check"] == "detection.kev"} == {"scripts/run-gates.sh detection"}
 
 
 def test_the_deploy_checks_detection_before_it_applies():
     text = (REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text()
-    assert text.index("name: Detection gate (G7)") < text.index("name: Terraform Apply")
+    assert text.index("name: Fetch detection feeds") < text.index("name: Gates for the pre-apply stage")
+    assert text.index("name: Gates for the pre-apply stage") < text.index("name: Terraform Apply")
 
 
 def test_the_fetch_script_never_writes_a_stand_in():

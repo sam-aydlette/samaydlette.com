@@ -567,6 +567,10 @@ def test_each_checks_stages_match_the_workflows():
         for i, line in enumerate(deploy["deploy"]):
             if cmd in line:
                 found.add("pre-apply" if i < apply_at else "post-apply")
+            # The runner runs a check with a `run` script in the stages it lists.
+            for st in e["stages"] if "run" in e else ():
+                if f"make gates STAGE={st}" in line and line.strip().startswith("run:"):
+                    found.add("pre-apply" if i < apply_at else "post-apply")
         for job, lines in deploy.items():
             if job != "deploy" and any(cmd in line for line in lines):
                 found |= {"pr", "pre-apply"} if job in needed else {"pr"}
@@ -587,6 +591,8 @@ def test_each_checks_stages_match_the_workflows():
     ("fixture", "tests/fixtures/../../etc", "fixture must be a path under tests/fixtures/"),
     ("run", "scripts/check-exceptions.py; rm -rf /", "run must be a script under scripts/"),
     ("run", "../check-exceptions.py", "run must be a script under scripts/"),
+    ("run", "scripts/run-gates.sh detection extra", "run must be a script under scripts/"),
+    ("run", "scripts/run-gates.sh $(id)", "run must be a script under scripts/"),
 ])
 def test_a_bad_stage_owner_or_fixture_fails(tmp_path, field, value, msg):
     cfg = good()
@@ -598,16 +604,26 @@ def test_a_bad_stage_owner_or_fixture_fails(tmp_path, field, value, msg):
 # ---- one runner: make gates STAGE=<stage> -------------------------------------------
 
 def test_the_pr_stage_runs_exactly_the_registered_scripts():
-    runs, missing = _gates.stage_runs(_gates.load_gate_modes(), "pr")
+    runs, missing, covered = _gates.stage_runs(_gates.load_gate_modes(), "pr")
     assert runs == ["scripts/check-policy-annotations.py", "scripts/check-wasm-safe.py",
                     "scripts/check-exceptions.py"]
     assert missing == ["opa.plan", "scn.tag"]
+    assert covered == []
+
+
+def test_pre_apply_runs_only_what_needs_the_deploy_context():
+    # A check also listed for pr ran in the jobs the deploy needs, on the same
+    # commit: it is covered, not run twice.
+    runs, missing, covered = _gates.stage_runs(_gates.load_gate_modes(), "pre-apply")
+    assert runs == ["scripts/check-runtime-divergence.py", "scripts/run-gates.sh detection"]
+    assert missing == []
+    assert covered == ["opa.plan", "policy.annotations", "policy.wasm-safe", "exceptions.register"]
 
 
 def test_every_run_script_exists_and_its_check_names_its_stages():
     for e in _gates.load_gate_modes()["checks"].values():
         if "run" in e:
-            assert (REPO / e["run"]).is_file(), e["run"]
+            assert (REPO / e["run"].split()[0]).is_file(), e["run"]
             assert e["stages"], e["check"]
 
 
@@ -626,4 +642,25 @@ def test_the_runner_runs_every_gate_and_fails_if_any_failed(tmp_path):
                          env={**env, "PYTHON": str(stub)}, capture_output=True, text=True)
     assert out.returncode == 1
     assert "3 gate(s) failed" in out.stderr
+
+
+def test_the_runner_runs_a_shell_gate_with_its_subcommand(tmp_path):
+    # bash runs `scripts/run-gates.sh detection` from infrastructure/; with no
+    # detection inputs present it fails closed, which the runner reports.
+    stub = tmp_path / "py"
+    stub.write_text(f'#!/bin/sh\ncase "$1" in *_gates.py) exec {sys.executable} "$@";; esac\nexit 0\n')
+    stub.chmod(0o755)
+    env = {k: v for k, v in os.environ.items() if k not in ("GATE_EVENTS_FILE", "GATE_MODES_FILE")}
+    reg = json.loads(_gates.DEFAULT_PATH.read_text())
+    for c in reg["checks"]:
+        if "run" in c and c["run"] != "scripts/run-gates.sh detection":
+            del c["run"]
+    path = tmp_path / "gate-modes.json"
+    path.write_text(json.dumps(reg))
+    out = subprocess.run(["bash", str(REPO / "scripts" / "run-gates.sh"), "stage", "nightly"],
+                         env={**env, "PYTHON": str(stub), "GATE_MODES_FILE": str(path)},
+                         capture_output=True, text=True, cwd=tmp_path)
+    assert out.returncode == 1
+    assert "== scripts/run-gates.sh detection" in out.stdout
+    assert "1 gate(s) failed: scripts/run-gates.sh detection" in out.stderr
 

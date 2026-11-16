@@ -60,9 +60,10 @@ STAGES = ("pr", "pre-apply", "post-apply", "nightly")
 OWNER_RE = re.compile(r"^role:[a-z0-9]+(-[a-z0-9]+)*$")
 FIXTURE_RE = re.compile(r"^tests/fixtures/[A-Za-z0-9_./-]+$")
 # The script `make gates STAGE=<stage>` (scripts/run-gates.sh stage) runs for a
-# check, from the repository root. Only a script under scripts/ with no
-# arguments, so the register cannot carry a shell command.
-RUN_RE = re.compile(r"^scripts/[a-z0-9_-]+\.py$")
+# check, from infrastructure/, where the workflows gather gate inputs. Only a
+# script under scripts/ with at most one lowercase subcommand, so the register
+# cannot carry a shell command.
+RUN_RE = re.compile(r"^scripts/[a-z0-9_-]+\.(py|sh)( [a-z]+)?$")
 
 # Every check a gate script consults, with the gate it implements. A check here
 # with no entry in the register, or an entry for a check not here, fails the load.
@@ -181,7 +182,7 @@ def validate_gate_modes(cfg, where="(in memory)", today=None):
         if not isinstance(fx, str) or not FIXTURE_RE.fullmatch(fx) or ".." in fx.split("/"):
             _fail(where, f"{name}: fixture must be a path under tests/fixtures/")
         if "run" in e and (not isinstance(e["run"], str) or not RUN_RE.fullmatch(e["run"])):
-            _fail(where, f"{name}: run must be a script under scripts/ (scripts/<name>.py)")
+            _fail(where, f"{name}: run must be a script under scripts/ (scripts/<name>.py|sh [subcommand])")
         if not isinstance(e["decided_by"], str) or not e["decided_by"].strip():
             _fail(where, f"{name}: decided_by must name who decided the mode")
         _date(where, name, "decided_on", e["decided_on"])
@@ -257,17 +258,26 @@ def published_view(register):
 
 
 def stage_runs(register, stage):
-    """(scripts to run, checks not on the runner yet) for a stage, in register order."""
+    """(scripts to run, checks not on the runner yet, checks covered by pr) for a
+    stage, in register order.
+
+    A check runs as often as its context needs, and no more. A check listed for
+    both pr and pre-apply runs in the jobs the deploy job needs, which run on
+    every pull request and again on the same commit before the deploy. So at
+    pre-apply it is covered, not run a second time."""
     if stage not in STAGES:
         raise SystemExit(f"::error::unknown stage {stage!r}; one of {list(STAGES)}")
-    runs, missing = [], []
+    runs, missing, covered = [], [], []
     for name, e in register["checks"].items():
-        if stage in e["stages"]:
-            if "run" not in e:
-                missing.append(name)
-            elif e["run"] not in runs:
-                runs.append(e["run"])
-    return runs, missing
+        if stage not in e["stages"]:
+            continue
+        if stage == "pre-apply" and "pr" in e["stages"]:
+            covered.append(name)
+        elif "run" not in e:
+            missing.append(name)
+        elif e["run"] not in runs:
+            runs.append(e["run"])
+    return runs, missing, covered
 
 
 def read_events(path):
@@ -293,7 +303,9 @@ if __name__ == "__main__":
     reg = load_gate_modes()
     if len(sys.argv) == 3 and sys.argv[1] == "stage":
         # For scripts/run-gates.sh: the scripts to run, one per line; the rest to stderr.
-        runs, missing = stage_runs(reg, sys.argv[2])
+        runs, missing, covered = stage_runs(reg, sys.argv[2])
+        if covered:
+            print(f"covered by the pr stage on this commit ({sys.argv[2]}): {', '.join(covered)}", file=sys.stderr)
         if missing:
             print(f"not on the runner yet ({sys.argv[2]}): {', '.join(missing)}", file=sys.stderr)
         print("\n".join(runs))

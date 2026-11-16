@@ -1006,8 +1006,7 @@ jobs:
     # Break glass when the deploy IS the fix:
     #   --allow-divergence "reason"
     # -------------------------------------------------------------------------
-    - name: Runtime divergence pre-flight (stop the line)
-      run: python3 scripts/check-runtime-divergence.py
+    # It runs in the pre-apply gates step below, after the detection feeds are fetched.
 
     # -------------------------------------------------------------------------
     # DETECTION INPUTS AND G7 — before anything is applied
@@ -1025,9 +1024,14 @@ jobs:
         ACTIONS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: bash ../scripts/fetch-detection-feeds.sh
 
-    - name: Detection gate (G7)
-      working-directory: infrastructure
-      run: bash ../scripts/run-gates.sh detection
+    # The pre-apply gates the gate register (infrastructure/schemas/gate-modes.json)
+    # lists, through the same runner as `make gates` locally: the runtime
+    # divergence pre-flight (G4/G7) and the detection gate (G7). Checks also listed
+    # for pr already ran in the jobs this one needs, on this commit, and are not
+    # run again. Break glass for a divergence (--allow-divergence "reason") is a
+    # reviewed edit to this step.
+    - name: Gates for the pre-apply stage (make gates STAGE=pre-apply)
+      run: make gates STAGE=pre-apply
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure

@@ -30,7 +30,7 @@
           "stages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["pr", "pre-apply", "post-apply", "nightly"]}},
           "owner": {"type": "string", "pattern": "^role:[a-z0-9]+(-[a-z0-9]+)*$"},
           "fixture": {"type": "string", "pattern": "^tests/fixtures/[A-Za-z0-9_./-]+$"},
-          "run": {"type": "string", "pattern": "^scripts/[a-z0-9_-]+\\.py$", "description": "The script `make gates STAGE=<stage>` runs for this check, from the repository root. A check without one is not on the runner yet."}
+          "run": {"type": "string", "pattern": "^scripts/[a-z0-9_-]+\\.(py|sh)( [a-z]+)?$", "description": "The script `make gates STAGE=<stage>` runs for this check, from infrastructure/, with at most one lowercase subcommand. A check without one is not on the runner yet. At pre-apply the runner skips a check also listed for pr: the jobs the deploy needs have already run it on the same commit."}
         },
         "allOf": [
           {"if": {"properties": {"mode": {"const": "detect-and-recover"}}}, "then": {"required": ["reason"]}},
