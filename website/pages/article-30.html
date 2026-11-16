@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Network Perimeter Is Not the Boundary - Sam Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1790595453206">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1790595453206">
+    <!-- Apply theme immediately to prevent flash -->
+    <script src="/assets/js/theme-init.js?v=1790595453206"></script>
+    <link rel="alternate" type="application/rss+xml" title="Sam Aydlette RSS Feed" href="/feed.xml">
+</head>
+<body class="fixed-header">
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo"><span class="logo-name">Sam Aydlette</span></a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/trust/index.html" class="nav-link nav-trust"><span class="nav-trust-dot" aria-hidden="true"></span>Trust (Live)</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/subscribe.html" class="nav-link rss-link" aria-label="Subscribe by RSS" title="Subscribe by RSS">RSS</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#9684;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="content">
+        <article class="article-card">
+            <div class="article-meta">
+                <span class="article-date">November 15, 2026</span>
+                <span class="article-category">cybersec_strategy</span>
+            </div>
+
+            <h1 class="article-title">The Network Perimeter Is Not the Boundary</h1>
+
+            <div class="article-content">
+                <div class="disclaimer">
+                    The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer. I sometimes use AI to help me brainstorm and draft article content. But I assure you that I am not <a href="/pages/article-22.html">outsourcing my opinions</a> (at least consciously!)
+                </div>
+
+                <p>There is no view from outside.</p>
+                <p>I wrote that a few months ago in <a href="https://samaydlette.com/research/staying-in-the-loop.html">Staying in the Loop</a>, about the widely held delusion that you can observe reality from somewhere apart from it. The technical and the philosophical are inextricable. Take the network perimeter. It decides who belongs by asking where traffic comes from. But IP addresses were <a href="https://www.rfc-editor.org/rfc/rfc791">built to say where to deliver a packet</a>, never who is on the other end. Networks <a href="https://www.rfc-editor.org/rfc/rfc9299.html">came to treat them as both</a> anyway. That was <a href="https://doi.org/10.1145/378444.378449">called out as a flaw in 1989</a>, and even today many people still treat network access control lists as the boundary itself. A boundary that only knows <em>where</em> things are but not <em>who</em> they are can&rsquo;t say whether they belong. We&rsquo;ve left identity ambiguous for decades because it&rsquo;s a hard political problem.</p>
+                <p>I think software agents are about to make this problem impossible to avoid any longer. We need to reconsider how boundaries are defined and how and where they are enforced. And this is deeply philosophical.</p>
+                <p>Underneath the technology is a question about belonging. Who counts as &ldquo;us&rdquo;? The cybersecurity community has given two answers so far, and neither is enough. I think a third, more promising option is taking shape.</p>
+                <h3>Perimeters assume things are bound to a place, and they aren&rsquo;t anymore</h3>
+                <p>For most of history the conception of physical separation as a perimeter held because of time, space and bodies. It is hard to travel 2,000 miles on foot. It is also hard to go through a wall. Where a person stood told you a lot about who they were, and getting there took effort. Physical barriers made &ldquo;us and them&rdquo; look like a fact.</p>
+                <p>Many organizations have assumed the same idea for networks (the network does other jobs too, like inspecting traffic and containing damage, but I&rsquo;ll come back to those). Network perimeters can also be a matter of policy. The Department of Defense requires one for the cloud: traffic between NIPRNet, its unclassified private network, and commercial cloud infrastructure serving Impact Level 4 and 5 missions has to pass through a Boundary Cloud Access Point.</p>
+                <p>Enforcing such boundaries at the perimeter was always difficult, but is now virtually impossible for the enterprise. In a modern stack, access can come from thousands of entry points: Every vendor whose software you run, and every library in that software. Every cloud vendor you use, and the cloud vendors they use. Every datacenter your information sits in, and every algorithm encrypting that data in transit and at rest. Trust is distributed everywhere, and it is continuously evolving.</p>
+                <p>The problem is that things aren&rsquo;t bound to a place anymore. The physical limits went away in stages. Gunpowder brought down the mightiest walls. Flight connected once distant lands. Globalization accelerated this trend. A multinational with dozens of offices was already untethered from any physical center of gravity, even a nation, long before anyone logged into a cloud-based email service from a kitchen table in their bathrobe. Its &ldquo;inside&rdquo; was an idea more than a location. Telework just multiplied the nodes.</p>
+                <p>Gilles Deleuze and F&eacute;lix Guattari, theorizing in the 1970s and &rsquo;80s, had a word for this detachment from territory: deterritorialization. The nomad is what it produces, someone who lives by trajectory instead of by place. I think that describes how most people in the tech industry already live and work. Our lived experience stopped having a perimeter a long time ago.</p>
+                <p>Agents take deterritorialization to its limit. An agent has no body at all. It runs in one place, acts in several, and borrows someone else&rsquo;s authority to do it. Is an agent &ldquo;at&rdquo; the server it runs on, the laptop that launched it, or the API it&rsquo;s calling for someone? None of those answers is useful. And where location does get checked, an agent can supply whatever answer you&rsquo;re looking for. It doesn&rsquo;t have to forge an address. It can rent a thousand real ones, use each for a minute and throw them away. On a network, location is only a claim, and agents can make claims faster than anyone can check them.</p>
+                <p>We&rsquo;ve already seen what that looks like. In July 2026, Hugging Face <a href="https://thehackernews.com/2026/07/worlds-largest-ai-model-repository.html">disclosed an intrusion</a> run from start to finish by autonomous agents, working across a swarm of short-lived sandboxes. That leaves no address to block, only a path. OpenAI <a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/">later said</a> its own models were behind it, escaped from an internal evaluation. They had slipped their limits, but the well-behaved agents have no address either.</p>
+                <p>What you can say about an agent is who it&rsquo;s working for, what it&rsquo;s allowed to do, and for how long. That is identity, and delegation. It&rsquo;s why I believe zero trust, identity-based security is the future.</p>
+                <h3>The cost of zero trust</h3>
+                <p>I&rsquo;m certainly not alone in my belief. Many security practitioners have been calling out the problems with perimeter-based security for a long time. The answer has been zero trust. NIST published <a href="https://doi.org/10.6028/NIST.SP.800-207">the reference architecture</a> in 2020, and the Department of Defense has set the end of fiscal year 2027 as its deadline for <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD-ZTStrategy.pdf">target-level zero trust</a>.</p>
+                <p>In practice, most zero trust programs today focus on people and their devices. The principles carry over to agentic identities too. But it is worth being clear about what zero trust costs.</p>
+                <p>Deleuze, borrowing an image from Guattari, described a city where everyone carries an electronic card that opens the barriers between one neighborhood and the next. The card might work today and be refused tomorrow. This is from 1990, but it is a fair description of zero trust, especially if you interpret card as a stand-in for identity: a badge, a token, a secret, a hardware key, a fingerprint. You prove who you are, your device gets checked, a policy weighs the request, and you&rsquo;re let in. Then it happens again, and keeps happening. No position confers unconditional trust. As I read it, that is &ldquo;no view from outside&rdquo; built into a system.</p>
+                <p>The same thing is happening at the macro level. An Authorization to Operate (ATO) is a statement about what a system is: these components, inside this authorization boundary, configured this way. A traditional ATO checked that at a point in time. That is changing. The DoD&rsquo;s <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/20220204-cATO-memo-Signed-Cleared.pdf">continuous ATO</a> is an alternative: an authorization that lasts only as long as the system keeps proving what it is. FedRAMP is doing the same. But a system can only keep proving what it is if we can say what it&rsquo;s made of. A system is an identifier of a set of identifiers, which is also how FedRAMP&rsquo;s Consolidated Rules for 2026 define a cloud service offering. The identities remain the same across a lifecycle even as context and relationships change.</p>
+                <p>So the same principle works at three levels: a person&rsquo;s identity, an agent&rsquo;s identity, and a system&rsquo;s identity. At each one the question moves from where to who, and from once to continuously. Who belongs keeps changing.</p>
+                <p>The biggest problem with zero trust is that it is a more total form of monitoring and control than a perimeter ever was. Deleuze wasn&rsquo;t recommending any of this. He was warning about it. You can never escape what defines your identity in a network (unless you&rsquo;re a hacker). Whoever writes the rules for the card holds&hellip; well, all the cards. Consent and transparency are critical problems. But surveillance is necessary for identity-based boundaries to function. You can&rsquo;t keep checking who someone is without watching them.</p>
+                <p>Ultimately this is a choice we need to make, and I personally think it is clear. We can&rsquo;t have our cake and eat it too. Either we accept a degree of surveillance, and set the terms, or we accept that boundaries will break down as attribution gets more complex, and agents are making it more complex fast. As much as I feel uncomfortable with the idea of being monitored all the time, I think the pros now squarely outweigh the cons. What makes the trade acceptable is consent and transparency. People know they are being watched, they know the rules they answer to, and they agree to them. On government and DoD networks, people sign up for that. A card that follows you everywhere without your awareness or consent is a different thing, and Deleuze&rsquo;s warning applies to it in full.</p>
+                <p>The more technical problem is that zero trust fails too. The card is a representation of identity, not identity itself, and representations can be stolen, forged, or left stale. Agents add a twist. In April 2026, researchers <a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-comment-control-github-prompt-injection-20/">showed</a> that three popular coding agents could be hijacked by text planted in a pull request title. Nobody stole the agent&rsquo;s identity. It just started working for someone else. An agent has no outside view of its own instructions, and we have none of its intent. Talk about insider threat. That&rsquo;s Manchurian candidate level stuff.</p>
+                <p>But this problem doesn&rsquo;t mean zero trust is wrong. It means zero trust alone is not enough. In practice it verifies one identity at a time, one request at a time. It can confirm that a credential is valid and still not know what that credential is connected to: which system the agent is part of, what that system is made of, or which person it is acting for. The hijacked agents had valid identities. What changed was who they were working for, and a check on the agent alone could not see that. The pieces have to come together: identified things, their relationships to each other, and their relationships to people.</p>
+                <h3>The boundary is a list of relationships</h3>
+                <p>Here is the third answer. The boundary is the list of relationships between identified things. People, agents, systems and the parts they are made of each have an identifier. A relationship says who is acting, for whom, for what purpose and for how long, on terms both sides know. For example: this agent, launched by this engineer, may read this repository until 5 p.m. An agent doesn&rsquo;t belong on its own. It belongs through the person it acts for, for as long as the delegation lasts. If it is hijacked, it can still only do what that delegation allows. &ldquo;Us&rdquo; is whatever is on that list.</p>
+                <p>I said at the start that we need to reconsider how boundaries are defined, and how and where they are enforced. Let&rsquo;s take each in order.</p>
+                <p><strong>How the boundary is defined:</strong> By policy, on the basis of identity and relationship. FedRAMP has already moved toward this with the <a href="https://www.fedramp.gov/2026/reference/minimum-assessment-scope/">Consolidated Rules for 2026</a>. Under its Minimum Assessment Scope rules, a cloud service offering is the information resources likely to handle federal customer data, or likely to impact its confidentiality, integrity, or availability, each listed in machine-readable form. A companion rule requires the same for the permitted connections between them, and anything not entirely inside that scope is a &ldquo;third-party information resource.&rdquo; That is a list of identified things and their relationships, with a name for everything outside it. A perimeter-based approach falls apart here, because a perimeter has no attribution. It can say something is inside, but not what it is or why it belongs. As I read it, an agent that handles that data fits without strain. It is one more identified resource on the list, wherever it runs. For systems, this list can be written as code. Infrastructure as code declares the resources and the connections permitted between them, then builds them. Policy as code states who may do what in a form a machine can check. Anything running that the code does not describe is drift.</p>
+                <p><strong>How it is enforced:</strong> By enforcement points, which carry out a decision and never make one. A decision point answers &ldquo;should this be allowed?&rdquo; and an enforcement point acts on the answer. The Department of Defense&rsquo;s <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/CNAP_RefDesign_v1.0.pdf">Cloud Native Access Point Reference Design</a> is built this way, and it recommends deploying the access point through infrastructure as code. An access control list is an enforcement point. It was never the boundary. Inspecting traffic, monitoring and containing damage, the other jobs I said I would come back to, are enforcement mechanisms too. The network is the bluntest enforcement point. On its own it knows where traffic comes from and little else. That suits rules that should never be judgment calls, the <a href="https://samaydlette.com/pages/article-17.html">immutable policies</a> I have written about before: if there is no route, no credential can use it. A classified enclave connected only to its own network is the plain case. Even that is not a perimeter. It still has a supply chain, and its hardware comes from somewhere else. It is one part of a strategy for strictly enforcing who counts as &ldquo;us.&rdquo;</p>
+                <p><strong>Where it is enforced:</strong> Wherever a relationship is exercised: the network, the build, a workload, an agent&rsquo;s reach, a single delegation. The network is one of those places, and the least discerning. The finer checks happen closer to the thing itself. Where credentials are issued, keys rotate and expire on schedule, so a stolen one stops working. At build and deployment, only what carries <a href="https://slsa.dev/provenance/">SLSA provenance</a>, a verifiable record of what built it and from what, gets to run. In a minimized image, what isn&rsquo;t there can&rsquo;t be used. The network sees none of that. Its part is the path. Take one application at Impact Level 4 or 5. Traffic from NIPRNet has to cross a Boundary Cloud Access Point, because <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/CloudSecurityPlaybookVol1.pdf">policy requires</a> that path. It protects the network, and <a href="https://dl.dod.cyber.mil/wp-content/uploads/devsecops/pdf/unclass-CNAP-RefDesign_ver-1.0.pdf">who may pass is decided by address</a>. A Cloud Native Access Point checks the user, the device and the state the device is in, wherever they connect from. I think that is the stronger check.</p>
+                <p>None of the parts are new. Decision points, enforcement points and small boundaries around workloads all come from <a href="https://doi.org/10.6028/NIST.SP.800-207">zero trust architecture</a>. The Jericho Forum was arguing against reliance on the perimeter in 2004 and, by 2011, for <a href="https://webarchive.library.unt.edu/web/20121010052010/http:/www.nist.gov/nstic/governance-comments/Jericho-Forum_NSTIC-NOI-July2011.pdf">identity that covers people, devices, organizations, code and agents</a>. Relationship-based access control, the model behind <a href="https://research.google/pubs/pub48190/">Google&rsquo;s Zanzibar</a>, has long decided access from relationships, and others have <a href="https://www.sans.org/blog/rethinking-identity-new-perimeter">separated who from where</a> and <a href="https://www.qut.edu.au/news/realfocus/computers-tracking-us-people-as-data-points-gilles-deleuzes-1990-postcript-on-the-societies-of-control-was-eerily-prescient">read Deleuze into digital credentials</a> before me. What changes here is what we call the boundary.</p>
+                <p>Security lives in how faithfully each identifier represents the thing behind it. A key can be stolen, an agent can be turned, an inventory can drift from what is actually running, and then the policy is deciding about something that is no longer there. I think key rotation, tight delegation and provenance do more about each of those than any network rule can. That is where I expect this answer to be tested, and it is where the work is. Keeping that fidelity takes watching, which is why consent and transparency belong in the design from the start.</p>
+                <p>There is no view from outside. &ldquo;Us&rdquo; and &ldquo;them&rdquo; are contextual. The boundary is never a neutral fact. Someone draws it, from where they stand, which makes identity a political problem before it is a technical one. &ldquo;Us&rdquo; was once a place. The internet made it no longer bound to one. You have to be somewhere, but wherever that is, it&rsquo;s connected to everything else. A perimeter can only say where something is. The boundary says what belongs, and why.</p>
+                <h3>References</h3>
+                <ul>
+                    <li>Aydlette, S. (2025). <a href="https://samaydlette.com/pages/article-17.html">&ldquo;while true: manage_risk().&rdquo;</a> samaydlette.com.</li>
+                    <li>Aydlette, S. (2026). <a href="https://samaydlette.com/research/staying-in-the-loop.html">&ldquo;Staying in the Loop.&rdquo;</a> samaydlette.com.</li>
+                    <li>Bellovin, S. M. (1989). <a href="https://doi.org/10.1145/378444.378449">&ldquo;Security Problems in the TCP/IP Protocol Suite.&rdquo;</a> <em>Computer Communication Review</em> 19(2), 32&ndash;48.</li>
+                    <li>Cabellos, A., &amp; Saucez, D. (2022). <a href="https://www.rfc-editor.org/rfc/rfc9299.html">&ldquo;An Architectural Introduction to the Locator/ID Separation Protocol (LISP).&rdquo;</a> RFC 9299, Internet Engineering Task Force.</li>
+                    <li>Cloud Security Alliance. (2026). <a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-comment-control-github-prompt-injection-20/">&ldquo;Comment and Control: GitHub AI Agents as Credential Exfiltrators.&rdquo;</a></li>
+                    <li>Deleuze, G. (1990). &ldquo;Post-scriptum sur les soci&eacute;t&eacute;s de contr&ocirc;le.&rdquo; <em>L&rsquo;Autre journal</em> 1 (May 1990). English translation: &ldquo;Postscript on the Societies of Control,&rdquo; <em>October</em> 59 (Winter 1992), 3&ndash;7.</li>
+                    <li>Deleuze, G., &amp; Guattari, F. (1980). <em>Mille plateaux</em>. Minuit. English translation: <em>A Thousand Plateaus</em> (1987), trans. Brian Massumi, University of Minnesota Press.</li>
+                    <li>Department of Defense, Chief Information Officer. (2021). <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/CNAP_RefDesign_v1.0.pdf"><em>Cloud Native Access Point (CNAP) Reference Design</em>, Version 1.0.</a> 29 July 2021.</li>
+                    <li>Department of Defense, Chief Information Officer. (2022). <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/20220204-cATO-memo-Signed-Cleared.pdf">&ldquo;Continuous Authorization To Operate (cATO).&rdquo;</a> Memorandum, February 2022.</li>
+                    <li>Department of Defense, Chief Information Officer. (2025). <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/CloudSecurityPlaybookVol1.pdf"><em>Cloud Security Playbook, Volume 1</em>.</a> 11 February 2025.</li>
+                    <li>Department of Defense, Zero Trust Portfolio Management Office. (2022). <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD-ZTStrategy.pdf"><em>DoD Zero Trust Strategy</em></a>. 21 October 2022.</li>
+                    <li>FedRAMP. (2026). <a href="https://www.fedramp.gov/2026/reference/minimum-assessment-scope/">&ldquo;Minimum Assessment Scope.&rdquo;</a> <em>FedRAMP Consolidated Rules for 2026</em>, rules MAS-CSO-IIR and MAS-CSO-FLO.</li>
+                    <li>Hartman, K. G. (2025). <a href="https://www.sans.org/blog/rethinking-identity-new-perimeter">&ldquo;Rethinking &lsquo;Identity Is the New Perimeter.&rsquo;&rdquo;</a> SANS Institute, 14 November 2025.</li>
+                    <li>Jericho Forum. (2011). <a href="https://webarchive.library.unt.edu/web/20121010052010/http:/www.nist.gov/nstic/governance-comments/Jericho-Forum_NSTIC-NOI-July2011.pdf">Response to the NSTIC Notice of Inquiry</a>. The Open Group, July 2011.</li>
+                    <li>Lakshmanan, R. (2026). <a href="https://thehackernews.com/2026/07/worlds-largest-ai-model-repository.html">&ldquo;World&rsquo;s Largest AI Model Repository Hugging Face Breached by Autonomous AI Agent.&rdquo;</a> <em>The Hacker News</em>, 20 July 2026.</li>
+                    <li>National Institute of Standards and Technology. (2020). <em>Zero Trust Architecture</em>. Special Publication 800-207.</li>
+                    <li>OpenAI. (2026). <a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/">&ldquo;OpenAI and Hugging Face partner to address security incident during model evaluation.&rdquo;</a> 21 July 2026.</li>
+                    <li>Pang, R., et al. (2019). <a href="https://research.google/pubs/pub48190/">&ldquo;Zanzibar: Google&rsquo;s Consistent, Global Authorization System.&rdquo;</a> 2019 USENIX Annual Technical Conference.</li>
+                    <li>Postel, J., ed. (1981). <a href="https://www.rfc-editor.org/rfc/rfc791">&ldquo;Internet Protocol.&rdquo;</a> RFC 791, September 1981.</li>
+                    <li>Shackell, C. (2025). <a href="https://www.qut.edu.au/news/realfocus/computers-tracking-us-people-as-data-points-gilles-deleuzes-1990-postcript-on-the-societies-of-control-was-eerily-prescient">&ldquo;Computers tracking us, people as data points: Gilles Deleuze&rsquo;s 1990 Postscript on the Societies of Control was eerily prescient.&rdquo;</a> Queensland University of Technology.</li>
+                    <li>SLSA. (n.d.). <a href="https://slsa.dev/provenance/">&ldquo;Provenance.&rdquo;</a> Supply-chain Levels for Software Artifacts specification.</li>
+                </ul>
+            </div>
+        </article>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>Sam Aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/assets/js/main.js?v=1790595453206"></script>
+</body>
+</html>
