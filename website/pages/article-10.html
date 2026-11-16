@@ -133,23 +133,24 @@ WHERE
                     <div class="code-block">
                         <pre><code>package storage_encryption_policy
 
-default remediate = false
+import rego.v1
+
+default remediate := false
+
+# Production requires manual approval, so it is never auto-remediated
+production if input.tags.Environment == "Production"
 
 # Critical data must be encrypted within 1 hour
-remediate = true {
+remediate if {
+    not production
     input.tags.DataClassification == "Critical"
     time.now_ns() - input.created_timestamp > 3600000000000
 }
 
 # Non-prod gets 24 hours before remediation
-remediate = true {
+remediate if {
     input.tags.Environment != "Production"
     time.now_ns() - input.created_timestamp > 86400000000000
-}
-
-# Production requires manual approval
-remediate = false {
-    input.tags.Environment == "Production"
 }</code></pre>
                     </div>
                     
