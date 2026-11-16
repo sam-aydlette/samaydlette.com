@@ -1110,10 +1110,10 @@
     },
     {
       "id": "DEC-039",
-      "title": "ZAP 10099 Source Code Disclosure - SQL on the method article",
+      "title": "ZAP 10099 Source Code Disclosure - SQL on the method article and the trust center",
       "disposition": "false-positive",
       "status": "in-force",
-      "justification": "False positive. ZAP's SQL pattern matched prose in /research/vulnerability-evidence.html (\"select a new timeframe from the same start\"); the page is static HTML and discloses no source code. Assessed in the 2026-10-26/27 manual scans and again on the first weekly scan, 2026-11-04.",
+      "justification": "False positive. ZAP's SQL pattern matched English prose (a sentence with 'select' followed by 'from') in /research/vulnerability-evidence.html. The weekly scan of 2026-11-16 also matched /.well-known/trust-center.json, which republishes this record and earlier quoted that sentence word for word; the quote is removed here so the record no longer trips the pattern. Both are static text and disclose no source code. Assessed in the 2026-10-26/27 manual scans, on the first weekly scan (2026-11-04) and again on 2026-11-16.",
       "controls": [
         "ra-5",
         "sa-11.8"
@@ -1128,8 +1128,8 @@
         ]
       },
       "decided_by": "Sam Aydlette",
-      "decided_on": "2026-11-04",
-      "review_by": "2027-11-04",
+      "decided_on": "2026-11-16",
+      "review_by": "2027-11-16",
       "original_detection_date": "2026-10-26",
       "source": {
         "detector": "OWASP ZAP baseline scan"
