@@ -770,23 +770,50 @@ body.fixed-header main.content {
     margin-bottom: 0;
 }
 
-/* Featured article spans both columns and uses golden ratio */
+/* Featured article spans both columns; its summary keeps a readable measure */
 .article-card.featured {
     grid-column: span 2;
-    display: grid;
-    grid-template-columns: 61.8fr 38.2fr;
-    gap: var(--space-3xl);
-    align-items: start;
+}
+
+.article-card.featured p {
+    max-width: 70ch;
+}
+
+/* Homepage grids: the grid gap sets spacing, cards in a row share a height,
+   and each card's footer sits on its bottom edge. */
+.articles-grid > .article-card,
+.books-grid > .book-card {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.articles-grid > .article-card > .article-footer,
+.books-grid .book-info > .article-footer {
+    margin-top: auto;
+    padding-top: var(--space-lg);
+}
+
+.articles-grid + .section-footer.centered {
+    margin-top: var(--space-2xl);
+}
+
+@media (min-width: 769px) {
+    .hero-section .article-card,
+    .articles-grid > .article-card,
+    .books-grid > .book-card {
+        padding: var(--space-2xl);
+    }
 }
 
 @media (max-width: 900px) {
-    .articles-grid {
+    .articles-grid,
+    .books-grid {
         grid-template-columns: 1fr;
     }
 
     .article-card.featured {
         grid-column: span 1;
-        grid-template-columns: 1fr;
     }
 }
 
@@ -1057,6 +1084,10 @@ body.fixed-header main.content {
     line-height: 1.7;
 }
 
+.hero-content .code-example {
+    margin: 0 0 var(--space-2xl);
+}
+
 .hero-content p {
     margin-top: var(--space-xl);
     color: var(--text-secondary);
@@ -1143,17 +1174,16 @@ body.fixed-header main.content {
     margin-bottom: 0;
 }
 
-/* Book cards layout - stack vertically like articles */
+/* Book cards sit side by side, like the article and project grids */
 .books-grid {
-    display: block;                /* Simple block layout like articles */
-    margin-bottom: var(--space-3xl);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-4xl);
 }
 
 .book-card {
-    padding: var(--space-3xl);     /* Match article card padding */
-    margin-bottom: var(--space-4xl); /* Match article card spacing */
-    width: 100%;                   /* Match article card width */
-    box-sizing: border-box;        /* Match article card box model */
+    box-sizing: border-box;
 }
 
 /* Book cover images */
@@ -1169,6 +1199,12 @@ body.fixed-header main.content {
 /* Book information section */
 .book-info {
     padding: var(--space-lg);
+}
+
+.books-grid .book-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Book titles */
@@ -1884,7 +1920,7 @@ a.submit-button:hover {
         gap: var(--space-md);
     }
     
-    .book-card { margin: 0 0 var(--space-md) 0; }
+    .book-card { margin: 0; }
     
     /* Stack book detail layout on mobile */
     .book-detail-grid {
