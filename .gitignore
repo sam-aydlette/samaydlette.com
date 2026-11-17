@@ -46,8 +46,6 @@ infrastructure/ksi-signal.json
 # and published to /.well-known/; never committed — same policy as the OSCAL artifacts above)
 infrastructure/ongoing-certification-report.json
 infrastructure/ongoing-certification-report.md
-infrastructure/certification-overview-package.json
-infrastructure/certification-overview-package.md
 infrastructure/certification-package-overview.json
 infrastructure/certification-package-overview.md
 infrastructure/security-decision-record.json

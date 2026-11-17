@@ -212,21 +212,6 @@
       "markdown": true
     },
     {
-      "path": ".well-known/certification-overview-package.json", "generator": "scripts/build-cds-overview.py",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "json",
-        "field": "emitted_at"
-      },
-      "signed": true,
-      "signature": ".well-known/certification-overview-package.bundle",
-      "published_by": [
-        "deploy"
-      ],
-      "markdown": true
-    },
-    {
       "path": ".well-known/availability.json", "generator": "scripts/build-availability.py",
       "cadence": "deploy",
       "max_age_hours": 720,

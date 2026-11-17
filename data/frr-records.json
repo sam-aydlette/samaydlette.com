@@ -606,8 +606,8 @@
     },
     {
       "frr_id": "CDS-CSO-SVC",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "status": "Implemented",
+      "implementation": "Every deploy writes the Certification Package Overview in FedRAMP's schema with certifiedServices: each service in the offering (data/cds/offering.json), named as on the site, with its security category and whether it is in the Minimum Assessment Scope. The builder fails on an empty service list, on a service with no scope answer, and on a category that does not name the system's impact level. The overview is validated against the vendored schema before it is written, then signed and published.",
       "evidence": [
         {
           "kind": "step",
@@ -616,13 +616,24 @@
         {
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_every_service_is_listed_with_its_security_category_and_scope"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_a_service_whose_category_does_not_name_the_system_level_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_a_service_without_a_scope_answer_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_an_offering_with_no_services_fails"
         }
-      ],
-      "acceptance": {
-        "by": "Sam Aydlette",
-        "on": "2026-11-09",
-        "review_by": "2027-11-09"
-      }
+      ]
     },
     {
       "frr_id": "CDS-CSO-UTC",
@@ -802,8 +813,8 @@
     },
     {
       "frr_id": "CPO-CSO-MTD",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "status": "Implemented",
+      "implementation": "Every deploy writes the Certification Package Overview with metadata: the accountable official's name, title and contact, the version (the commit it was built from), the date and time of the update, and its source (the builder, the commit and the deploy run). The builder fails when the official lacks any of the three fields or there is no commit. The JSON and Markdown are published together; the JSON is signed.",
       "evidence": [
         {
           "kind": "step",
@@ -812,13 +823,24 @@
         {
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_the_metadata_names_the_accountable_official_version_time_and_source"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_an_accountable_official_missing_a_field_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_a_package_without_a_commit_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_the_markdown_carries_the_metadata_and_every_service"
         }
-      ],
-      "acceptance": {
-        "by": "Sam Aydlette",
-        "on": "2026-11-09",
-        "review_by": "2027-11-09"
-      }
+      ]
     },
     {
       "frr_id": "CPO-CSO-OSA",
