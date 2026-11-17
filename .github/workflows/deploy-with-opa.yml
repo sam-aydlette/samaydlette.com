@@ -1353,15 +1353,13 @@ jobs:
           --md-output ongoing-certification-report.md
         jq '{next_ongoing_certification_report_date, next_quarterly_review_date}' ongoing-certification-report.json
 
-    - name: Build CDS certification-data artifacts (overview, availability, policy index)
+    - name: Build CDS certification-data artifacts (availability, policy index)
       working-directory: infrastructure
       run: |
-        echo "Building CDS certification-overview package, availability feed, policy index..."
+        echo "Building the availability feed and policy index..."
         # availability history: fetch the previously-published feed (best-effort)
         curl -sfL -o previous-availability.json "https://samaydlette.com/.well-known/availability.json" \
           || echo '{"history":[]}' > previous-availability.json
-        python3 ../scripts/build-cds-overview.py \
-          --offering ../data/cds/offering.json --profile ../data/system-profile.json --ksi-signal ksi-signal.json
         python3 ../scripts/build-availability.py \
           --previous previous-availability.json --ksi-signal ksi-signal.json
         python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
@@ -1402,7 +1400,7 @@ jobs:
         echo "Building Certification Package Overview (CPO-CSO-OVR); with the SDR, the SSP replacement..."
         python3 ../scripts/build-cpo.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
-          --overview certification-overview-package.json --ksi-signal ksi-signal.json
+          --ksi-signal ksi-signal.json
 
     # The authorization-boundary map the trust center draws: the inventory's
     # components placed by docs/boundary/boundary-classification.json, connected
@@ -1488,7 +1486,6 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Signing CDS artifacts with cosign keyless..."
-        cosign sign-blob --yes --new-bundle-format --bundle certification-overview-package.bundle certification-overview-package.json
         cosign sign-blob --yes --new-bundle-format --bundle availability.bundle availability.json
         cosign sign-blob --yes --new-bundle-format --bundle policy-index.bundle policy-index.json
         cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json

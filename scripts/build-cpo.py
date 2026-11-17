@@ -1,146 +1,252 @@
 #!/usr/bin/env python3
 # =============================================================================
-# CERTIFICATION PACKAGE OVERVIEW BUILDER  (CR26 CPO)
+# CERTIFICATION PACKAGE OVERVIEW BUILDER  (CR26 CPO, FedRAMP's 2026-06-24 schema)
 # =============================================================================
-# CR26 CPO-CSO-OVR (MUST) requires a Certification Package Overview, human- and
-# machine-readable, that rolls up the CDS public information, the Minimum
-# Assessment Scope, the cryptographic-module use (CMU-CSO-CMD), and the
-# independent-assessment results (IVV-CSO-ICP). CPO-CSO-MTD requires the name,
-# title, and contact of the accountable official plus version/timestamp/source.
-# CPO-CSX-CPM (Class C) requires the package be maintained at least every two
-# weeks — trivially met by the per-deploy pipeline. Together with the Security
-# Decision Record, the CPO is CR26's replacement for the base System Security
-# Plan; the OSCAL SSP that used to be published alongside is retired.
+# CPO-CSO-OVR: the overview of the one offering, in JSON and Markdown. It is
+# written in FedRAMP's Certification Package Overview schema and validated
+# against the vendored copy first; a CPO that fails is never written, so it is
+# never signed or published.
 #
-# This is an overview/manifest: it points at the constituent artifacts the
-# pipeline already publishes and summarizes scope, crypto, and assessment status.
+# It also carries the public information (CDS-CSO-PUB) and the service list
+# (CDS-CSO-SVC) that scripts/build-cds-overview.py used to publish in a separate
+# file, so that information has one source and one file.
+#
+#   serviceIdentification   provider, service, FedRAMP ID, website, logo. The
+#                           FedRAMP ID is FedRAMP's fallback (the provider name
+#                           and acronym), suffixed so nobody mistakes it for an
+#                           assigned ID. No UEI: the schema says to leave it
+#                           out when there is none.
+#   serviceProperties       service and deployment model, business category,
+#                           trust center, secure configuration guidance, and the
+#                           package's files as repositories
+#   contactInformation      security and sales; never an email address
+#   certifiedServices       each service, with its security category and
+#                           whether it is in the Minimum Assessment Scope
+#   metadata                accountable official, version, last update and its
+#                           source (CPO-CSO-MTD)
+#
+# The fields this repo's other tools read stay at the top level, beside the
+# schema's sections (the schema allows extra fields): ksi_signal_id (the
+# inventory binding: reconciliation (e) and verify-published), impact_level
+# (reconciliation (d)) and metadata.last_updated (the freshness window).
 #
 #   build-cpo.py --offering ../data/cds/offering.json --profile ../data/system-profile.json \
-#       --overview certification-overview-package.json --ksi-signal ksi-signal.json
+#       --ksi-signal ksi-signal.json
 # =============================================================================
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# The certification-package artifacts the pipeline publishes under /.well-known/.
-# (artifact filename, type, signed)
-PACKAGE_CONTENTS = [
-    ("security-decision-record.json",
-     "Security Decision Record (SDR: per-KSI and per-Rev5-control records; replaces the SSP)", True),
-    ("ksi-signal.json", "FedRAMP 20x KSI signal (canonical inventory)", True),
-    ("vdr-report.json", "Vulnerability Detection and Response report", True),
-    ("ongoing-certification-report.json", "Ongoing Certification Report (CCM)", True),
-    ("certification-overview-package.json", "CDS certification-overview package", True),
-    ("availability.json", "Availability feed (CDS-CSO-AVR)", True),
-    ("policy-index.json", "Policy and procedure index (CDS-CSO-IRP)", True),
-    ("iiw.csv", "FedRAMP Integrated Inventory Workbook (Appendix M)", True),
-]
-BASE = "https://samaydlette.com/.well-known/"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _fedramp_schema as fs  # noqa: E402
 
+BASE = "https://samaydlette.com/.well-known/"
+TRUST_CENTER = "https://samaydlette.com/trust/index.html"
+BOUNDARY_PAGE = "https://samaydlette.com/research/authorization-boundary.html"
+
+# The certification package's files under /.well-known/: (file, repository types, description).
+PACKAGE = [
+    ("security-decision-record.json", ["Security Decision Record"],
+     "Every applicable FedRAMP rule and KSI with its status, and the Rev5 control projection "
+     "(with this overview, the CR26 replacement for the System Security Plan). Signed."),
+    ("ksi-signal.json", ["Key Security Indicators"],
+     "The canonical inventory and per-KSI results that every other file is bound to. Signed."),
+    ("vdr-report.json", ["Vulnerability Detection and Response"],
+     "Vulnerability detection and response report. Signed."),
+    ("ongoing-certification-report.json", ["Ongoing Certification Report"],
+     "Ongoing Certification Report (CCM). Signed."),
+    ("availability.json", ["Availability"], "Availability feed. Signed."),
+    ("policy-index.json", ["Policies and Procedures"], "Policy and procedure index (CDS-CSO-IRP). Signed."),
+    ("iiw.csv", ["Integrated Inventory Workbook"], "FedRAMP Integrated Inventory Workbook (Appendix M). Signed."),
+]
 
 NO_INDEPENDENT_ASSESSMENT = ("None performed. Independent assessment is Impractical here: one-person, no-budget. "
                              "Provider-side verification and validation are in the Security Decision Record.")
 
 
-def main():
+def _fail(msg):
+    raise SystemExit(f"::error::CPO: {msg} (fail-closed)")
+
+
+def _repo(types, url, desc):
+    return {"repositoryType": types, "url": url, "repositoryDescription": desc, "authenticationRequired": False}
+
+
+# --- the schema's sections -------------------------------------------------------------
+
+def service_identification(off):
+    return {"providerName": off["provider_name"], "serviceName": off["service_name"],
+            "serviceAcronym": off["service_acronym"], "serviceDescription": off["service_description"],
+            "certificationType": "20x",
+            "fedRampPackageId": off["fedramp_id"],
+            "website": off["product_website"], "logo": off["logo_url"]}
+
+
+def service_properties(off):
+    return {"serviceType": off["service_model"], "deploymentModel": off["deployment_model"],
+            "businessCategory": off["business_category"],
+            "trustCenter": _repo(["Trust Center"], TRUST_CENTER,
+                                 "The trust center: the security state this package reports, drawn from the "
+                                 "signed files under /.well-known/. Public; no access request is needed."),
+            "secureConfigurationGuidance": _repo(["Secure Configuration Guidance"],
+                                                 off["secure_configuration_guidance_url"],
+                                                 "The Secure Configuration Guide."),
+            "additionalRepositories": [_repo(t, BASE + f, d) for f, t, d in PACKAGE]}
+
+
+def contacts(off):
+    """Security and Sales, which the schema requires. Neither is an email
+    address, so neither goes in the email field."""
+    return [{"contactType": "Security", "contactName": off["security_contact"]["name"]},
+            {"contactType": "Sales", "contactName": off["sales_contact"]["name"]}]
+
+
+def certified_services(off, prof):
+    """CDS-CSO-SVC: every service in the offering, with its security category and
+    whether it is in the Minimum Assessment Scope. A service's category must name
+    the system's own impact level."""
+    services = off.get("services") or []
+    if not services:
+        _fail("the offering lists no services (CDS-CSO-SVC)")
+    out = []
+    for s in services:
+        cat = s.get("security_category")
+        if not isinstance(cat, str) or prof["impact_level"] not in cat:
+            _fail(f"service {s.get('name')!r}: security category {cat!r} does not name the system's "
+                  f"impact level {prof['impact_level']!r}")
+        if not isinstance(s.get("in_mas_scope"), bool):
+            _fail(f"service {s.get('name')!r}: in_mas_scope must be true or false")
+        out.append({"serviceName": s["name"], "serviceDescription": s["description"],
+                    "securityCategory": cat, "inMinimumAssessmentScope": s["in_mas_scope"]})
+    return out
+
+
+# --- this repo's fields ------------------------------------------------------------------
+
+def metadata(off, now, commit, run_url):
+    """CPO-CSO-MTD: the accountable official, version, date and time of the last
+    update, and its source."""
+    ao = off.get("accountable_official") or {}
+    if not all(isinstance(ao.get(k), str) and ao[k] for k in ("name", "title", "contact")):
+        _fail("the accountable official needs a name, title and contact (CPO-CSO-MTD)")
+    if not commit:
+        _fail("no commit to version the package with (CPO-CSO-MTD)")
+    return {"accountable_official": {k: ao[k] for k in ("name", "title", "contact")},
+            "version": commit,
+            "last_updated": now.isoformat(),
+            "source_of_update": f"scripts/build-cpo.py at commit {commit}, "
+                                + (f"deploy run {run_url}" if run_url else "local build")}
+
+
+def _commit():
+    if os.environ.get("GITHUB_SHA"):
+        return os.environ["GITHUB_SHA"]
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                              check=True, cwd=Path(__file__).resolve().parent).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def _run_url():
+    e = os.environ
+    if all(e.get(k) for k in ("GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID")):
+        return f"{e['GITHUB_SERVER_URL']}/{e['GITHUB_REPOSITORY']}/actions/runs/{e['GITHUB_RUN_ID']}"
+    return None
+
+
+def build(off, prof, signal, now, commit, run_url):
+    return {
+        "$schema": fs.stamp("cpo"),
+        "serviceIdentification": service_identification(off),
+        "serviceProperties": service_properties(off),
+        "contactInformation": contacts(off),
+        "certifiedServices": certified_services(off, prof),
+        "metadata": metadata(off, now, commit, run_url),
+        "ksi_signal_id": signal.get("signal_id"),
+        "class": prof.get("fedramp_class"),
+        "impact_level": prof.get("impact_level"),
+        "minimum_assessment_scope": {
+            "component_count": len(signal.get("components", [])),
+            "authorization_boundary": BOUNDARY_PAGE,
+        },
+        "cryptographic_modules": off.get("cryptographic_modules", []),
+        "independent_assessment": NO_INDEPENDENT_ASSESSMENT,
+    }
+
+
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--offering", default="../data/cds/offering.json")
     ap.add_argument("--profile", default="../data/system-profile.json")
-    ap.add_argument("--overview", default="certification-overview-package.json")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--output", default="certification-package-overview.json")
     ap.add_argument("--md-output", default="certification-package-overview.md")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
 
-    now = datetime.now(timezone.utc)
     off = json.loads(Path(a.offering).read_text())
     prof = json.loads(Path(a.profile).read_text())
-    overview = json.loads(Path(a.overview).read_text()) if Path(a.overview).exists() else {}
-    signal = json.loads(Path(a.ksi_signal).read_text()) if Path(a.ksi_signal).exists() else {}
-    components = signal.get("components", []) if signal else []
+    if not Path(a.ksi_signal).exists():
+        _fail(f"{a.ksi_signal} not found: the package must be bound to the inventory")
+    signal = json.loads(Path(a.ksi_signal).read_text())
 
-    cpo = {
-        "package_type": "certification-package-overview",
-        "schema": "fedramp-certification-package-overview-schema-2026-06-24.json",
-        "note": "With the Security Decision Record, the CR26 replacement for the base System "
-                "Security Plan.",
-        # CPO-CSO-MTD
-        "accountable_official": off.get("accountable_official"),
-        "metadata": {
-            "version": "live (regenerated each deploy)",
-            "last_updated": now.isoformat(),
-            "source_of_update": "scripts/build-cpo.py",
-        },
-        "maintenance_cadence": "per-deploy — exceeds the CPO-CSX-CPM Class C 2-week minimum",
-        "class": prof.get("fedramp_class"),
-        "impact_level": prof.get("impact_level"),
-        "impact_level_canonical": prof.get("impact_level_canonical"),
-        "ksi_signal_id": signal.get("signal_id"),
-        # CPO-CSO-OVR rollup:
-        "certification_data": {                                  # CDS public info
-            "fedramp_id": overview.get("fedramp_id") or off.get("fedramp_id"),
-            "service_description": off.get("service_description"),
-            "service_model": off.get("service_model"),
-            "deployment_model": off.get("deployment_model"),
-            "security_contact": off.get("security_contact"),
-            "overview_package": BASE + "certification-overview-package.json",
-        },
-        "minimum_assessment_scope": {                            # MAS
-            "component_count": len(components),
-            "services": off.get("services"),
-            "authorization_boundary": "https://samaydlette.com/research/authorization-boundary.html",
-            "reference": "MAS-CSO-IIR / MAS-CSO-FLO / MAS-CSO-TPR; MAS-CSO-MDI N/A (no federal customer data)",
-        },
-        "cryptographic_modules": {                               # CMU-CSO-CMD
-            "modules": off.get("cryptographic_modules", []),
-            "reference": "CMU-CSO-CMD; full narrative in the authorization-boundary FIPS section",
-        },
-        "independent_assessment": {                              # IVV-CSO-ICP
-            "status": NO_INDEPENDENT_ASSESSMENT,
-            "current_service": off.get("current_independent_assessment_service"),
-        },
-        "package_contents": [
-            {"artifact": fn, "description": desc, "url": BASE + fn, "signed": signed}
-            for fn, desc, signed in PACKAGE_CONTENTS
-        ],
-    }
-    Path(a.output).write_text(json.dumps(cpo, indent=2) + "\n")
+    cpo = build(off, prof, signal, datetime.now(timezone.utc), _commit(), _run_url())
+    fs.write_validated(cpo, "cpo", a.output)
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(cpo) + "\n")
-    ao = cpo["accountable_official"] or {}
-    print(f"certification-package-overview: official {ao.get('name')}; "
-          f"{len(cpo['package_contents'])} package artifacts; "
+    print(f"certification-package-overview: {len(cpo['certifiedServices'])} services; "
+          f"{len(cpo['serviceProperties']['additionalRepositories'])} package files; "
           f"{cpo['minimum_assessment_scope']['component_count']} components in scope")
     return 0
 
 
 def render_markdown(c):
-    ao = c["accountable_official"] or {}
+    si, sp, md = c["serviceIdentification"], c["serviceProperties"], c["metadata"]
+    ao = md["accountable_official"]
+    contact = {x["contactType"]: x["contactName"] for x in c["contactInformation"]}
     out = ["# Certification Package Overview", "",
-           f"_{c['note']}_", "",
-           f"- **Accountable official:** {ao.get('name')}, {ao.get('title')} ({ao.get('contact')})",
-           f"- **Class:** {c['class']} | **Impact:** {c['impact_level_canonical']}",
-           f"- **Version:** {c['metadata']['version']} | **Last updated:** {c['metadata']['last_updated']}",
-           f"- **Maintenance:** {c['maintenance_cadence']}",
-           f"- **Bound to inventory signal:** `{c['ksi_signal_id']}`", ""]
+           f"**{si['serviceName']}** ({si['serviceAcronym']}), provided by {si['providerName']}.", "",
+           si["serviceDescription"], "",
+           f"- **FedRAMP ID:** {si['fedRampPackageId']}",
+           f"- **Certification type:** {si['certificationType']} | **Class:** {c['class']} | "
+           f"**Impact level:** {c['impact_level']}",
+           f"- **Service model:** {', '.join(sp['serviceType'])} | **Deployment model:** {sp['deploymentModel']}",
+           f"- **Business category:** {', '.join(sp['businessCategory'])}",
+           f"- **Website:** {si['website']} | **Logo:** {si['logo']}",
+           f"- **Security contact:** {contact['Security']}",
+           f"- **Sales contact:** {contact['Sales']}",
+           f"- **Trust center:** {sp['trustCenter']['url']}",
+           f"- **Secure Configuration Guidance:** {sp['secureConfigurationGuidance']['url']}",
+           f"- **Independent assessment:** {c['independent_assessment']}", "",
+           "## Metadata", "",
+           f"- **Accountable official:** {ao['name']}, {ao['title']} ({ao['contact']})",
+           f"- **Version:** `{md['version']}`",
+           f"- **Last updated:** {md['last_updated']}",
+           f"- **Source of update:** {md['source_of_update']}",
+           f"- **Bound to inventory signal:** `{c['ksi_signal_id']}`", "",
+           "## Services", "",
+           "| Service | Security category | In the Minimum Assessment Scope | Description |",
+           "|---|---|---|---|"]
+    for s in c["certifiedServices"]:
+        out.append("| {n} | {cat} | {m} | {d} |".format(
+            n=s["serviceName"], cat=s["securityCategory"], m="yes" if s["inMinimumAssessmentScope"] else "no",
+            d=s["serviceDescription"].replace("|", "\\|")))
     mas = c["minimum_assessment_scope"]
-    out += ["## Minimum Assessment Scope", "",
+    out += ["", "## Minimum Assessment Scope", "",
             f"- Components in scope: **{mas['component_count']}**",
-            f"- Authorization boundary: {mas['authorization_boundary']}",
-            f"- {mas['reference']}", ""]
-    out += ["## Cryptographic modules (CMU-CSO-CMD)", "",
+            f"- Authorization boundary: {mas['authorization_boundary']}", "",
+            "## Cryptographic modules (CMU-CSO-CMD)", "",
             "| Module | Validation | Role |", "|---|---|---|"]
-    for m in c["cryptographic_modules"]["modules"]:
-        out.append("| {mod} | {val} | {role} |".format(
-            mod=m.get("module", ""), val=m.get("validation", ""), role=m.get("role", "")))
-    out += ["", "## Independent assessment (IVV-CSO-ICP)", "", c["independent_assessment"]["status"], ""]
-    out += ["## Package contents", "", "| Artifact | Description | Signed |", "|---|---|---|"]
-    for p in c["package_contents"]:
-        out.append("| [`{a}`]({u}) | {d} | {s} |".format(
-            a=p["artifact"], u=p["url"], d=p["description"], s="yes" if p["signed"] else "no"))
+    for m in c["cryptographic_modules"]:
+        out.append(f"| {m.get('module', '')} | {m.get('validation', '')} | {m.get('role', '')} |")
+    out += ["", "## Package files", "", "| File | Description |", "|---|---|"]
+    for r in sp["additionalRepositories"]:
+        out.append(f"| [`{r['url'].rsplit('/', 1)[-1]}`]({r['url']}) | {r['repositoryDescription']} |")
     out += ["", "---", "_Source of truth: the signed `certification-package-overview.json` (CPO-CSO-OVR)._"]
     return "\n".join(out)
 
