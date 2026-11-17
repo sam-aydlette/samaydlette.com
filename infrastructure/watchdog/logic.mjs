@@ -110,25 +110,59 @@ export function staleArtifacts(config, readings, now = Date.now()) {
     return stale;
 }
 
-export function computeMetrics(config, readings, now = Date.now()) {
+export function computeMetrics(config, readings, now = Date.now(), register = null) {
     const age = (path) => {
         const a = config.artifacts.find((x) => x.path === path);
         const h = ageHours(timestampOf(a, readings[path]), now);
         return h === null ? UNREADABLE_AGE_HOURS : h;
     };
     const stale = staleArtifacts(config, readings, now);
-    return {
-        metrics: {
-            VdrAgeHours: age(KEYS.vdr),
-            RuntimeSignalAgeHours: age(KEYS.runtime),
-            NightlyFailed: nightlyFailed(parsedBody(readings[KEYS.status]), config.windows[KEYS.status], now),
-            StaleArtifacts: stale.length,
-        },
-        stale,
+    const status = parsedBody(readings[KEYS.status]);
+    const failing = register ? failingGates(register, status) : [];
+    const metrics = {
+        VdrAgeHours: age(KEYS.vdr),
+        RuntimeSignalAgeHours: age(KEYS.runtime),
+        NightlyFailed: nightlyFailed(status, config.windows[KEYS.status], now),
+        StaleArtifacts: stale.length,
     };
+    if (register) metrics.FailingGates = failing.length;
+    return { metrics, stale, failing };
 }
 
-const COUNTS = new Set(['NightlyFailed', 'StaleArtifacts']);
+// The gate register (infrastructure/schemas/gate-modes.json, packaged beside
+// this file as gate-modes.json). scripts/_gates.py is its full validator; this
+// checks only the fields the watchdog reads, and throws on anything else, so a
+// watchdog without a usable register publishes nothing and the alarms page.
+export function parseRegister(reg) {
+    const bad = (msg) => { throw new Error(`gate register invalid: ${msg}`); };
+    if (!reg || typeof reg !== 'object' || Array.isArray(reg)) bad('not an object');
+    if (!nonEmpty(reg.version)) bad('version must be a non-empty string');
+    if (!Array.isArray(reg.checks) || reg.checks.length === 0) bad('checks must be a non-empty list');
+    for (const c of reg.checks) {
+        if (!c || typeof c !== 'object' || !nonEmpty(c.check)) bad('a check has no name');
+        if (!Array.isArray(c.stages) || !c.stages.every(nonEmpty)) bad(`${c.check}: stages must be a list`);
+        if (!nonEmpty(c.owner)) bad(`${c.check}: owner must be a role`);
+        if ('run' in c && !nonEmpty(c.run)) bad(`${c.check}: run must be a non-empty string`);
+    }
+    return reg;
+}
+
+// Every nightly check with a run script whose result in the beacon is not a
+// pass: failed, not run, or absent. A gate in detect-and-recover mode can fail
+// while the nightly still succeeds, so NightlyFailed alone does not page on it.
+// A beacon without gate results says nothing passed: every such check counts.
+// Checks with no run script cannot report, and are not counted.
+export function failingGates(register, status) {
+    const results = new Map();
+    for (const r of (status && Array.isArray(status.gate_results)) ? status.gate_results : []) {
+        if (r && typeof r === 'object' && typeof r.check === 'string') results.set(r.check, r.result);
+    }
+    return register.checks
+        .filter((c) => c.stages.includes('nightly') && 'run' in c && results.get(c.check) !== 'pass')
+        .map((c) => ({ check: c.check, owner: c.owner, result: results.get(c.check) ?? 'absent' }));
+}
+
+const COUNTS = new Set(['NightlyFailed', 'StaleArtifacts', 'FailingGates']);
 
 export function metricData(metrics, now) {
     return Object.entries(metrics).map(([MetricName, Value]) => ({

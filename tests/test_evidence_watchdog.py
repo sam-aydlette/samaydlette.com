@@ -84,8 +84,31 @@ def metrics(vdr=None, runtime=None, status=None):
     return compute(objects)["metrics"]
 
 
-def status(result="success", finished_at="2026-09-25T06:00:00Z"):
-    return {"result": result, "finished_at": finished_at, "vuln_gate": "success", "reconcile": "success"}
+REGISTER = REPO / "infrastructure" / "schemas" / "gate-modes.json"
+
+
+def register():
+    return json.loads(REGISTER.read_text())
+
+
+def nightly_runnable():
+    return [c for c in register()["checks"] if "nightly" in c["stages"] and "run" in c]
+
+
+def gate_results(**override):
+    """Every nightly check as the beacon reports it: pass, or not on the runner."""
+    out = []
+    for c in register()["checks"]:
+        if "nightly" in c["stages"]:
+            res = "pass" if "run" in c else "not on the runner"
+            out.append({"check": c["check"], "gate": c["gate"], "owner": c["owner"],
+                        "result": override.get(c["check"], res)})
+    return out
+
+
+def status(result="success", finished_at="2026-09-25T06:00:00Z", results=None):
+    return {"result": result, "finished_at": finished_at, "vuln_gate": "success", "reconcile": "success",
+            "gate_results": gate_results() if results is None else results}
 
 
 def test_fresh_evidence_and_a_passing_nightly_page_nobody():
@@ -190,14 +213,16 @@ def test_the_watchdog_rejects_an_invalid_config():
         assert _parse(cfg)["ok"] is False, cfg
 
 
-def _fake_sdk(tmp_path, objects, cfg=None):
+def _fake_sdk(tmp_path, objects, cfg=None, reg=None):
     """Copy the watchdog next to stand-in @aws-sdk packages that serve `objects`
-    from S3 and record every PutMetricData call. The governed config is
-    packaged beside the handler, as watchdog.tf packages it."""
+    from S3 and record every PutMetricData call. The governed config and the
+    gate register are packaged beside the handler, as watchdog.tf packages them."""
     for f in ("index.mjs", "logic.mjs"):
         shutil.copy(WATCHDOG / f, tmp_path / f)
     if cfg is not False:
         (tmp_path / "freshness-config.json").write_text(json.dumps(cfg or config()))
+    if reg is not False:
+        (tmp_path / "gate-modes.json").write_text(json.dumps(reg or register()))
     s3 = tmp_path / "node_modules" / "@aws-sdk" / "client-s3"
     cw = tmp_path / "node_modules" / "@aws-sdk" / "client-cloudwatch"
     for d in (s3, cw):
@@ -224,8 +249,8 @@ def _fake_sdk(tmp_path, objects, cfg=None):
     """))
 
 
-def run_handler(tmp_path, objects, cfg=None):
-    _fake_sdk(tmp_path, objects, cfg)
+def run_handler(tmp_path, objects, cfg=None, reg=None):
+    _fake_sdk(tmp_path, objects, cfg, reg)
     script = textwrap.dedent(f"""
         process.env.S3_BUCKET = 'site-bucket';
         process.env.METRIC_NAMESPACE = 'Samaydlette/Evidence';
@@ -287,3 +312,82 @@ def test_alarm_thresholds_and_reads_come_from_the_governed_config():
     # No window is a literal in the watchdog any more.
     assert "MAX_BEACON_AGE_HOURS" not in logic
     assert not re.search(r"threshold\s*=\s*(24|26)\b", tf)
+
+
+def gates(beacon, reg=None):
+    script = textwrap.dedent(f"""
+        import {{ failingGates, parseRegister }} from '{WATCHDOG / "logic.mjs"}';
+        console.log(JSON.stringify(failingGates(parseRegister({json.dumps(reg or register())}), {json.dumps(beacon)})));
+    """)
+    return node(script, REPO)
+
+
+def test_every_nightly_gate_passing_counts_none_failing():
+    assert len(nightly_runnable()) > 1
+    assert gates(status()) == []
+
+
+def test_a_failed_a_not_run_and_an_absent_gate_each_count():
+    a, b, c = (x["check"] for x in nightly_runnable()[:3])
+    results = [r for r in gate_results(**{a: "fail", b: "not run"}) if r["check"] != c]
+    out = gates(status(results=results))
+    assert {(x["check"], x["result"]) for x in out} == {(a, "fail"), (b, "not run"), (c, "absent")}
+    owners = {x["check"]: x["owner"] for x in register()["checks"]}
+    assert all(x["owner"] == owners[x["check"]] for x in out)
+
+
+def test_a_gate_failing_inside_a_successful_run_still_counts():
+    # The case NightlyFailed cannot see: a detect-and-recover gate fails and the run continues.
+    a = nightly_runnable()[0]["check"]
+    beacon = status("success", results=gate_results(**{a: "fail"}))
+    assert metrics(status=beacon)["NightlyFailed"] == 0
+    assert [x["check"] for x in gates(beacon)] == [a]
+
+
+def test_checks_not_on_the_runner_are_not_counted():
+    off = [c["check"] for c in register()["checks"] if "nightly" in c["stages"] and "run" not in c]
+    assert off, "the test needs a nightly check with no run script"
+    assert not {x["check"] for x in gates(status())} & set(off)
+
+
+def test_no_beacon_or_no_gate_results_counts_every_runnable_gate():
+    n = len(nightly_runnable())
+    assert len(gates(None)) == n
+    assert len(gates({"result": "success"})) == n
+
+
+def test_the_watchdog_rejects_an_invalid_register():
+    for mutate in (lambda r: r.pop("version"), lambda r: r.update(checks=[]),
+                   lambda r: r["checks"][0].pop("stages"), lambda r: r["checks"][0].update(run="")):
+        reg = register()
+        mutate(reg)
+        script = textwrap.dedent(f"""
+            import {{ parseRegister }} from '{WATCHDOG / "logic.mjs"}';
+            try {{ parseRegister({json.dumps(reg)}); console.log('{{"ok": true}}'); }}
+            catch (e) {{ console.log('{{"ok": false}}'); }}
+        """)
+        assert node(script, REPO)["ok"] is False, reg
+
+
+def test_handler_publishes_failing_gates_and_names_them_in_the_log(tmp_path):
+    a = nightly_runnable()[0]
+    objects = fresh_objects()
+    objects[".well-known/vdr-status.json"] = status(results=gate_results(**{a["check"]: "fail"}))
+    r = run_handler(tmp_path, objects)
+    names = {d["MetricName"]: d["Value"] for d in r["puts"][0]["MetricData"]}
+    assert names["FailingGates"] == 1
+    line = json.loads(r["logs"][-1])
+    assert line["failing"] == [{"check": a["check"], "owner": a["owner"], "result": "fail"}]
+    assert line["gates_version"] == register()["version"]
+
+
+@pytest.mark.parametrize("reg", [False, "bad"])
+def test_handler_with_a_missing_or_invalid_register_publishes_nothing(tmp_path, reg):
+    r = run_handler(tmp_path, fresh_objects(), reg={"version": ""} if reg == "bad" else False)
+    assert r["error"] and r["puts"] == [] and r["reads"] == []
+
+
+def test_the_failing_gates_alarm_and_the_packaged_register():
+    tf = (REPO / "infrastructure" / "watchdog.tf").read_text()
+    assert 'metric    = "FailingGates"\n      threshold = 0' in tf
+    assert 'content  = file("${path.module}/schemas/gate-modes.json")\n    filename = "gate-modes.json"' in tf
