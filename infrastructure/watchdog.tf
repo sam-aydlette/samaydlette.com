@@ -13,8 +13,10 @@
 #     (schemas/freshness-config.json: the VDR, the runtime signal, the
 #     nightly's status beacon and every other signed output under
 #     /.well-known/) straight from the site bucket
+#     and compares the beacon's gate results with the gate register
+#     (schemas/gate-modes.json)
 #     -> CloudWatch metrics (Samaydlette/Evidence)
-#     -> four alarms -> SNS topic (CMK-encrypted) -> operator email
+#     -> five alarms -> SNS topic (CMK-encrypted) -> operator email
 #
 # The freshness windows are governed values (REQ-PUB-2, REQ-GOV-1). They are
 # read here with jsondecode(file(...)): the alarm thresholds, the objects the
@@ -30,7 +32,7 @@
 # Terraform lands in state and in the uploaded plan artifact of a public repo.
 # It is created once, out of band (docs/runbooks/evidence-sla-alarm.md).
 #
-# Cost: four standard alarms plus four custom metrics, roughly $1.60/month.
+# Cost: five standard alarms plus five custom metrics, roughly $2.00/month.
 # Every listed artifact feeds one StaleArtifacts count rather than a metric
 # each, so the cost stays flat as the list grows.
 # SNS email at this volume and 720 short invocations a month are within free
@@ -78,6 +80,11 @@ locals {
       threshold = 0
       summary   = "At least one published /.well-known/ artifact is older than its governed freshness window, or unreadable. The watchdog's log names which."
     }
+    "failing-gates" = {
+      metric    = "FailingGates"
+      threshold = 0
+      summary   = "At least one nightly gate did not pass in the latest run, including a detect-and-recover gate the run continued past. The gate-alert issue on GitHub and the watchdog's log name the gate and its owners."
+    }
   }
 }
 
@@ -99,6 +106,11 @@ data "archive_file" "evidence_watchdog" {
   source {
     content  = file("${path.module}/schemas/freshness-config.json")
     filename = "freshness-config.json"
+  }
+  # The gate register, so the watchdog knows which nightly checks must report.
+  source {
+    content  = file("${path.module}/schemas/gate-modes.json")
+    filename = "gate-modes.json"
   }
 }
 

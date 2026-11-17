@@ -8,6 +8,7 @@ The evidence SLA watchdog (`infrastructure/watchdog.tf`) emails the operator thr
 | `vdr-age` | the published VDR is more than 24h old | the reporting policy is breached; nightly runs have failed or stopped |
 | `runtime-age` | the runtime signal is more than 26h old | the daily runtime-check Lambda has failed or stopped |
 | `artifact-stale` | any artifact listed in `infrastructure/schemas/freshness-config.json` is past its window, missing, or has no readable timestamp | no deploy within the deploy-cadence window; the corroboration was not re-run; or one of the above |
+| `failing-gates` | a nightly check in the gate register (`infrastructure/schemas/gate-modes.json`) with a run script did not pass in the beacon's `gate_results`, or is missing from it | a gate failed, including a detect-and-recover gate the run continued past; or the nightly did not reach it |
 
 The windows are governed values in `infrastructure/schemas/freshness-config.json`; the thresholds above are read from it. Change a window there, through review, never in the alarm.
 
@@ -38,9 +39,16 @@ The watchdog's log line for the run lists the stale artifacts under `stale`. To 
 - **`boundary-corroboration.json`:** re-run `tools/boundary-map/corroborate.py`, commit the result, and deploy.
 - **Nightly artifacts** (`vdr-*`): follow `nightly-failed` / `vdr-age` above.
 
-## All four at once
+## `failing-gates`
 
-Check the watchdog: its log group `/aws/lambda/samaydlette-com-evidence-watchdog`, the dead-letter queue, and its EventBridge rule. Each run logs one JSON line with the values it published, the config version, and the stale artifacts.
+The watchdog's log line lists each gate under `failing`, with its owner and its result (`fail`, `not run`, or `absent` from the beacon). The beacon's `gate_results` at `/.well-known/vdr-status.json` shows the same from outside.
+
+- **`fail`:** the `[nightly] gate failing: <gate>` issue (label `gate-alert`) links the run; follow it as for `nightly-failed`.
+- **`not run` or `absent`:** the nightly stopped before the gate, or the register lists a nightly check the runner does not report. `nightly-failed` usually fires too; start there.
+
+## All of them at once
+
+Check the watchdog: its log group `/aws/lambda/samaydlette-com-evidence-watchdog`, the dead-letter queue, and its EventBridge rule. Each run logs one JSON line with the values it published, the config and register versions, the stale artifacts and the failing gates.
 
 ## Setup and testing (operator)
 

@@ -3,7 +3,7 @@
 // =============================================================================
 // Measures, from outside GitHub, whether the published compliance evidence is
 // fresh, and whether the unattended nightly refresh last succeeded. Runs hourly
-// on an EventBridge schedule and publishes three CloudWatch metrics; alarms on
+// on an EventBridge schedule and publishes five CloudWatch metrics; alarms on
 // those metrics page the operator by email through SNS.
 //
 // Why it exists: from 2026-09-09 to 2026-09-24 the nightly failed every night
@@ -25,9 +25,12 @@
 //                          missing, or is too old to trust; else 0
 //   StaleArtifacts         how many listed artifacts are past their governed
 //                          window, unreadable, or without a usable timestamp
+//   FailingGates           how many nightly checks in the gate register
+//                          (gate-modes.json, packaged beside this file) with a
+//                          run script did not pass in the beacon's gate_results
 //
-// A missing or invalid config fails the run before anything is published; the
-// alarms read the missing data as a breach and page.
+// A missing or invalid config or register fails the run before anything is
+// published; the alarms read the missing data as a breach and page.
 //
 // A read or parse failure is reported as a breach (UNREADABLE_AGE_HOURS / 1),
 // never skipped: an artifact the watchdog cannot read is not evidence that it
@@ -38,9 +41,10 @@
 import { readFile } from 'node:fs/promises';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
-import { KEYS, computeMetrics, metricData, parseConfig } from './logic.mjs';
+import { KEYS, computeMetrics, metricData, parseConfig, parseRegister } from './logic.mjs';
 
 const CONFIG_URL = new URL('./freshness-config.json', import.meta.url);
+const REGISTER_URL = new URL('./gate-modes.json', import.meta.url);
 
 async function read(s3, bucket, key) {
     try {
@@ -59,6 +63,7 @@ export async function handler(_event, _context, deps = {}) {
 
     // Fail closed: no valid governed windows, no metrics (and so, a page).
     const config = parseConfig(JSON.parse(await (deps.readConfig || (() => readFile(CONFIG_URL, 'utf8')))()));
+    const register = parseRegister(JSON.parse(await (deps.readRegister || (() => readFile(REGISTER_URL, 'utf8')))()));
 
     const s3 = deps.s3 || new S3Client({});
     const cw = deps.cw || new CloudWatchClient({});
@@ -67,18 +72,19 @@ export async function handler(_event, _context, deps = {}) {
     const paths = config.artifacts.map((a) => a.path);
     const bodies = await Promise.all(paths.map((p) => read(s3, bucket, p)));
     const readings = Object.fromEntries(paths.map((p, i) => [p, bodies[i]]));
-    const { metrics, stale } = computeMetrics(config, readings, now);
+    const { metrics, stale, failing } = computeMetrics(config, readings, now, register);
 
     await cw.send(new PutMetricDataCommand({
         Namespace: namespace,
         MetricData: metricData(metrics, now),
     }));
 
-    // One structured line per run: the numbers the alarms act on, and which
-    // artifacts are stale, for the log.
+    // One structured line per run: the numbers the alarms act on, which
+    // artifacts are stale and which gates are failing (with their owners), for the log.
     let beacon = null;
     try { beacon = JSON.parse(readings[KEYS.status]?.body); } catch { beacon = null; }
-    console.log(JSON.stringify({ msg: 'evidence watchdog', config_version: config.version, ...metrics, stale,
+    console.log(JSON.stringify({ msg: 'evidence watchdog', config_version: config.version,
+        gates_version: register.version, ...metrics, stale, failing,
         nightly: beacon ? { result: beacon.result, finished_at: beacon.finished_at } : null }));
     return metrics;
 }
