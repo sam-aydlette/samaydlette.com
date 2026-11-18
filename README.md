@@ -108,7 +108,7 @@ curl -s https://samaydlette.com/.well-known/security-decision-record.json | jq '
 }'
 ```
 
-`rule_records` summarize each in-scope KSI (`SDR-CSX-KSI`); `rev5_controls` summarize each applicable Rev5 control (`SDR-CSF-CTF`): parameter values, implementation status, origination, the implementation statement, verification and validation. Both come from one control projection (`scripts/_controls.py`), computed from the canonical inventory in the live KSI signal and the FedRAMP KSI catalog (`infrastructure/schemas/ksi-catalog.json`, source: FRMR.KSI), so they cannot disagree. The SDR names the inventory it was built from (`ksi_signal_id`), and the reconciliation gate fails the deploy if it differs from the signal's.
+`keySecurityIndicators` summarize each in-scope KSI (`SDR-CSX-KSI`): its objective, its measures and how often they run, or the reason and resulting risk, with verification and validation. `rule_records` map each KSI to its controls; `rev5_controls` summarize each applicable Rev5 control (`SDR-CSF-CTF`): parameter values, implementation status, origination, the implementation statement, verification and validation. Both come from one control projection (`scripts/_controls.py`), computed from the canonical inventory in the live KSI signal and the FedRAMP KSI catalog (`infrastructure/schemas/ksi-catalog.json`, source: FRMR.KSI), so they cannot disagree. The SDR names the inventory it was built from (`ksi_signal_id`), and the reconciliation gate fails the deploy if it differs from the signal's.
 
 For the full reference, see [docs/ksi-signal.md](docs/ksi-signal.md).
 
