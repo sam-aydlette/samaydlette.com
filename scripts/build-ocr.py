@@ -30,6 +30,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
+import _fedramp_schema as fs  # noqa: E402
+import _ocr_calendar  # noqa: E402
 from _common import fedramp_id  # noqa: E402
 
 QUARTER_DAYS = 91
@@ -51,110 +53,99 @@ def _scn_rows(path):
         return list(csv.DictReader(f))
 
 
-def build_ocr(vdr, decisions, scn_rows, signal_id, now):
-    period_start = (now - timedelta(days=QUARTER_DAYS)).date().isoformat()
-    period_end = now.date().isoformat()
+RELATIONSHIP = ("N/A absent a consuming agency. The synchronous Quarterly Review (CCM-QTR-MTG), the feedback "
+                "channel (CCM-OCR-FBM) and the anonymized feedback summary (CCM-OCR-AFS) need a counterparty; "
+                "with no agency sponsor there is none. The next review's target date is published regardless "
+                "(CCM-QTR-NRD).")
+NO_INCIDENTS = ("No FedRAMP Reportable Incidents occurred during this reporting period. The system holds no federal "
+                "customer data, so the IEC-CSO-EFR trigger does not apply; the empty list is an attestation of none.")
+RECOMMENDATIONS = ["No new customer recommendations this period; the Secure Configuration Guidance at /.well-known/ "
+                   "remains current."]
 
-    # 1. Changes to Certification Data — the SCN register is the change record.
-    cert_changes = [{"scn_id": r.get("scn_id"), "type": r.get("scn_type"),
-                     "summary": (r.get("short_description") or "")[:240],
-                     "status": r.get("status", "")[:80]} for r in scn_rows]
-    # 4. Transformative changes (a subset of the above).
-    transformative = [c for c in cert_changes if (c.get("type") or "").lower() == "transformative"]
 
-    # 2. Planned changes over the next 3 months — in-force decision records that
-    # carry a remediation plan or a planned completion date. A false positive or
-    # an accepted risk plans no change, so it is not listed here.
-    planned = [{"decision_id": r["id"], "title": r.get("title", "")[:160],
-                "planned_completion": r.get("planned_completion")}
+def _in_period(row, start, end):
+    """An SCN belongs to the period when it started or finished in it, or is still open."""
+    days = [row.get("date_initiated") or "", row.get("date_finished") or ""]
+    if not days[1]:
+        return True
+    return any(start.isoformat() <= d[:10] <= end.isoformat() for d in days if d)
+
+
+def build_ocr(vdr, decisions, scn_rows, signal_id, now, cal, issued=()):
+    """The OCR in FedRAMP's schema (CCM-OCR-AVL), for the period since the last
+    issued report, with the next report and review dates from the calendar."""
+    today = now.date()
+    start = _ocr_calendar.period_start(cal, issued)
+    target, overdue = _ocr_calendar.next_report(cal, issued, today)
+    review = _ocr_calendar.next_review(cal, issued, today)
+
+    # 1 and 4. Changes to Certification Data: the SCN register is the change record.
+    rows = [r for r in scn_rows if _in_period(r, start, today)]
+    changes = [f"{r.get('scn_id')} ({r.get('scn_type')}): {(r.get('short_description') or '')[:240]}" for r in rows]
+    transformative = [c for c, r in zip(changes, rows, strict=True)
+                      if (r.get("scn_type") or "").lower() == "transformative"]
+    # 2. Planned changes: in-force decision records with a remediation plan or a
+    # planned completion. A false positive or an accepted risk plans no change.
+    planned = [f"{r['id']}: {r.get('title', '')[:160]}"
+               + (f" (planned completion {r['planned_completion']})" if r.get("planned_completion") else "")
                for r in (decisions or {}).get("decisions", [])
                if r.get("status") == "in-force" and (r.get("remediation_plan") or r.get("planned_completion"))]
-
-    # 3. Accepted vulnerabilities.
-    accepted = []
-    if vdr:
-        for a in vdr.get("risk_accepted", []) or []:
-            accepted.append({"tracking_id": a.get("tracking_id"), "pain": a.get("pain"),
-                             "decision_id": a.get("decision_id"),
-                             "explanation": (a.get("explanation") or "")[:200]})
-
-    report = {
-        "report_type": "ongoing-certification-report",
-        "schema": "fedramp-ongoing-certification-report-schema-2026-06-24.json",
+    # 3. Accepted vulnerabilities: a summary; the records are in the VDR (VER-RPT-AVI).
+    accepted = (vdr or {}).get("risk_accepted", []) or []
+    accepted_text = (f"{len(accepted)} accepted vulnerabilit{'y' if len(accepted) == 1 else 'ies'}, each with its "
+                     "decision record; the full records are in /.well-known/vdr-accepted-vulnerabilities.json."
+                     if accepted else "None.")
+    return {
+        "$schema": fs.stamp("ocr"),
+        "certificationPackageOverviewUri": fs.CPO_URI,
+        "reportPeriod": {"from": start.isoformat(), "to": today.isoformat()},
+        "certificationDataChanges": changes,
+        "plannedCertificationDataChanges": {
+            "planningHorizonThrough": (today + timedelta(days=QUARTER_DAYS)).isoformat(), "changes": planned},
+        "acceptedVulnerabilities": accepted_text,
+        "transformativeChanges": transformative,
+        "updatedRecommendations": RECOMMENDATIONS,
+        "activeAgencies": [],
+        "reportableIncidents": {"incidents": []},
+        # This repository's fields, beside the schema's.
         "fedramp_id": fedramp_id(),  # CDS-CSO-FID
         "class": "C",
         "emitted_at": now.isoformat(),
-        "reporting_period": {"start": period_start, "end": period_end},
         "ksi_signal_id": signal_id,
-        "next_ongoing_certification_report_date": (now + timedelta(days=QUARTER_DAYS)).date().isoformat(),
-        "next_quarterly_review_date": (now + timedelta(days=QUARTER_DAYS)).date().isoformat(),
-        # The eight CCM-OCR-AVL summaries:
-        "summaries": {
-            "changes_to_certification_data": cert_changes,                 # 1
-            "planned_changes_next_quarter": planned,                       # 2
-            "accepted_vulnerabilities": accepted,                          # 3
-            "transformative_changes": transformative,                      # 4
-            "updated_recommendations": [                                   # 5
-                "No new customer recommendations this period; the Secure Configuration "
-                "Guidance at /.well-known/ remains current."],
-            "agencies_using_product": [],                                  # 6 (none)
-            "reportable_incidents_or_attestation":                         # 7
-                "No FedRAMP Reportable Incidents occurred during this reporting period. "
-                "The system holds no federal customer data, so the IEC-CSO-EFR trigger "
-                "does not apply; this is an attestation of none, not an omission.",
-            "lessons_learned_from_incidents": [],                          # 8 (none)
-        },
-        "relationship_obligations_status": (
-            "N/A absent a consuming agency. The synchronous Quarterly Review (CCM-QTR-MTG), "
-            "the feedback channel (CCM-OCR-FBM), and the anonymized feedback summary "
-            "(CCM-OCR-AFS) require a counterparty; with no agency sponsor there is none to "
-            "exercise them. The next-review date above is published per CCM-QTR-NRD regardless."),
+        "next_ongoing_certification_report_date": target.isoformat(),          # CCM-OCR-NRD
+        "next_ongoing_certification_report_overdue": overdue,
+        "next_quarterly_review_date": review.isoformat(),                      # CCM-QTR-NRD
+        "reportable_incidents_attestation": NO_INCIDENTS,
+        "lessons_learned_from_incidents": [],
+        "relationship_obligations_status": RELATIONSHIP,
     }
-    return report
 
 
 def render_markdown(r):
-    s = r["summaries"]
-    out = ["# Ongoing Certification Report", ""]
-    out.append(f"- **Class:** {r['class']} | **Reporting period:** {r['reporting_period']['start']} to {r['reporting_period']['end']}")
-    out.append(f"- **Emitted:** {r['emitted_at']}")
-    out.append(f"- **Bound to inventory signal:** `{r['ksi_signal_id']}`")
-    out.append(f"- **Next Ongoing Certification Report (CCM-OCR-NRD):** {r['next_ongoing_certification_report_date']}")
-    out.append(f"- **Next Quarterly Review (CCM-QTR-NRD):** {r['next_quarterly_review_date']}")
-    out.append("")
-    out.append("> " + r["relationship_obligations_status"])
-    out.append("")
+    out = ["# Ongoing Certification Report", "",
+           f"- **FedRAMP ID:** {r['fedramp_id']} | **Class:** {r['class']}",
+           f"- **Reporting period:** {r['reportPeriod']['from']} to {r['reportPeriod']['to']}",
+           f"- **Emitted:** {r['emitted_at']}",
+           f"- **Bound to inventory signal:** `{r['ksi_signal_id']}`",
+           f"- **Next Ongoing Certification Report (CCM-OCR-NRD):** {r['next_ongoing_certification_report_date']}"
+           + (" (overdue)" if r["next_ongoing_certification_report_overdue"] else ""),
+           f"- **Next Quarterly Review (CCM-QTR-NRD):** {r['next_quarterly_review_date']}", "",
+           "> " + r["relationship_obligations_status"], ""]
 
-    def section(n, title, body):
-        out.append(f"## {n}. {title}\n")
-        out.extend(body)
-        out.append("")
+    def section(n, title, items, empty):
+        out.extend([f"## {n}. {title}", ""] + ([f"- {x}" for x in items] if items else [f"_{empty}_"]) + [""])
 
-    cc = s["changes_to_certification_data"]
-    section(1, "Changes to Certification Data",
-            ([f"- `{c['scn_id']}` ({c['type']}): {c['summary']} — _{c['status']}_" for c in cc]
-             if cc else ["_No changes recorded this period._"]))
-    pc = s["planned_changes_next_quarter"]
-    section(2, "Planned changes over the next 3 months",
-            ([f"- {p['title']}" for p in pc] if pc else ["_None planned._"]))
-    av = s["accepted_vulnerabilities"]
-    section(3, "Accepted vulnerabilities",
-            ([f"- `{a['tracking_id']}` (PAIN {a['pain']}, {a['decision_id'] or 'no decision record'}): {a['explanation']}" for a in av]
-             if av else ["_None._"]))
-    tf = s["transformative_changes"]
-    section(4, "Transformative changes",
-            ([f"- `{c['scn_id']}`: {c['summary']}" for c in tf] if tf else ["_None this period._"]))
-    section(5, "Updated recommendations", [f"- {x}" for x in s["updated_recommendations"]])
-    ag = s["agencies_using_product"]
-    section(6, "Agencies using the product",
-            ([f"- {a}" for a in ag] if ag else ["_None — unsponsored proof of concept._"]))
-    section(7, "FedRAMP Reportable Incidents", [s["reportable_incidents_or_attestation"]])
-    ll = s["lessons_learned_from_incidents"]
-    section(8, "Lessons learned from incidents",
-            ([f"- {x}" for x in ll] if ll else ["_None; no incidents to date._"]))
-    out.append("---")
-    out.append("_Source of truth: the signed `ongoing-certification-report.json`. Rules: "
-               "CCM-OCR-AVL (report), CCM-OCR-NRD / CCM-QTR-NRD (next dates)._")
+    section(1, "Changes to Certification Data", r["certificationDataChanges"], "No changes recorded this period.")
+    p = r["plannedCertificationDataChanges"]
+    section(2, f"Planned changes through {p['planningHorizonThrough']}", p["changes"], "None planned.")
+    out.extend(["## 3. Accepted vulnerabilities", "", r["acceptedVulnerabilities"], ""])
+    section(4, "Transformative changes", r["transformativeChanges"], "None this period.")
+    section(5, "Updated recommendations", r["updatedRecommendations"], "None.")
+    section(6, "Agencies using the product", r["activeAgencies"], "None: unsponsored proof of concept.")
+    out.extend(["## 7. FedRAMP Reportable Incidents", "", r["reportable_incidents_attestation"], ""])
+    section(8, "Lessons learned from incidents", r["lessons_learned_from_incidents"], "None; no incidents to date.")
+    out += ["---", "_Source of truth: the signed `ongoing-certification-report.json`, in FedRAMP's OCR schema. "
+            "Rules: CCM-OCR-AVL (report), CCM-OCR-NRD and CCM-QTR-NRD (next dates)._"]
     return "\n".join(out)
 
 
@@ -175,14 +166,15 @@ def main():
     signal_id = sig.get("signal_id") if sig else None
     scn_rows = _scn_rows(a.scn_register)
 
-    report = build_ocr(vdr, decisions, scn_rows, signal_id, now)
-    Path(a.output).write_text(json.dumps(report, indent=2) + "\n")
+    report = build_ocr(vdr, decisions, scn_rows, signal_id, now, _ocr_calendar.load())
+    fs.write_validated(report, "ocr", a.output)
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(report) + "\n")
-    print(f"ongoing-certification-report: {len(report['summaries']['changes_to_certification_data'])} cert changes, "
-          f"{len(report['summaries']['planned_changes_next_quarter'])} planned, "
-          f"{len(report['summaries']['accepted_vulnerabilities'])} accepted vulns; "
-          f"next report {report['next_ongoing_certification_report_date']}")
+    print(f"ongoing-certification-report: {report['reportPeriod']['from']} to {report['reportPeriod']['to']}; "
+          f"{len(report['certificationDataChanges'])} changes, "
+          f"{len(report['plannedCertificationDataChanges']['changes'])} planned; "
+          f"next report {report['next_ongoing_certification_report_date']}, "
+          f"next review {report['next_quarterly_review_date']}")
     return 0
 
 

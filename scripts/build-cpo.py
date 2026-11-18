@@ -42,6 +42,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _fedramp_schema as fs  # noqa: E402
+import _ocr_calendar  # noqa: E402
 from _common import commit as _commit, run_url as _run_url  # noqa: E402
 
 BASE = "https://samaydlette.com/.well-known/"
@@ -85,8 +86,9 @@ def service_identification(off):
             "website": off["product_website"], "logo": off["logo_url"]}
 
 
-def service_properties(off):
+def service_properties(off, next_report):
     return {"serviceType": off["service_model"], "deploymentModel": off["deployment_model"],
+            "nextOngoingCertificationReportDate": next_report.isoformat(),  # CCM-OCR-NRD
             "businessCategory": off["business_category"],
             "trustCenter": _repo(["Trust Center"], TRUST_CENTER,
                                  "The trust center: the security state this package reports, drawn from the "
@@ -141,11 +143,13 @@ def metadata(off, now, commit, run_url):
                                 + (f"deploy run {run_url}" if run_url else "local build")}
 
 
-def build(off, prof, signal, now, commit, run_url):
+def build(off, prof, signal, now, commit, run_url, cal=None, issued=()):
+    cal = cal or _ocr_calendar.load()
+    next_report, overdue = _ocr_calendar.next_report(cal, issued, now.date())
     return {
         "$schema": fs.stamp("cpo"),
         "serviceIdentification": service_identification(off),
-        "serviceProperties": service_properties(off),
+        "serviceProperties": service_properties(off, next_report),
         "contactInformation": contacts(off),
         "certifiedServices": certified_services(off, prof),
         "metadata": metadata(off, now, commit, run_url),
@@ -159,6 +163,8 @@ def build(off, prof, signal, now, commit, run_url):
         },
         "cryptographic_modules": off.get("cryptographic_modules", []),
         "independent_assessment": NO_INDEPENDENT_ASSESSMENT,
+        "next_ongoing_certification_report_overdue": overdue,
+        "next_quarterly_review_date": _ocr_calendar.next_review(cal, issued, now.date()).isoformat(),  # CCM-QTR-NRD
     }
 
 
@@ -204,7 +210,10 @@ def render_markdown(c):
            f"- **Sales contact:** {contact['Sales']}",
            f"- **Trust center:** {sp['trustCenter']['url']}",
            f"- **Secure Configuration Guidance:** {sp['secureConfigurationGuidance']['url']}",
-           f"- **Independent assessment:** {c['independent_assessment']}", "",
+           f"- **Independent assessment:** {c['independent_assessment']}",
+           f"- **Next Ongoing Certification Report:** {sp['nextOngoingCertificationReportDate']}"
+           + (" (overdue)" if c["next_ongoing_certification_report_overdue"] else ""),
+           f"- **Next Quarterly Review:** {c['next_quarterly_review_date']}", "",
            "## Metadata", "",
            f"- **Accountable official:** {ao['name']}, {ao['title']} ({ao['contact']})",
            f"- **Version:** `{md['version']}`",

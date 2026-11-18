@@ -1,0 +1,14 @@
+{
+  "schema": "ocr-calendar/1",
+  "$comment": "The Ongoing Certification Report and Quarterly Review calendar (CCM-OCR-SOR, CCM-QTR-SAR, CCM-OCR-NRD, CCM-QTR-NRD). Read by scripts/_ocr_calendar.py. A report is due on each issue date; the Quarterly Review follows the report's release by review_business_days business days (Monday to Friday; federal holidays are not counted out).",
+  "issue_dates": {
+    "months": [2, 5, 8, 11],
+    "day": 15,
+    "why": "The 15th of the middle month of each quarter, spread away from the quarter's start and end (CCM-OCR-SOR)."
+  },
+  "review_business_days": 5,
+  "first_period_start": "2026-11-04",
+  "first_period_start_why": "The day this system adopted CR26 and retired its POA&M (2026-11-04); the first report covers from then.",
+  "decided_by": "Sam Aydlette",
+  "decided_on": "2026-11-18"
+}

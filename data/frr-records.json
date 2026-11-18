@@ -214,8 +214,8 @@
     },
     {
       "frr_id": "CCM-OCR-NRD",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "status": "Implemented",
+      "implementation": "The CPO (in FedRAMP's nextOngoingCertificationReportDate field) and the OCR publish the next report's target date from the calendar on every deploy: the earliest due date with no issued report, marked overdue when it has passed.",
       "evidence": [
         {
           "kind": "artifact",
@@ -224,6 +224,18 @@
         {
           "kind": "artifact",
           "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_an_unissued_due_date_is_the_next_report_and_is_reported_overdue"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_the_ocr_is_in_fedramps_schema_and_publishes_the_calendar_dates"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_the_cpo_publishes_the_same_next_dates"
         }
       ]
     },
@@ -241,8 +253,30 @@
     },
     {
       "frr_id": "CCM-OCR-SOR",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 2 test(s)."
+      "status": "Implemented",
+      "implementation": "The report calendar in data/ocr-calendar.json (the operator's decision, 2026-11-18) sets a regular three-month cycle on the 15th of the middle month of each quarter (February, May, August, November), away from the quarter's start and end. The calendar fails closed unless it names one month in each quarter. The OCR and the CPO publish the next due date from it on every deploy.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_reports_fall_mid_quarter_on_a_regular_three_month_cycle"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_a_calendar_that_breaks_the_cycle_or_has_no_decision_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_the_calendar_is_a_recorded_operator_decision"
+        }
+      ]
     },
     {
       "frr_id": "CCM-QTR-ACT",
@@ -306,12 +340,24 @@
     },
     {
       "frr_id": "CCM-QTR-NRD",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 1 test(s).",
+      "status": "Implemented",
+      "implementation": "The CPO and the OCR publish the next Quarterly Review's target date from the calendar on every deploy: 5 business days after the latest report's release, or after the next report's target date.",
       "evidence": [
         {
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_the_review_falls_three_to_ten_business_days_after_the_release"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_the_cpo_publishes_the_same_next_dates"
         }
       ]
     },
@@ -371,8 +417,26 @@
     },
     {
       "frr_id": "CCM-QTR-SAR",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 2 test(s)."
+      "status": "Implemented",
+      "implementation": "The calendar schedules each Quarterly Review 5 business days after the report's release, and fails closed outside 3 to 10. Weekends are skipped; federal holidays are not counted out. The review's date is published; the review itself has no counterparty (CCM-QTR-MTG).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_the_review_falls_three_to_ten_business_days_after_the_release"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_business_days_skip_weekends"
+        }
+      ]
     },
     {
       "frr_id": "CCM-QTR-SCR",
@@ -1392,12 +1456,30 @@
       "status": "Implemented",
       "implementation": "Every pull request into main carries a security impact analysis: yes/no answers to the governed questions in data/sia-questions.json, adapted from the NIST SP 800-128 template. The scn-tag check reads the diff, requires an answer (and a reason for each no) to every question the diff touches, derives the type in this rule's order (class change, then routine recurring, transformative, adaptive; with not significant for changes that touch no security-relevant path) and fails when the declared SCN-Type disagrees or a class change is proposed. main requires the check on every pull request.",
       "evidence": [
-        {"kind": "step", "ref": "scn-tag.yml#Validate the SCN evaluation"},
-        {"kind": "test", "ref": "tests/test_sia.py::test_a_question_the_diff_touches_must_be_answered_with_a_reason_for_no"},
-        {"kind": "test", "ref": "tests/test_sia.py::test_the_declared_type_must_equal_the_analysis"},
-        {"kind": "test", "ref": "tests/test_sia.py::test_a_class_change_cannot_ship_under_scn"},
-        {"kind": "test", "ref": "tests/test_sia.py::test_the_outcome_follows_scn_cso_eva"},
-        {"kind": "test", "ref": "tests/test_sia.py::test_the_script_reads_the_git_diff_between_base_and_head"}
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sia.py::test_a_question_the_diff_touches_must_be_answered_with_a_reason_for_no"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sia.py::test_the_declared_type_must_equal_the_analysis"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sia.py::test_a_class_change_cannot_ship_under_scn"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sia.py::test_the_outcome_follows_scn_cso_eva"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sia.py::test_the_script_reads_the_git_diff_between_base_and_head"
+        }
       ]
     },
     {
