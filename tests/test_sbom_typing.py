@@ -19,7 +19,6 @@ def _load(name, relpath):
 
 
 ksi = _load("ksi", "scripts/build-ksi-signal.py")
-iiw = _load("iiw", "scripts/build-iiw.py")
 
 SBOM = {
     "bomFormat": "CycloneDX",
@@ -43,22 +42,17 @@ def test_components_typed_by_ecosystem():
     assert comps["left-pad"]["type"] == "npm_package"
 
 
-def test_iiw_row_not_mislabeled_for_pypi():
-    comps = {c["attributes"]["name"]: c for c in _build()}
-    row = iiw.project_component(comps["flask"], {"ownership": {}})
-    assert row["Asset Type"] == "Software Package (PyPI)"
-    assert row["Asset Type"] != "Software Package (npm)"
-    assert row["Function"] != "Lambda runtime dependency"
-    assert "PyPI" in row["Function"]
-    # software fields still populated for pypi
-    assert row["Software/Database Name & Version"] == "flask@3.0.0"
+def test_pypi_package_not_mislabeled():
+    attrs = {c["attributes"]["name"]: c for c in _build()}["flask"]["attributes"]
+    assert attrs["iiw_asset_type"] == "Software Package (PyPI)"
+    assert attrs["function"] != "Lambda runtime dependency"
+    assert "PyPI" in attrs["function"]
 
 
 def test_npm_sbom_dep_is_not_lambda_runtime():
-    comps = {c["attributes"]["name"]: c for c in _build("sbom-js.json")}
-    row = iiw.project_component(comps["left-pad"], {"ownership": {}})
-    assert row["Function"] != "Lambda runtime dependency"
-    assert row["Asset Type"] == "Software Package (npm)"
+    attrs = {c["attributes"]["name"]: c for c in _build("sbom-js.json")}["left-pad"]["attributes"]
+    assert attrs["function"] != "Lambda runtime dependency"
+    assert attrs["iiw_asset_type"] == "Software Package (npm)"
 
 
 def test_pypi_package_passes_schema():

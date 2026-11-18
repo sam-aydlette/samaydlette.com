@@ -26,7 +26,6 @@ Every deployment goes through this gate, in CI:
     │                    + every website/**/*.html sha256 + OPA validations
     │                    + SLSA-style build provenance
     ├─ build VDR + vuln trend ledger (RA-5(6))
-    ├─ build IIW (SSP Appendix M)
     ├─ build SDR + CPO                ├─ build Ongoing Certification Report
     │                                 └─ build CDS certification-data artifacts
     │
@@ -233,7 +232,7 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── _common.py                  # the shared helpers (classify, sha256_file, prop, ...)
 │   ├── build-ksi-signal.py         # THE CANONICAL INVENTORY; everything derives from it
 │   ├── _controls.py                # the control projection (per-control view)
-│   ├── build-vdr-report.py build-iiw.py
+│   ├── build-vdr-report.py
 │   ├── build-sdr.py build-cpo.py build-ocr.py ...
 │   ├── reconcile.py                # the fail-closed reconciliation gate
 │   ├── vuln-gate.py check-exceptions.py check-policy-annotations.py check-wasm-safe.py

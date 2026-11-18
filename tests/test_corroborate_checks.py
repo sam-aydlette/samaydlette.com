@@ -46,7 +46,7 @@ def test_signed_artifacts_come_from_the_governed_config_without_the_report_itsel
     assert by["vdr-report.json"] == by["vdr-report.json.intoto.jsonl"] == ["deploy", "nightly"]
     assert by["trust-center.json"] == ["deploy"]
     # The POA&M attestation is retired; the SDR's replaced the retired SSP's.
-    assert sum(a["kind"] == "dsse" for a in arts) == 4
+    assert sum(a["kind"] == "dsse" for a in arts) == 3
     assert all(a.get("bundle") for a in arts if a["kind"] == "bundle")
 
 

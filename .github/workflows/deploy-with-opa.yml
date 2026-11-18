@@ -1317,29 +1317,6 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
         done
 
-    # -------------------------------------------------------------------------
-    # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE
-    # -------------------------------------------------------------------------
-    # The IIW is one of several reports this codebase derives from one source.
-    # The KSI signal is the wire format, the SDR carries the per-KSI and per-Rev5-
-    # control record, and the IIW is the Excel-compatible shape FedRAMP processes
-    # still ask for. All derive from the canonical inventory in ksi-signal.json.
-    # -------------------------------------------------------------------------
-    - name: Build IIW (FedRAMP SSP Appendix M)
-      working-directory: infrastructure
-      run: |
-        echo "Projecting KSI signal into IIW shape..."
-        python3 ../scripts/build-iiw.py \
-          --signal ksi-signal.json \
-          --output iiw.csv
-        echo "IIW row count: $(($(wc -l < iiw.csv) - 1))"
-
-    - name: Sign IIW CSV
-      working-directory: infrastructure
-      run: |
-        echo "Signing iiw.csv with cosign keyless..."
-        cosign sign-blob --yes --new-bundle-format --bundle iiw.bundle iiw.csv
-
     - name: Build Ongoing Certification Report (CCM)
       working-directory: infrastructure
       run: |
@@ -1659,7 +1636,6 @@ jobs:
         attest ksi-signal.json scripts/build-ksi-signal.py
         attest security-decision-record.json scripts/build-sdr.py
         attest vdr-report.json scripts/build-vdr-report.py
-        attest iiw.csv         scripts/build-iiw.py
         echo "✅ SLSA/in-toto provenance attestations published for the core compliance artifacts"
 
     # Post-publish round-trip (Task 1.5 / reconciliation invariant f, live half):

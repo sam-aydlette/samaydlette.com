@@ -107,8 +107,9 @@ def test_a_workflow_generator_must_be_the_publishing_workflow(cfg):
 
 
 def test_an_attestation_that_names_another_generator_is_caught(cfg):
-    bad = _with(cfg, ".well-known/iiw.csv", generator="scripts/build-ksi-signal.py")
-    assert any(p.startswith("iiw.csv: the deploy attests it as built by scripts/build-iiw.py") for p in problems(bad))
+    bad = _with(cfg, ".well-known/vdr-report.json", generator="scripts/build-ksi-signal.py")
+    assert any(p.startswith("vdr-report.json: the deploy attests it as built by scripts/build-vdr-report.py")
+               for p in problems(bad))
 
 
 def test_unregistered_rule_evidence_is_caught(cfg):

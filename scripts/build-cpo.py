@@ -61,7 +61,6 @@ PACKAGE = [
      "Ongoing Certification Report (CCM). Signed."),
     ("availability.json", ["Availability"], "Availability feed. Signed."),
     ("policy-index.json", ["Policies and Procedures"], "Policy and procedure index (CDS-CSO-IRP). Signed."),
-    ("iiw.csv", ["Integrated Inventory Workbook"], "FedRAMP Integrated Inventory Workbook (Appendix M). Signed."),
 ]
 
 NO_INDEPENDENT_ASSESSMENT = ("None performed. Independent assessment is Impractical here: one-person, no-budget. "

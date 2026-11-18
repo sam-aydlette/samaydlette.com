@@ -41,8 +41,9 @@ def _fail(msg):
 
 
 def _text(v):
-    """Short, printable, unpadded text. It reaches the IIW CSV, so it may not
-    start with a character a spreadsheet reads as a formula."""
+    """Short, printable, unpadded text. It is published in the inventory, which
+    a reader may open in a spreadsheet, so it may not start with a character a
+    spreadsheet reads as a formula."""
     return (isinstance(v, str) and 0 < len(v) <= 120 and v.isprintable() and v == v.strip()
             and not v.startswith(("=", "+", "-", "@")))
 

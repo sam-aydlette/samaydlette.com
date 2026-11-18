@@ -260,7 +260,7 @@ security-scan:
 # Local infrastructure pipeline: set up, validate, plan, apply. Stops there.
 #
 # This is NOT the full compliance pipeline and never was — it does not build the
-# VDR, IIW, SDR, CPO or CDS artifacts, does not sign
+# VDR, SDR, CPO or CDS artifacts, does not sign
 # anything with cosign, and does not run the reconciliation gate. That whole
 # sequence is .github/workflows/deploy-with-opa.yml. Run `make reconcile` and
 # `make gate` locally for the offline half.

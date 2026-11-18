@@ -105,12 +105,11 @@ def test_the_deploy_uploads_every_listed_object_with_its_type(tmp_path):
     assert out.returncode == 0, out.stderr
     uploaded = _rows((tmp_path / "uploads").read_text())
     keys = {r[1] for r in uploaded}
-    assert len(uploaded) == len(keys) == 45
+    assert len(uploaded) == len(keys) == 43
     assert {".well-known/ksi-signal.json", ".well-known/ksi-signal.schema.json", ".well-known/vdr-history.json",
             ".well-known/trust-center.bundle", ".well-known/certification-package-overview.md"} <= keys
     by_key = {r[1]: r for r in uploaded}
     assert by_key[".well-known/ksi-signal.schema.json"][2:] == ["application/schema+json", "public, max-age=3600"]
-    assert by_key[".well-known/iiw.csv"][2:] == ["text/csv", "public, max-age=300"]
     assert by_key[".well-known/vdr-report.md"][2] == "text/markdown; charset=utf-8"
     assert by_key[".well-known/opa-policy-bundle.tar.gz"][2] == "application/gzip"
     # The nightly's beacon and the runtime Lambda's signal are not the deploy's to publish.
@@ -127,7 +126,7 @@ def test_the_gate_scans_exactly_the_text_the_deploy_uploads(tmp_path):
             if not r[0].endswith((".bundle", ".tar.gz"))}
     gate = _gate(infra, env)
     assert gate.returncode == 0, gate.stderr
-    assert set(gate.stdout.split()) == text and len(text) == 26
+    assert set(gate.stdout.split()) == text and len(text) == 25
     # Never a directory scan: the deploy downloads live files it does not publish.
     script = (REPO / "scripts" / "run-gates.sh").read_text()
     assert "--root" not in script[script.index("  redaction)"):]
@@ -138,7 +137,7 @@ def test_an_absent_corroboration_is_neither_scanned_nor_uploaded(tmp_path):
     env = _bin(tmp_path)
     assert _step(UPLOAD, infra, env).returncode == 0
     keys = {r[1] for r in _rows((tmp_path / "uploads").read_text())}
-    assert len(keys) == 43 and not any("corroboration" in k for k in keys)
+    assert len(keys) == 41 and not any("corroboration" in k for k in keys)
     gate = _gate(infra, env)
     assert "boundary-corroboration.json" not in gate.stdout.split()
 
@@ -158,19 +157,19 @@ def test_a_listed_file_the_build_did_not_make_stops_the_upload(tmp_path, absent)
 
 def test_the_round_trip_compares_every_uploaded_object_and_attestation(tmp_path):
     infra = _build(tmp_path)
-    for a in ("ksi-signal.json", "security-decision-record.json", "vdr-report.json", "iiw.csv"):
+    for a in ("ksi-signal.json", "security-decision-record.json", "vdr-report.json"):
         (infra / f"{a}.intoto.jsonl").write_text("{}")
     env = _bin(tmp_path)
     served = tmp_path / "served" / ".well-known"
     served.mkdir(parents=True)
     rows = _rows(subprocess.run([sys.executable, str(REPO / "scripts" / "published-set.py"), "served", "--by", "deploy"],
                                 cwd=infra, capture_output=True, text=True, check=True).stdout)
-    assert len(rows) == 49
+    assert len(rows) == 46
     for f, key in rows:
         (tmp_path / "served" / key).write_bytes((infra / f).read_bytes())
     ok = _step(ROUND_TRIP, infra, env)
     assert ok.returncode == 0, ok.stdout + ok.stderr
-    assert sum(line.startswith("ok: ") for line in ok.stdout.splitlines()) == 49
+    assert sum(line.startswith("ok: ") for line in ok.stdout.splitlines()) == 46
     # A served Markdown rendering that differs from the build is caught.
     (served / "vdr-report.md").write_text("stale")
     bad = _step(ROUND_TRIP, infra, env)
@@ -182,7 +181,7 @@ def test_attestations_the_deploy_makes_are_the_ones_listed():
     listed = {a["path"].rsplit("/", 1)[-1].removesuffix(".intoto.jsonl")
               for a in _freshness.load_freshness_config()["artifacts"]
               if a["path"].endswith(".intoto.jsonl") and "deploy" in a["published_by"]}
-    assert attested == listed and len(listed) == 4
+    assert attested == listed and len(listed) == 3
 
 
 # --- the config fields -----------------------------------------------------------
