@@ -51,8 +51,21 @@ def test_the_id_comes_from_the_offering_and_says_it_is_not_a_real_one():
     assert FID.endswith("PROOF-OF-CONCEPT-NOT-A-REAL-FEDRAMP-ID")
 
 
-@pytest.mark.parametrize("offering", [{}, {"fedramp_id": ""}, {"fedramp_id": "  "}, {"fedramp_id": 7}])
-def test_no_report_is_built_without_an_id(tmp_path, offering):
+def test_the_placeholder_is_a_recorded_operator_decision():
+    dec = OFFERING["fedramp_id_decision"]
+    assert dec["by"] == "Sam Aydlette" and dec["on"] == "2026-11-17" and "placeholder" in dec["decision"]
+
+
+DECISION = {"decision": "d", "by": "Sam Aydlette", "on": "2026-11-17"}
+
+
+@pytest.mark.parametrize("offering", [
+    {}, {"fedramp_id": "", "fedramp_id_decision": DECISION}, {"fedramp_id": "  ", "fedramp_id_decision": DECISION},
+    {"fedramp_id": 7, "fedramp_id_decision": DECISION},
+    {"fedramp_id": "X"}, {"fedramp_id": "X", "fedramp_id_decision": {**DECISION, "by": ""}},
+    {"fedramp_id": "X", "fedramp_id_decision": {"decision": "d", "by": "Sam Aydlette"}},
+])
+def test_no_report_is_built_without_an_id_and_its_decision(tmp_path, offering):
     p = tmp_path / "offering.json"
     p.write_text(json.dumps(offering))
     with pytest.raises(SystemExit, match="CDS-CSO-FID"):

@@ -4,6 +4,11 @@
   "service_name": "samaydlette.com",
   "service_acronym": "SAMCOM",
   "fedramp_id": "Sam Aydlette (SAMCOM): PROOF-OF-CONCEPT-NOT-A-REAL-FEDRAMP-ID",
+  "fedramp_id_decision": {
+    "decision": "Use FedRAMP's fallback (provider name and acronym) suffixed PROOF-OF-CONCEPT-NOT-A-REAL-FEDRAMP-ID as the placeholder FedRAMP ID. None will be assigned: there is no FedRAMP engagement.",
+    "by": "Sam Aydlette",
+    "on": "2026-11-17"
+  },
   "service_model": ["SaaS"],
   "deployment_model": "Public Cloud",
   "business_category": ["Governance, Risk, and Compliance (GRC)", "Cybersecurity & Risk Management", "Health & Wellness"],

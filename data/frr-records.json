@@ -424,7 +424,7 @@
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Built for every report the deploy and the nightly publish: the SDR, the CPO, the OCR, the four VDR reports, the nightly status, the KSI signal, availability, the policy index and the trust center carry the offering's FedRAMP ID (a placeholder, since none is assigned), and a gate fails the publish when one does not; every alert issue names it. Missing: the runtime KSI signal (ksi-signal-runtime.json, written by the runtime Lambda) does not carry it yet; incident reports have no workflow yet.",
+      "not_demonstrated": "Built for every report the deploy and the nightly publish: the SDR, the CPO, the OCR, the four VDR reports, the nightly status, the KSI signal, availability, the policy index and the trust center carry the offering's FedRAMP ID (a placeholder, since none is assigned; the operator's decision is recorded beside it in data/cds/offering.json), and a gate fails the publish when one does not; every alert issue names it. Missing: the runtime KSI signal (ksi-signal-runtime.json, written by the runtime Lambda) does not carry it yet; incident reports have no workflow yet.",
       "evidence": [
         {
           "kind": "step",
@@ -449,6 +449,10 @@
         {
           "kind": "test",
           "ref": "tests/test_fedramp_id.py::test_every_alert_names_the_id"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id.py::test_the_placeholder_is_a_recorded_operator_decision"
         }
       ]
     },
