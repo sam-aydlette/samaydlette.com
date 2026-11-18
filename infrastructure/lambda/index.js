@@ -377,6 +377,9 @@ async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersio
         signal_id: crypto.randomUUID(),
         emitted_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
         emitter: 'runtime',
+        // CDS-CSO-FID: the FedRAMP ID, carried from the deploy signal this run
+        // validates (one source: data/cds/offering.json through the inventory).
+        ...(deploySignal.fedramp_id ? { fedramp_id: deploySignal.fedramp_id } : {}),
         csp: deploySignal.csp || 'aws',
         system_id: deploySignal.system_id,
         provenance,
@@ -449,6 +452,9 @@ async function publishPublicKey(kms, s3, bucketName, keyArn) {
 // =============================================================================
 // HANDLER
 // =============================================================================
+
+// Exported for tests (tests/test_runtime_fedramp_id.py); the handler is the entry point.
+exports.buildRuntimeSignal = buildRuntimeSignal;
 
 exports.handler = async (event, context) => {
     console.log('Runtime KSI emitter started');
