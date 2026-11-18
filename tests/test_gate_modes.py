@@ -742,3 +742,16 @@ def test_the_beacon_reports_every_nightly_check_with_its_owner(tmp_path):
     assert got["vdr.kev"]["result"] == "not on the runner"
     assert all(r["result"] == "not run" or r["result"] == "not on the runner"
                for r in _gates.stage_results(reg, "nightly", tmp_path / "absent.jsonl"))
+
+
+def test_every_nightly_gate_run_through_run_gates_records_its_result():
+    """The status beacon reports a nightly check as "not run" unless its runner
+    records a result, and the watchdog counts that as a failing gate. Every
+    `scripts/run-gates.sh <cmd>` a nightly-stage check names must be on the
+    runner's record list."""
+    src = (REPO / "scripts" / "run-gates.sh").read_text()
+    recorded = set(re.search(r"^  ([a-z|]+)\)\n    trap 'record ", src, re.M).group(1).split("|"))
+    reg = json.loads(REGISTER.read_text())
+    nightly = {c["run"].split()[1] for c in reg["checks"]
+               if "nightly" in c["stages"] and c.get("run", "").startswith("scripts/run-gates.sh ")}
+    assert nightly and nightly <= recorded, nightly - recorded
