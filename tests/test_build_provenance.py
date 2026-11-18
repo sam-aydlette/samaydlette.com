@@ -69,7 +69,7 @@ def test_predicate_structure_and_bindings(tmp_path, monkeypatch):
 def test_builder_id_single_sourced_and_pinned(tmp_path, monkeypatch):
     _ci_env(monkeypatch)
     sig = _signal(tmp_path)
-    pred = bp.build_predicate(str(sig), str(REPO / "scripts" / "build-iiw.py"))
+    pred = bp.build_predicate(str(sig), str(REPO / "scripts" / "build-sdr.py"))
     bid = pred["runDetails"]["builder"]["id"]
     assert bid == EXPECTED_BUILDER          # derived from WORKFLOW_REF, not hardcoded drift
     assert " " not in bid                   # never the spaced display name

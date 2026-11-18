@@ -38,8 +38,6 @@ website/.well-known/ksi-signal.bundle
 website/.well-known/oscal-ssp.json
 website/.well-known/vdr-report.json
 infrastructure/vdr-report.json
-website/.well-known/iiw.csv
-infrastructure/iiw.csv
 infrastructure/oscal-ssp.json
 infrastructure/ksi-signal.json
 # CR26 certification-data artifacts (built in CI from the canonical inventory, signed

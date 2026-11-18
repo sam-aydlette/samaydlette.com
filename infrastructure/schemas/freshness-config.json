@@ -178,31 +178,6 @@
       ]
     },
     {
-      "path": ".well-known/iiw.csv", "generator": "scripts/build-iiw.py",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "last_modified"
-      },
-      "signed": true,
-      "signature": ".well-known/iiw.bundle",
-      "published_by": [
-        "deploy"
-      ]
-    },
-    {
-      "path": ".well-known/iiw.csv.intoto.jsonl", "generator": "scripts/build-provenance.py",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "last_modified"
-      },
-      "signed": true,
-      "published_by": [
-        "deploy"
-      ]
-    },
-    {
       "path": ".well-known/ongoing-certification-report.json", "generator": "scripts/build-ocr.py",
       "certification_data": true,
       "cadence": "deploy",

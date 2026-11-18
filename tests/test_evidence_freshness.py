@@ -148,12 +148,12 @@ def test_each_artifact_is_measured_by_its_own_field_and_window(tmp_path):
 
 
 def test_an_artifact_without_a_timestamp_field_is_measured_by_last_modified(tmp_path):
-    csv = tmp_path / "iiw.csv"
-    csv.write_text("a,b\n")
-    assert freshness.main(["--url", csv.as_uri()]) == 0  # just written: Last-Modified is now
+    bundle = tmp_path / "opa-policy-bundle.tar.gz"
+    bundle.write_bytes(b"bundle")
+    assert freshness.main(["--url", bundle.as_uri()]) == 0  # just written: Last-Modified is now
     old = (datetime.now(timezone.utc) - timedelta(days=40)).timestamp()
-    os.utime(csv, (old, old))
-    assert freshness.main(["--url", csv.as_uri()]) == 1
+    os.utime(bundle, (old, old))
+    assert freshness.main(["--url", bundle.as_uri()]) == 1
 
 
 def _site(tmp_path, age_hours):

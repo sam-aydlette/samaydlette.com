@@ -170,7 +170,7 @@ def test_missing_unreadable_or_untimestamped_artifacts_count_as_stale():
 
 def test_last_modified_artifacts_are_aged_by_the_object_time():
     stale = [a["path"] for a in config()["artifacts"] if a["timestamp"]["source"] == "last_modified"]
-    assert ".well-known/iiw.csv" in stale
+    assert ".well-known/opa-policy-bundle.tar.gz" in stale
     out = compute(fresh_objects(), last_modified="2026-08-01T00:00:00Z")
     assert set(stale) <= set(out["stale"])
 

@@ -334,8 +334,9 @@ MAS_DEFAULTS = {
 # IIW (Integrated Inventory Workbook) attributes per component type
 # =============================================================================
 # Stamped onto component.attributes so the canonical inventory carries the
-# fields the FedRAMP IIW (SSP Appendix M) requires. The build-iiw.py projector
-# reads these to emit an IIW-compatible CSV.
+# fields the FedRAMP IIW (SSP Appendix M) asked for: asset type, function,
+# baseline configuration. The IIW CSV itself is retired (CR26 has no SSP); the
+# fields stay because they describe each component.
 # =============================================================================
 
 IIW_DEFAULTS = {
@@ -1869,7 +1870,6 @@ def main():
             "related_artifacts": {
                 "security_decision_record": "https://samaydlette.com/.well-known/security-decision-record.json",
                 "vdr_report": "https://samaydlette.com/.well-known/vdr-report.json",
-                "iiw_csv": "https://samaydlette.com/.well-known/iiw.csv",
                 "runtime_signal": "https://samaydlette.com/.well-known/ksi-signal-runtime.json",
                 "boundary_diagram": "https://samaydlette.com/research/authorization-boundary.html",
             },
