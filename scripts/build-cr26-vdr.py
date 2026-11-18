@@ -45,6 +45,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
+from _common import fedramp_id  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 
 HISTORY_DAYS = 366
@@ -212,7 +213,7 @@ def build(vdr, register, previous_vdt, previous_avi, previous_mrh, now):
             [a["vulnerabilityDetail"]["detection"]["detectedAt"] for a in accepted]
     earliest = min(times) if times else now.isoformat()
     to = now.isoformat()
-    cpo = {"certificationPackageOverviewUri": fs.CPO_URI}
+    cpo = {"certificationPackageOverviewUri": fs.CPO_URI, "fedramp_id": fedramp_id()}  # CDS-CSO-FID
     # REQ-GOV-2: like every VDR-family output, each names the method profile and
     # conformance results of the VDR report it came from.
     ext = {"source": "vdr-report.json", "vdrReportId": vdr.get("report_id"),
@@ -225,6 +226,7 @@ def build(vdr, register, previous_vdt, previous_avi, previous_mrh, now):
            "acceptedVulnerabilities": accepted, "providerExtensions": dict(ext)}
     mrh = build_history(active, accepted, previous_mrh, now)
     mrh["providerExtensions"] = {**ext, **mrh["providerExtensions"]}
+    mrh["fedramp_id"] = cpo["fedramp_id"]  # CDS-CSO-FID
     for doc, period in ((vdt, "VDT"), (avi, "AVI")):
         if doc["reportPeriod"]["from"] > doc["reportPeriod"]["to"]:
             _fail(f"{period} period starts after it ends")

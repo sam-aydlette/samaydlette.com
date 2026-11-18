@@ -30,6 +30,7 @@
 # =============================================================================
 
 import hashlib
+import json
 import os
 import subprocess
 import uuid
@@ -140,3 +141,29 @@ def run_url():
     if all(e.get(k) for k in ("GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID")):
         return f"{e['GITHUB_SERVER_URL']}/{e['GITHUB_REPOSITORY']}/actions/runs/{e['GITHUB_RUN_ID']}"
     return None
+
+
+# =============================================================================
+# the FedRAMP ID (CDS-CSO-FID)
+# =============================================================================
+OFFERING = Path(__file__).resolve().parent.parent / "data" / "cds" / "offering.json"
+
+
+def fedramp_id(path=OFFERING):
+    """The offering's FedRAMP ID, which every FedRAMP report carries. One source:
+    data/cds/offering.json, where the operator's decision to use a placeholder is
+    recorded beside it (fedramp_id_decision: decision, by, on). Fail-closed: no
+    report is written without the ID or without that decision."""
+    try:
+        off = json.loads(Path(path).read_text())
+    except (OSError, ValueError) as e:
+        raise SystemExit(f"::error::no FedRAMP ID: {path} unreadable ({e}) (CDS-CSO-FID, fail-closed)") from e
+    fid = off.get("fedramp_id")
+    if not isinstance(fid, str) or not fid.strip():
+        raise SystemExit(f"::error::no FedRAMP ID in {path} (CDS-CSO-FID, fail-closed)")
+    dec = off.get("fedramp_id_decision")
+    if not isinstance(dec, dict) or not all(isinstance(dec.get(k), str) and dec[k].strip()
+                                            for k in ("decision", "by", "on")):
+        raise SystemExit(f"::error::{path}: the FedRAMP ID has no recorded decision "
+                         "(fedramp_id_decision: decision, by, on) (CDS-CSO-FID, fail-closed)")
+    return fid

@@ -7,6 +7,7 @@
 #   run-gates.sh vdr [EXTRA BUILDER ARGS...]   (from infrastructure/)
 #   run-gates.sh ksi | vuln | claims | reconcile | freshness   (from infrastructure/)
 #   run-gates.sh redaction [FILES...]   (from infrastructure/)
+#   run-gates.sh fedrampid [FILES...]   (from infrastructure/)
 #
 # `stage` runs every gate the gate register (infrastructure/schemas/gate-modes.json)
 # lists for STAGE with a `run` script, from infrastructure/ (where the workflows
@@ -26,6 +27,8 @@
 # uploads. reconcile expects the commit in EXPECT_COMMIT (the deploy passes its
 # own), or HEAD locally. They run under PYTHON (default python3). redaction
 # scans FILES when given (the nightly's own set), else what the deploy uploads.
+# fedrampid is a pre-publish and nightly gate: every certification-data report
+# built here carries the offering's FedRAMP ID (CDS-CSO-FID).
 # freshness is the nightly's: the served VDR is the one this run built.
 #
 # When GATE_RESULTS_FILE is set, each gate run appends {run, result, at} to it
@@ -37,7 +40,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 manifest="${APPS_MANIFEST:-$here/../data/apps.json}"
 
 if [ "$#" -lt 1 ]; then
-  echo "usage: $0 stage STAGE | detection | vdr [args...] | ksi | vuln | claims | reconcile | redaction [files...] | freshness" >&2
+  echo "usage: $0 stage STAGE | detection | vdr [args...] | ksi | vuln | claims | reconcile | redaction [files...] | fedrampid | freshness" >&2
   exit 2
 fi
 cmd="$1"
@@ -135,6 +138,9 @@ case "$cmd" in
       # shellcheck disable=SC2086  # a word list by design
       "${PYTHON:-python3}" "$here/check-published-redaction.py" $files
     fi
+    ;;
+  fedrampid)
+    "${PYTHON:-python3}" "$here/check-fedramp-id.py" "$@"
     ;;
   freshness)
     built=$(sha256sum vdr-report.json | awk '{print $1}')

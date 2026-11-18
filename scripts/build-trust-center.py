@@ -43,6 +43,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _freshness import load_freshness_config  # noqa: E402
 import _decisions  # noqa: E402
+from _common import fedramp_id  # noqa: E402
 import _gates  # noqa: E402
 
 FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
@@ -799,6 +800,7 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         "schema": SCHEMA,
         "generated_at": now.isoformat(timespec="seconds"),
         "commit": commit,
+        "fedramp_id": fedramp_id(),  # CDS-CSO-FID
         "ksi_signal_id": signal_id,
         "system": {"id": inp["signal"].get("system_id"), "impact_level": (inp["signal"].get("categorization") or {}).get("impact_level")},
         "picture": build_picture(inp, now),

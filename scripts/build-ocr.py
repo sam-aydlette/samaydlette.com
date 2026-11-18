@@ -30,6 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
+from _common import fedramp_id  # noqa: E402
 
 QUARTER_DAYS = 91
 
@@ -80,7 +81,7 @@ def build_ocr(vdr, decisions, scn_rows, signal_id, now):
     report = {
         "report_type": "ongoing-certification-report",
         "schema": "fedramp-ongoing-certification-report-schema-2026-06-24.json",
-        "fedramp_id": "<not assigned — unsponsored self-attested PoC>",
+        "fedramp_id": fedramp_id(),  # CDS-CSO-FID
         "class": "C",
         "emitted_at": now.isoformat(),
         "reporting_period": {"start": period_start, "end": period_end},

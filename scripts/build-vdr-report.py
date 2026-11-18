@@ -53,6 +53,7 @@ from pathlib import Path
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
+from _common import fedramp_id  # noqa: E402
 import _gates  # noqa: E402
 import _redact  # noqa: E402
 import _rules  # noqa: E402
@@ -2337,6 +2338,7 @@ def main():
                                     inventory=load_inventory(args.ksi_signal),
                                     mitigations=load_mitigations(args.mitigations),
                                     runtime=load_runtime_signal(args.runtime_signal, args.runtime_pubkey))
+    report["fedramp_id"] = fedramp_id()  # CDS-CSO-FID
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Name the inventory component each finding affects, so the trust center can

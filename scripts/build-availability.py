@@ -24,6 +24,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import fedramp_id  # noqa: E402
+
 WINDOW_DAYS = 45  # keep >= 30 days of history per CDS-CSO-AVR
 
 
@@ -58,6 +61,7 @@ def main():
     up = sum(1 for h in history if h.get("status") == "available")
     feed = {
         "feed_type": "availability",
+        "fedramp_id": fedramp_id(),  # CDS-CSO-FID
         "rule": "CDS-CSO-AVR",
         "emitted_at": now.isoformat(),
         "ksi_signal_id": signal_id,

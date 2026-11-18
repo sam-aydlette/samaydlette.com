@@ -683,6 +683,15 @@ jobs:
     # per object, so the role needs exactly s3:PutObject on
     # `.well-known/vdr-*` and nothing else. The bucket default-encrypts with
     # SSE-S3 (AES256), so no KMS grant is involved.
+
+    # CDS-CSO-FID: every report this run publishes carries the offering's FedRAMP
+    # ID (scripts/check-fedramp-id.py over the certification-data reports built here).
+    - name: FedRAMP ID gate (every report carries it)
+      working-directory: infrastructure
+      run: >-
+        bash ../scripts/run-gates.sh fedrampid
+        vdr-report.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
+
     # Publication redaction gate over exactly the files the next step uploads
     # (scripts/_redact.py): fails closed on any AWS account ID.
     - name: Publication redaction gate (no AWS account ID)
@@ -797,6 +806,8 @@ jobs:
         # What G7 found about each detection input, when the gate got that far.
         [ -s detection.json ] || echo 'null' > detection.json
         if [ -s conformance-results.json ]; then cp conformance-results.json conformance-status.json; else echo 'null' > conformance-status.json; fi
+        # CDS-CSO-FID: the beacon names the offering. An assignment, so set -e stops on a missing ID.
+        FEDRAMP_ID="$(jq -er '.fedramp_id' ../data/cds/offering.json)"
         jq -n \
           --slurpfile gs gate-status.json \
           --slurpfile det detection.json \
@@ -809,7 +820,8 @@ jobs:
           --arg finished_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           --arg run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
           --arg commit "${SIGNAL_COMMIT:-unknown}" \
-          '{schema: "vdr-status/1", result: $result, finished_at: $finished_at,
+          --arg fedramp_id "${FEDRAMP_ID}" \
+          '{schema: "vdr-status/1", fedramp_id: $fedramp_id, result: $result, finished_at: $finished_at,
             vuln_gate: $vuln_gate, reconcile: $reconcile, published: $published,
             inventory_commit: $commit, run_url: $run_url,
             gates: $gs[0].gates, gate_events: $gs[0].gate_events, gate_results: $gs[0].gate_results,

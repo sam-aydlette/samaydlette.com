@@ -150,6 +150,7 @@ def build(off, prof, signal, now, commit, run_url):
         "contactInformation": contacts(off),
         "certifiedServices": certified_services(off, prof),
         "metadata": metadata(off, now, commit, run_url),
+        "fedramp_id": off["fedramp_id"],          # CDS-CSO-FID: the same ID, where every report carries it
         "ksi_signal_id": signal.get("signal_id"),
         "class": prof.get("fedramp_class"),
         "impact_level": prof.get("impact_level"),

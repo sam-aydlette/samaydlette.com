@@ -34,6 +34,11 @@
       "type": "string",
       "format": "uuid"
     },
+    "fedramp_id": {
+      "description": "The FedRAMP ID of the cloud service offering (CDS-CSO-FID), from data/cds/offering.json. A placeholder until one is assigned. Optional: the runtime emitter does not carry it yet.",
+      "type": "string",
+      "minLength": 1
+    },
     "emitted_at": {
       "description": "ISO 8601 timestamp at which this signal was emitted.",
       "type": "string",

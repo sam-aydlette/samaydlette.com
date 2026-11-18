@@ -35,6 +35,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _gates  # noqa: E402
+from _common import fedramp_id  # noqa: E402
 
 LABEL = "gate-alert"
 CONTEXTS = ("deploy", "nightly")
@@ -83,9 +84,10 @@ def _body(a, context):
     repo, run_id = os.environ.get("GITHUB_REPOSITORY", ""), os.environ.get("GITHUB_RUN_ID", "")
     run_url = f"{server}/{repo}/actions/runs/{run_id}" if repo and run_id else "(local run)"
     sha = os.environ.get("GITHUB_SHA", "")
+    fid = f"FedRAMP ID: {fedramp_id()}"  # CDS-CSO-FID: every notification names the offering
     if a["action"] == "close":
-        return f"Passed in the {context} run {run_url} (commit {sha}). Closing."
-    lines = [f"Failed in the {context} run {run_url} (commit {sha}).", ""]
+        return f"Passed in the {context} run {run_url} (commit {sha}). Closing.\n\n{fid}"
+    lines = [f"Failed in the {context} run {run_url} (commit {sha}).", "", fid, ""]
     if a["checks"]:
         lines += ["| Check | Owner |", "|---|---|"] + [f"| `{c}` | `{o}` |" for c, o in a["checks"]]
         lines += ["", "The run log names the cause. Fix it, or record a decision for it; "

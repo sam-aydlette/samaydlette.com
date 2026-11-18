@@ -148,6 +148,9 @@
     {"check": "redaction.published", "gate": "pipeline", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
      "stages": ["pre-publish", "nightly"], "owner": "role:platform-owner", "fixture": "tests/fixtures/redaction/bad", "run": "scripts/run-gates.sh redaction"},
+    {"check": "fedramp-id.published", "gate": "pipeline", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-18", "review_by": "2027-11-18",
+     "stages": ["pre-publish", "nightly"], "owner": "role:security-officer", "fixture": "tests/fixtures/fedramp-id/bad", "run": "scripts/run-gates.sh fedrampid"},
     {"check": "freshness.published", "gate": "pipeline", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-13", "review_by": "2027-11-13",
      "stages": ["nightly"], "owner": "role:observability-owner", "fixture": "tests/fixtures/freshness/stale", "run": "scripts/run-gates.sh freshness"}
