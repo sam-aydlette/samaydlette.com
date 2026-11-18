@@ -102,6 +102,7 @@ CHECKS = {
     "inventory.signal": PIPELINE,
     "frr.claims": PIPELINE,
     "redaction.published": PIPELINE,
+    "fedramp-id.published": PIPELINE,
     "freshness.published": PIPELINE,
 }
 

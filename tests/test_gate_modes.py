@@ -441,6 +441,8 @@ def _pipeline(check, tmp_path, e, monkeypatch, capsys):
         return _claims(tmp_path, e)
     if check == "redaction.published":
         return _script(tmp_path, [str(s / "check-published-redaction.py"), "--root", fx])
+    if check == "fedramp-id.published":
+        return _script(tmp_path, [str(s / "check-fedramp-id.py"), "--root", fx])
     if check == "freshness.published":
         return _script(tmp_path, [str(s / "check-evidence-freshness.py"), "--url",
                                   (_fixture(e) / "vdr-report.json").as_uri()])
@@ -465,6 +467,7 @@ MARKERS = {
     "inventory.signal": "duplicate native_id",
     "frr.claims": "SCN-CSO-EVA",
     "redaction.published": "account ID(s)",
+    "fedramp-id.published": "availability.json: fedramp_id is None",
     "freshness.published": "vdr-report.json",
 }
 
@@ -534,6 +537,7 @@ RUNS = {"vdr.": "run-gates.sh vdr", "detection.zap.": "run-gates.sh vdr", "detec
         "exceptions.register": "make gates STAGE=pr", "scn.tag": "scripts/sia.py",
         "inventory.signal": "scripts/validate-ksi-signal.py", "frr.claims": "scripts/_frr.py --claims",
         "redaction.published": "scripts/check-published-redaction.py",
+        "fedramp-id.published": "run-gates.sh fedrampid",
         "freshness.published": "scripts/check-evidence-freshness.py"}
 
 
@@ -634,7 +638,8 @@ def test_post_apply_and_pre_publish_run_the_deploys_later_gates():
     assert sorted(runs) == ["scripts/run-gates.sh claims", "scripts/run-gates.sh ksi",
                             "scripts/run-gates.sh reconcile", "scripts/run-gates.sh vuln"]
     assert all(m.startswith(("vdr.", "detection.zap.")) for m in missing) and covered == []
-    assert _gates.stage_runs(_gates.load_gate_modes(), "pre-publish") == (["scripts/run-gates.sh redaction"], [], [])
+    assert _gates.stage_runs(_gates.load_gate_modes(), "pre-publish") == (["scripts/run-gates.sh redaction",
+                                                                                "scripts/run-gates.sh fedrampid"], [], [])
 
 
 def test_every_run_script_exists_and_its_check_names_its_stages():

@@ -36,7 +36,7 @@ from pathlib import Path
 # Shared generator helpers. The insert is __file__-relative, so this script stays
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import sha256_file  # noqa: E402
+from _common import fedramp_id, sha256_file  # noqa: E402
 import _apps  # noqa: E402
 import _redact  # noqa: E402
 
@@ -1833,6 +1833,7 @@ def main():
         "$schema": schema_id,
         "signal_version": SIGNAL_VERSION,
         "signal_id": str(uuid.uuid4()),
+        "fedramp_id": fedramp_id(),  # CDS-CSO-FID
         "emitted_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "emitter": "deploy",
         "csp": CSP,

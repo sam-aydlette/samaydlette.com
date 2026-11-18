@@ -30,6 +30,7 @@
 # =============================================================================
 
 import hashlib
+import json
 import os
 import subprocess
 import uuid
@@ -140,3 +141,21 @@ def run_url():
     if all(e.get(k) for k in ("GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID")):
         return f"{e['GITHUB_SERVER_URL']}/{e['GITHUB_REPOSITORY']}/actions/runs/{e['GITHUB_RUN_ID']}"
     return None
+
+
+# =============================================================================
+# the FedRAMP ID (CDS-CSO-FID)
+# =============================================================================
+OFFERING = Path(__file__).resolve().parent.parent / "data" / "cds" / "offering.json"
+
+
+def fedramp_id(path=OFFERING):
+    """The offering's FedRAMP ID, which every FedRAMP report carries. One source:
+    data/cds/offering.json. Fail-closed: no report is written without it."""
+    try:
+        fid = json.loads(Path(path).read_text()).get("fedramp_id")
+    except (OSError, ValueError) as e:
+        raise SystemExit(f"::error::no FedRAMP ID: {path} unreadable ({e}) (CDS-CSO-FID, fail-closed)") from e
+    if not isinstance(fid, str) or not fid.strip():
+        raise SystemExit(f"::error::no FedRAMP ID in {path} (CDS-CSO-FID, fail-closed)")
+    return fid

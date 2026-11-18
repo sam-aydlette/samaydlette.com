@@ -131,6 +131,10 @@
             },
             "description": "The workflows (or the runtime Lambda) that upload this artifact. scripts/published-set.py builds each workflow's publish list from it."
           },
+          "certification_data": {
+            "type": "boolean",
+            "description": "FedRAMP Certification Data (a report that results from FedRAMP rules): it carries the offering's FedRAMP ID at top-level fedramp_id (CDS-CSO-FID), and scripts/check-fedramp-id.py fails the publish when it does not."
+          },
           "markdown": {
             "type": "boolean",
             "description": "A human-readable <name>.md rendering is published beside this .json artifact."

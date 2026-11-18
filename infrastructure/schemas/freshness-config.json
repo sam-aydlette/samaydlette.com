@@ -9,6 +9,7 @@
   "artifacts": [
     {
       "path": ".well-known/vdr-report.json", "generator": "scripts/build-vdr-report.py",
+      "certification_data": true,
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -54,6 +55,7 @@
     },
     {
       "path": ".well-known/vdr-detail-report.json", "generator": "scripts/build-cr26-vdr.py",
+      "certification_data": true,
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -71,6 +73,7 @@
     },
     {
       "path": ".well-known/vdr-accepted-vulnerabilities.json", "generator": "scripts/build-cr26-vdr.py",
+      "certification_data": true,
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -88,6 +91,7 @@
     },
     {
       "path": ".well-known/vdr-history.json", "generator": "scripts/build-cr26-vdr.py",
+      "certification_data": true,
       "cadence": "nightly",
       "max_age_hours": 24,
       "timestamp": {
@@ -104,6 +108,7 @@
     },
     {
       "path": ".well-known/vdr-status.json", "generator": ".github/workflows/evidence-nightly.yml",
+      "certification_data": true,
       "cadence": "nightly",
       "max_age_hours": 26,
       "timestamp": {
@@ -133,6 +138,7 @@
     },
     {
       "path": ".well-known/ksi-signal.json", "generator": "scripts/build-ksi-signal.py",
+      "certification_data": true,
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -198,6 +204,7 @@
     },
     {
       "path": ".well-known/ongoing-certification-report.json", "generator": "scripts/build-ocr.py",
+      "certification_data": true,
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -213,6 +220,7 @@
     },
     {
       "path": ".well-known/availability.json", "generator": "scripts/build-availability.py",
+      "certification_data": true,
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -228,6 +236,7 @@
     },
     {
       "path": ".well-known/policy-index.json", "generator": "scripts/build-policy-index.py",
+      "certification_data": true,
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -242,6 +251,7 @@
     },
     {
       "path": ".well-known/security-decision-record.json", "generator": "scripts/build-sdr.py",
+      "certification_data": true,
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -269,6 +279,7 @@
     },
     {
       "path": ".well-known/certification-package-overview.json", "generator": "scripts/build-cpo.py",
+      "certification_data": true,
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
@@ -312,6 +323,7 @@
     },
     {
       "path": ".well-known/trust-center.json", "generator": "scripts/build-trust-center.py",
+      "certification_data": true,
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {

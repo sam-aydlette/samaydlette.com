@@ -19,6 +19,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import fedramp_id  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 
 # Family/topic -> related FedRAMP Practices, keyed by filename stem.
@@ -116,6 +119,7 @@ def main():
     entries = [index_file(f) for f in files]
     index = {
         "index_type": "policy-and-procedure-index",
+        "fedramp_id": fedramp_id(),  # CDS-CSO-FID
         "rule": "CDS-CSO-IRP",
         "count": len(entries),
         "entries": entries,

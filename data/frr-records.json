@@ -424,7 +424,33 @@
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID); step incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID); 10 test(s)."
+      "not_demonstrated": "Built for every report the deploy and the nightly publish: the SDR, the CPO, the OCR, the four VDR reports, the nightly status, the KSI signal, availability, the policy index and the trust center carry the offering's FedRAMP ID (a placeholder, since none is assigned), and a gate fails the publish when one does not; every alert issue names it. Missing: the runtime KSI signal (ksi-signal-runtime.json, written by the runtime Lambda) does not carry it yet; incident reports have no workflow yet.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Gates for the pre-publish stage (make gates STAGE=pre-publish)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#FedRAMP ID gate (every report carries it)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id.py::test_the_governed_config_marks_exactly_the_certification_data"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id.py::test_each_certification_data_generator_writes_the_offerings_id"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id.py::test_the_gate_fails_a_report_without_the_offerings_id"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id.py::test_every_alert_names_the_id"
+        }
+      ]
     },
     {
       "frr_id": "CDS-CSO-FRC",
@@ -889,12 +915,36 @@
     },
     {
       "frr_id": "FRC-CSO-MRA",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent); 3 test(s).",
+      "status": "Implemented",
+      "implementation": "The provider stays accountable for the package's accuracy and completeness, including what tools supply. Accountability: the CPO names the accountable official, and every package file is signed by the deploy workflow's pinned identity and versioned by its commit. Accuracy: every artifact is derived from one inventory and reconciled against live AWS before publication; third-party scanner output (Grype, Dependabot, Checkov, tfsec, ZAP) enters only through the detection gate; the claims gate fails a rule record that claims more than its evidence; and after publication the deploy reruns the verifier a third party would. Completeness: every rule and KSI has a record, every governed artifact must be published inside its freshness window, and every report must carry the offering's FedRAMP ID.",
       "evidence": [
         {
           "kind": "step",
           "ref": "deploy-with-opa.yml#Gates for the post-apply stage (make gates STAGE=post-apply)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Gates for the pre-publish stage (make gates STAGE=pre-publish)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Post-publish round-trip verify"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#External verifier smoke test (reciprocity handshake)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id.py::test_the_gate_fails_a_report_without_the_offerings_id"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo.py::test_the_metadata_names_the_accountable_official_version_time_and_source"
         }
       ]
     },

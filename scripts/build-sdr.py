@@ -33,7 +33,7 @@ from pathlib import Path
 # Shared generator helpers. The insert is __file__-relative, so this script stays
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import commit, prop, run_url  # noqa: E402
+from _common import commit, fedramp_id, prop, run_url  # noqa: E402
 import _assessor  # noqa: E402
 import _controls  # noqa: E402
 import _fedramp_schema  # noqa: E402
@@ -457,6 +457,7 @@ def main():
         "note": "The CR26 replacement for the System Security Plan: per-KSI records (20x) and "
                 "per-Rev5-control records (rev5_controls), both from one control projection.",
         "metadata": fedramp["metadata"],         # SDR-CSO-MTD
+        "fedramp_id": fedramp_id(),               # CDS-CSO-FID
         "class": prof.get("fedramp_class"),
         "impact_level": prof.get("impact_level"),
         "ksi_signal_id": (signal or {}).get("signal_id"),

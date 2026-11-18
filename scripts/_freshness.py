@@ -38,7 +38,7 @@ REQUIRED = (
 
 TOP_KEYS = {"$schema", "version", "description", "decided_by", "decided_on", "review_by", "rationale", "artifacts"}
 ARTIFACT_KEYS = {"path", "generator", "cadence", "max_age_hours", "timestamp", "signed", "signature", "published_by",
-                 "markdown", "json_schema", "optional", "note"}
+                 "markdown", "json_schema", "optional", "note", "certification_data"}
 CADENCES = {"nightly", "runtime", "deploy", "operator"}
 PUBLISHERS = {"deploy", "nightly", "runtime"}
 SCHEMA_RE = re.compile(r"^schemas/[A-Za-z0-9][A-Za-z0-9._-]*\.schema\.json$")
@@ -80,7 +80,7 @@ def _check_artifact(where, i, a):
     by = a["published_by"]
     if not isinstance(by, list) or not by or len(set(by)) != len(by) or not set(by) <= PUBLISHERS:
         _fail(where, f"{path}: published_by must be a non-empty list drawn from {sorted(PUBLISHERS)}")
-    for flag in ("markdown", "optional"):
+    for flag in ("markdown", "optional", "certification_data"):
         if flag in a and not isinstance(a[flag], bool):
             _fail(where, f"{path}: {flag} must be true or false")
     if a.get("markdown") and not path.endswith(".json"):

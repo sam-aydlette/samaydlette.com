@@ -130,6 +130,10 @@ def _policy_repo(tmp_path):
     (repo / "scripts").mkdir(parents=True)
     (repo / "docs" / "policies").mkdir(parents=True)
     shutil.copy(REPO / "scripts" / "build-policy-index.py", repo / "scripts" / "build-policy-index.py")
+    # The index carries the FedRAMP ID (CDS-CSO-FID), read through _common from the offering.
+    shutil.copy(REPO / "scripts" / "_common.py", repo / "scripts" / "_common.py")
+    (repo / "data" / "cds").mkdir(parents=True)
+    shutil.copy(REPO / "data" / "cds" / "offering.json", repo / "data" / "cds" / "offering.json")
     _git(repo, "init", "-q")
     (repo / "docs" / "policies" / "ac-policy.md").write_text("# AC\n\nFirst.\n")
     (repo / "docs" / "policies" / "sc-policy.md").write_text("# SC\n\nFirst.\n")
