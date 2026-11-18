@@ -115,6 +115,9 @@ def build_ocr(vdr, decisions, scn_rows, signal_id, now, cal, issued=()):
         "next_ongoing_certification_report_date": target.isoformat(),          # CCM-OCR-NRD
         "next_ongoing_certification_report_overdue": overdue,
         "next_quarterly_review_date": review.isoformat(),                      # CCM-QTR-NRD
+        # On the day a report is issued, the OCR is that issue: say which, and how late.
+        "issue": next(({"id": i["id"], "due": i["due"], "days_late": i.get("days_late", 0)}
+                       for i in issued if i["issued_on"] == today.isoformat()), None),
         "reportable_incidents_attestation": NO_INCIDENTS,
         "lessons_learned_from_incidents": [],
         "relationship_obligations_status": RELATIONSHIP,
@@ -126,6 +129,9 @@ def render_markdown(r):
            f"- **FedRAMP ID:** {r['fedramp_id']} | **Class:** {r['class']}",
            f"- **Reporting period:** {r['reportPeriod']['from']} to {r['reportPeriod']['to']}",
            f"- **Emitted:** {r['emitted_at']}",
+           *([f"- **Issue:** {r['issue']['id']}, due {r['issue']['due']}"
+              + (f", issued {r['issue']['days_late']} days late" if r["issue"]["days_late"] else "")]
+             if r["issue"] else []),
            f"- **Bound to inventory signal:** `{r['ksi_signal_id']}`",
            f"- **Next Ongoing Certification Report (CCM-OCR-NRD):** {r['next_ongoing_certification_report_date']}"
            + (" (overdue)" if r["next_ongoing_certification_report_overdue"] else ""),

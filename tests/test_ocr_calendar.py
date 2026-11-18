@@ -120,3 +120,10 @@ def test_the_cpo_publishes_the_same_next_dates():
     assert fs.validate(doc, "cpo") == []
     assert doc["serviceProperties"]["nextOngoingCertificationReportDate"] == "2026-11-15"
     assert doc["next_quarterly_review_date"] == _ocr()["next_quarterly_review_date"]
+
+
+def test_on_its_issue_day_the_ocr_names_the_issue_and_how_late_it_is():
+    issued = [{**ISSUED_Q4[0], "days_late": 3}]
+    assert _ocr(issued)["issue"] == {"id": "2026-Q4", "due": "2026-11-15", "days_late": 3}
+    assert "issued 3 days late" in ocr.render_markdown(_ocr(issued))
+    assert _ocr()["issue"] is None
