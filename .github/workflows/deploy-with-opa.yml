@@ -1317,6 +1317,33 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
         done
 
+    # The quarterly issue (CCM-OCR-AVL, CDS-CSO-HAD). The published index of
+    # issued reports is fetched and its signature verified against this
+    # workflow's pinned identity: a published index that does not verify fails
+    # the run, and no index (404) means nothing has been issued yet. When a due
+    # date on data/ocr-calendar.json has passed with no issue, this run issues
+    # it: the OCR and CPO below are built from the updated index, and the
+    # package is frozen after it is signed.
+    - name: Plan the quarterly OCR issue (verified published index)
+      working-directory: infrastructure
+      run: |
+        rm -f ocr-issues.json ocr-issues-published.bundle
+        code=$(curl -sS -o ocr-issues.json -w '%{http_code}' "https://samaydlette.com/.well-known/ocr-issues.json")
+        if [ "$code" = 200 ]; then
+          curl -fsS -o ocr-issues-published.bundle "https://samaydlette.com/.well-known/ocr-issues.bundle"
+          cosign verify-blob --bundle ocr-issues-published.bundle \
+            --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
+            --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' ocr-issues.json
+          echo "Published OCR issue index verified ($(jq '.issues | length' ocr-issues.json) issues)."
+        elif [ "$code" = 404 ]; then
+          rm -f ocr-issues.json
+          echo "No published OCR issue index yet."
+        else
+          echo "::error::fetching the published OCR issue index returned HTTP $code"; exit 1
+        fi
+        rm -f ocr-issues-published.bundle
+        python3 ../scripts/issue-ocr.py plan --index ocr-issues.json
+
     - name: Build Ongoing Certification Report (CCM)
       working-directory: infrastructure
       run: |
@@ -1326,6 +1353,7 @@ jobs:
           --decisions ../data/decisions.json \
           --ksi-signal ksi-signal.json \
           --scn-register ../docs/scn/scn-register.csv \
+          --issues ocr-issues.json \
           --output ongoing-certification-report.json \
           --md-output ongoing-certification-report.md
         jq '{next_ongoing_certification_report_date, next_quarterly_review_date}' ongoing-certification-report.json
@@ -1377,7 +1405,7 @@ jobs:
         echo "Building Certification Package Overview (CPO-CSO-OVR); with the SDR, the SSP replacement..."
         python3 ../scripts/build-cpo.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
-          --ksi-signal ksi-signal.json
+          --ksi-signal ksi-signal.json --issues ocr-issues.json
 
     # The authorization-boundary map the trust center draws: the inventory's
     # components placed by docs/boundary/boundary-classification.json, connected
@@ -1479,6 +1507,20 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle boundary-corroboration.bundle boundary-corroboration.json
         fi
 
+    # Freeze this run's issue, if it made one: the signed package files the CPO
+    # lists are copied into ocr/<id>/ and their SHA-256s recorded in the index,
+    # which is then signed. The copies are the same bytes the redaction gate
+    # scans below.
+    - name: Freeze the quarterly OCR issue and sign the index
+      working-directory: infrastructure
+      run: |
+        rm -rf ocr
+        issued=$(python3 ../scripts/issue-ocr.py freeze --index ocr-issues.json --root . --out ocr)
+        if [ -n "$issued" ]; then
+          echo "Issued $issued: $(ls ocr/"$issued" | wc -l) files frozen."
+        fi
+        cosign sign-blob --yes --new-bundle-format --bundle ocr-issues.bundle ocr-issues.json
+
     # Publication redaction gate: no artifact this run is about to publish
     # carries an AWS account ID. The inventory builder redacts it
     # (scripts/_redact.py) and everything else derives from the inventory; this
@@ -1504,6 +1546,25 @@ jobs:
         # Markdown rendering and schema. published-set.py fails if one was not
         # built; the operator-run corroboration is the only optional one.
         objects=$(python3 ../scripts/published-set.py upload --by deploy)
+
+        # An issued quarterly snapshot is published once and never replaced: the
+        # run fails if anything is already under its prefix. It goes up before
+        # the index that lists it.
+        for dir in ocr/*/; do
+          [ -d "$dir" ] || continue
+          id=$(basename "$dir")
+          existing=$(aws s3api list-objects-v2 --bucket "$BUCKET_NAME" --prefix ".well-known/ocr/$id/" \
+            --max-keys 1 --query 'KeyCount' --output text)
+          if [ "$existing" != 0 ]; then
+            echo "::error::.well-known/ocr/$id/ is already published; an issued report is never replaced"; exit 1
+          fi
+          for f in "$dir"*; do
+            case "$f" in *.md) type="text/markdown; charset=utf-8" ;; *) type="application/json" ;; esac
+            aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/ocr/$id/$(basename "$f")" \
+              --content-type "$type" --cache-control "public, max-age=86400" </dev/null
+          done
+          echo "Published the $id issue snapshot."
+        done
         while IFS=$'\t' read -r file key type cache; do
           aws s3 cp "$file" "s3://$BUCKET_NAME/$key" --content-type "$type" --cache-control "$cache" </dev/null
         done <<< "$objects"

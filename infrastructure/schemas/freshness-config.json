@@ -225,6 +225,22 @@
       "markdown": true
     },
     {
+      "path": ".well-known/ocr-issues.json", "generator": "scripts/issue-ocr.py",
+      "certification_data": true,
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/ocr-issues.bundle",
+      "published_by": [
+        "deploy"
+      ],
+      "note": "The index of issued quarterly reports. The frozen snapshots it lists under /.well-known/ocr/<id>/ are not freshness-governed: they are meant to stay as issued, and verify-published checks them against the SHA-256s recorded here."
+    },
+    {
       "path": ".well-known/security-decision-record.json", "generator": "scripts/build-sdr.py",
       "certification_data": true,
       "cadence": "deploy",

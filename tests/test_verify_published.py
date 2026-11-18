@@ -60,10 +60,10 @@ done
 
 def test_every_listed_signature_is_checked_against_its_publisher(tmp_path):
     rows = _signed()
-    assert len(rows) == 21
+    assert len(rows) == 22
     _, lines = _run(tmp_path, _site(tmp_path))
     sig_lines = [line for line in lines if "bound to the published inventory" not in line]
-    assert len(sig_lines) == 21 and all(line.startswith("PASS") for line in sig_lines), sig_lines
+    assert len(sig_lines) == 22 and all(line.startswith("PASS") for line in sig_lines), sig_lines
     assert "PASS  vdr-status.json signed by the pinned nightly workflow on main" in sig_lines
 
 
@@ -93,3 +93,42 @@ def test_an_unpublished_corroboration_is_skipped_not_passed(tmp_path):
 def test_a_missing_required_artifact_stops_the_verifier(tmp_path):
     out, _ = _run(tmp_path, _site(tmp_path, skip={"policy-index.json"}))
     assert out.returncode == 1 and "could not fetch" in out.stderr and "policy-index.json" in out.stderr
+
+
+def _issued_site(tmp_path, tamper=False):
+    """A site with one issued quarterly report: a frozen JSON file, its
+    signature and a Markdown rendering, listed with their SHA-256s."""
+    import hashlib
+    import json
+    site = _site(tmp_path)
+    snap = site / "ocr" / "2026-Q4"
+    snap.mkdir(parents=True)
+    files = {"ongoing-certification-report.json": '{"x": 1}', "ongoing-certification-report.bundle": DEPLOY,
+             "ongoing-certification-report.md": "# OCR\n"}
+    for name, text in files.items():
+        (snap / name).write_text(text)
+    index = {"schema": "ocr-issues/1", "issues": [
+        {"id": "2026-Q4", "due": "2026-11-15", "issued_on": "2026-11-18", "period_from": "2026-11-04",
+         "period_to": "2026-11-18",
+         "files": {n: hashlib.sha256(t.encode()).hexdigest() for n, t in files.items()}}]}
+    (site / "ocr-issues.json").write_text(json.dumps(index))
+    if tamper:
+        (snap / "ongoing-certification-report.md").write_text("# edited after issue\n")
+    return site
+
+
+def _issued_lines(out):
+    section = out.stdout.split("== 6.", 1)[-1].split("== Scope", 1)[0]
+    return [line.strip() for line in section.splitlines() if line.strip().startswith(("PASS", "FAIL"))]
+
+
+def test_an_issued_snapshot_that_matches_its_signed_index_passes(tmp_path):
+    out, _ = _run(tmp_path, _issued_site(tmp_path))
+    lines = _issued_lines(out)
+    assert len(lines) == 2 and all(line.startswith("PASS") for line in lines), lines
+
+
+def test_a_snapshot_file_changed_after_issue_fails(tmp_path):
+    out, _ = _run(tmp_path, _issued_site(tmp_path, tamper=True))
+    assert any(line.startswith("FAIL") and "differs from the SHA-256" in line for line in _issued_lines(out))
+    assert out.returncode != 0

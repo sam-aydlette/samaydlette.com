@@ -104,10 +104,33 @@ def next_review(cal, issued, today):
     return add_business_days(max(target, today), n)
 
 
-def period_start(cal, issued):
-    """The current reporting period starts the day after the last issued report's
-    period ended, or on the first period start."""
-    if issued:
-        return date.fromisoformat(max(i["period_to"] for i in issued)) + timedelta(days=1)
+def period_start(cal, issued, today):
+    """The current reporting period starts the day after the last report closed
+    before today, or on the first period start. On the day a report is issued,
+    that report's own period is the current one."""
+    closed = [i["period_to"] for i in issued or [] if date.fromisoformat(i["period_to"]) < today]
+    if closed:
+        return date.fromisoformat(max(closed)) + timedelta(days=1)
     return date.fromisoformat(cal["first_period_start"])
+
+
+def load_issued(path):
+    """The issued reports from an index of issues (scripts/issue-ocr.py), or []
+    when no path is given or no index exists yet."""
+    if not path or not Path(path).exists():
+        return []
+    try:
+        doc = json.loads(Path(path).read_text())
+    except ValueError as e:
+        _fail(f"{path} is not JSON ({e})")
+    if not isinstance(doc, dict) or doc.get("schema") != "ocr-issues/1" or not isinstance(doc.get("issues"), list):
+        _fail(f"{path} is not an ocr-issues/1 index")
+    issues = doc["issues"]
+    for i in issues:
+        try:
+            for k in ("due", "issued_on", "period_from", "period_to"):
+                date.fromisoformat(i[k])
+        except (KeyError, TypeError, ValueError):
+            _fail(f"{path}: issue {i.get('id') if isinstance(i, dict) else i!r} lacks valid dates")
+    return issues
 
