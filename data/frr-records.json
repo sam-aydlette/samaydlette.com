@@ -174,8 +174,38 @@
     },
     {
       "frr_id": "CCM-OCR-AVL",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Built, not yet run: the deploy issues each quarter's report when due (scripts/issue-ocr.py), freezing it with the package under /.well-known/ocr/<id>/ and listing it in the signed ocr-issues.json. Missing: a first issue published and verified (2026-Q4, due 2026-11-15, is issued by the next deploy)."
+      "status": "Implemented",
+      "implementation": "Each quarter's Ongoing Certification Report is issued by the deploy when its due date passes (scripts/issue-ocr.py): in FedRAMP's OCR schema with the eight summaries, a human-readable Markdown rendering, covering the period since the previous report, and naming its issue and how late it went out. The first, 2026-Q4 (due 2026-11-15), was issued on 2026-11-18, 3 days late, and is frozen under /.well-known/ocr/2026-Q4/. The necessary parties are the public: with no agency, nobody else receives it.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Plan the quarterly OCR issue (verified published index)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Freeze the quarterly OCR issue and sign the index"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_issue.py::test_a_passed_due_date_is_issued_late_with_its_period"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_issue.py::test_nothing_is_issued_before_the_next_due_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_calendar.py::test_on_its_issue_day_the_ocr_names_the_issue_and_how_late_it_is"
+        }
+      ]
     },
     {
       "frr_id": "CCM-OCR-FBM",
@@ -548,8 +578,42 @@
     },
     {
       "frr_id": "CDS-CSO-HAD",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Built, not yet run: each issued report's package snapshot is frozen under /.well-known/ocr/<id>/, its files' SHA-256s recorded in the signed ocr-issues.json, published once and never replaced by the deploy (the bucket itself has no Object Lock; versioning keeps earlier versions). Missing: a first snapshot published and verified."
+      "status": "Implemented",
+      "implementation": "Each issued report is frozen with the package it reports on (the CPO, the files it lists, their Markdown and signatures) under /.well-known/ocr/<id>/, each file's SHA-256 recorded in the signed ocr-issues.json. The deploy publishes a snapshot once and fails rather than replace one; verify-published checks every frozen file against the index and its signature. 2026-Q4's 16 files are published and verified. The guarantee is the pipeline's: the bucket has no Object Lock, though versioning keeps earlier versions.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Freeze the quarterly OCR issue and sign the index"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Publish all signed artifacts to /.well-known/"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_issue.py::test_freeze_copies_the_package_and_records_each_files_sha256"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_issue.py::test_freeze_never_writes_over_an_existing_snapshot"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_issue.py::test_the_deploy_refuses_to_replace_an_issued_snapshot"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ocr_issue.py::test_a_changed_or_missing_snapshot_file_fails_the_check"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_verify_published.py::test_a_snapshot_file_changed_after_issue_fails"
+        }
+      ]
     },
     {
       "frr_id": "CDS-CSO-IRP",
