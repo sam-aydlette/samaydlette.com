@@ -931,7 +931,7 @@
     {
       "frr_id": "CPO-CSO-OVR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 4 test(s).",
+      "not_demonstrated": "The CPO is published in FedRAMP's schema and as Markdown, but five of the rules it must include are not met: CDS-CSO-IRP, MAS-CSO-IIR, MAS-CSO-FLO, MAS-CSO-TPR and CMU-CSO-CMD. Missing: the Minimum Assessment Scope and the secure configuration guide, then the CPO covering them.",
       "evidence": [
         {
           "kind": "step",
@@ -946,7 +946,7 @@
     {
       "frr_id": "CPO-CSX-CPM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Package maintainer preflight; step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 2 test(s).",
+      "not_demonstrated": "Not met yet. Class C must keep the package up to date at least every 2 weeks. The package is rebuilt only on a human-approved deploy (no unattended package role, the operator's decision of 2026-11-17), and the SDR's own history shows gaps of 28 days (to 2026-09-24) and 15 days (to 2026-10-20). Each package file now has a 14-day governed window, so the watchdog pages on a lapse. Missing: a deploy cadence that keeps every package file inside 14 days, shown over time.",
       "evidence": [
         {
           "kind": "artifact",
@@ -1660,7 +1660,7 @@
     {
       "frr_id": "SDR-CSX-KMT",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 3 test(s).",
+      "not_demonstrated": "Partly built: the SDR carries system-level metrics with 30-day and one-year summaries and a point per deploy day. Missing: metrics per KSI, a point for every day (36 points over 104 days), the status of persistent validation per day, and a signature check on the history the SDR builds on. Per-KSI status is decided only on a deploy, and the daily runtime check covers 5 validations, not the 46 KSIs; a daily per-KSI record needs the nightly to evaluate KSIs (widening its role by one key) or a larger runtime check (step 5).",
       "evidence": [
         {
           "kind": "artifact",

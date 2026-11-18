@@ -112,3 +112,13 @@ def test_the_markdown_carries_the_metadata_and_every_service():
     md = cpo.render_markdown(build())
     assert "abc123" in md and OFFERING["accountable_official"]["title"] in md
     assert all(s["name"] in md for s in OFFERING["services"])
+
+
+def test_every_package_file_is_held_to_class_cs_two_week_maintenance_window():
+    """CPO-CSX-CPM: Class C keeps the package current at least every 2 weeks. Each
+    package file's governed window is at most 14 days, so the watchdog's
+    stale-artifact alarm pages when the package lapses."""
+    cfg = json.loads((REPO / "infrastructure" / "schemas" / "freshness-config.json").read_text())
+    windows = {a["path"]: a["max_age_hours"] for a in cfg["artifacts"]}
+    package = [".well-known/" + f for f, _t, _d in cpo.PACKAGE] + [".well-known/certification-package-overview.json"]
+    assert all(windows[p] <= 14 * 24 for p in package), {p: windows[p] for p in package}
