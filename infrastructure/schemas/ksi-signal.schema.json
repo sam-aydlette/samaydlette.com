@@ -35,7 +35,7 @@
       "format": "uuid"
     },
     "fedramp_id": {
-      "description": "The FedRAMP ID of the cloud service offering (CDS-CSO-FID), from data/cds/offering.json. A placeholder until one is assigned. Optional: the runtime emitter does not carry it yet.",
+      "description": "The FedRAMP ID of the cloud service offering (CDS-CSO-FID), from data/cds/offering.json. A placeholder until one is assigned. The runtime emitter carries the deploy signal's. Optional, so a signal emitted before the ID was added still validates.",
       "type": "string",
       "minLength": 1
     },
