@@ -56,7 +56,7 @@ record() {
     >> "$GATE_RESULTS_FILE"
 }
 case "$cmd" in
-  detection|ksi|vuln|claims|reconcile|redaction|freshness)
+  detection|ksi|vuln|claims|reconcile|redaction|fedrampid|freshness)
     trap 'record "scripts/run-gates.sh $cmd" $?' EXIT ;;
 esac
 
