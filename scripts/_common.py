@@ -30,7 +30,10 @@
 # =============================================================================
 
 import hashlib
+import os
+import subprocess
 import uuid
+from pathlib import Path
 
 # =============================================================================
 # hashing
@@ -115,3 +118,25 @@ def load_hub(irs):
     """
     return {ir["control-id"]: (prop(ir, "implementation-status"), prop(ir, "control-origination"))
             for ir in irs}
+
+
+# =============================================================================
+# package metadata: version and source (CPO-CSO-MTD, SDR-CSO-MTD)
+# =============================================================================
+def commit():
+    """The commit the package is built from: GITHUB_SHA in CI, else the checkout's HEAD."""
+    if os.environ.get("GITHUB_SHA"):
+        return os.environ["GITHUB_SHA"]
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                              check=True, cwd=Path(__file__).resolve().parent).stdout.strip() or None
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def run_url():
+    """The GitHub Actions run that built the package, or None outside CI."""
+    e = os.environ
+    if all(e.get(k) for k in ("GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID")):
+        return f"{e['GITHUB_SERVER_URL']}/{e['GITHUB_REPOSITORY']}/actions/runs/{e['GITHUB_RUN_ID']}"
+    return None

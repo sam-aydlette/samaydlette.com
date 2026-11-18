@@ -33,7 +33,7 @@ from pathlib import Path
 # Shared generator helpers. The insert is __file__-relative, so this script stays
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import prop  # noqa: E402
+from _common import commit, prop, run_url  # noqa: E402
 import _assessor  # noqa: E402
 import _controls  # noqa: E402
 import _fedramp_schema  # noqa: E402
@@ -90,11 +90,9 @@ def build_records(catalog, cmap):
                 "statement": ind.get("statement", ""),
                 "controls": controls,
                 "explanation": expl,
-                "verification": ("Automated: the deploy-time OPA gate and the per-deploy KSI signal "
-                                 "record the implementing controls; the daily runtime emitter "
-                                 "re-validates the live configuration against the same compiled policy."),
-                "validation": ("Effectiveness reviewed continuously by the daily runtime revalidation "
-                               "(drift detector) and annually by the structural security review."),
+                # The KSI's own measures, cycle, verification and validation are in
+                # keySecurityIndicators (SDR-CSX-KSI), computed from what ran.
+                "summary": "See keySecurityIndicators in this record for this KSI's measures and status.",
                 "independent_verification": NO_IVV,
                 "independent_validation": NO_IVV,
                 "assessor_comment_responses": [],
@@ -201,45 +199,110 @@ def _frr_item(rec, rule):
     return item
 
 
-def _ksi_item(kid, res, methods_by_key):
+# How often each stage's measures run (SDR-CSX-KSI: the cycle of persistent measures).
+STAGE_CYCLE = {
+    "plan": "on every deploy, against the Terraform plan before it is applied (deploy-with-opa.yml)",
+    "deploy": "on every deploy (deploy-with-opa.yml)",
+    "nightly": "twice a day and after every successful deploy (evidence-nightly.yml)",
+    "live": "daily, against the live configuration (the runtime emitter on its EventBridge schedule)",
+}
+KSI_AUTOMATION = ("Automation verified: policies/compliance/ksi.rego decides the count from what ran (opa test), "
+                  "and scripts/_ksi_methods.py collects its inputs; tests/test_ksi_methods.py shows a failing, "
+                  "missing or stale input earns no credit.")
+KSI_NOT_ACCEPTED = "The reason is not accepted: this is a gap to close, not a decision."
+
+
+def ksi_statements(catalog_path=_ksi_methods.CATALOG_PATH):
+    """{KSI id: its statement (the objective)} from the KSI catalog."""
+    catalog = json.loads(Path(catalog_path).read_text())
+    return {ind["id"]: ind.get("statement", "") for fam in catalog.get("KSI", {}).values()
+            for ind in fam.get("indicators", []) or [] if not ind.get("retired")}
+
+
+def _measure(m, methods_by_key):
+    kind, key = m["method"].split(":", 1)
+    what = (methods_by_key[key]["measure"] if kind == "check" and key in methods_by_key
+            else f"OPA rule {key} evaluates every resource of the types it governs")
+    return f"{what.rstrip('.')}. Runs {STAGE_CYCLE[m['stage']]}."
+
+
+def _ksi_item(kid, res, methods_by_key, objective, scope_cut=None):
+    """SDR-CSX-KSI: the objective and the measures with their cycle, or the reason and
+    resulting risk; verification of the measures (or of the reason) and of the
+    automation; validation that the measures ran and passed."""
+    if not isinstance(objective, str) or not objective.strip():
+        sys.exit(f"build-sdr: {kid} has no statement in the KSI catalog (SDR-CSX-KSI needs its objective)")
     st = res["status"]
-    item = {"ksiId": kid, "ksiImplementation": [], "ksiValidation": [], "ksiAssessment": [
-                "No independent assessment: this system has no assessor."],
+    item = {"ksiId": kid, "ksiImplementation": [f"Objective: {objective}"], "ksiValidation": [],
+            "ksiAssessment": ["No independent assessment: this system has no assessor."],
             "ksiTests": [f"{m['method']}@{m['stage']}" for m in res["methods"]],
             "ksiEvidence": [{"evidenceType": "Report", "evidenceLocation": SITE + loc,
                              "evidenceDescription": "Published results this KSI's methods are counted from"}
                             for loc in sorted({STAGE_SOURCE[m["stage"]] for m in res["methods"]})],
             "statusDetail": {"status": st, "passing": res["passing"], "failing": res["failing"]}}
     if st == "Not Applicable":
-        item["ksiImplementation"].append("Not Applicable (approved by the operator); see data/ksi-applicability.json.")
+        cut = scope_cut or {}
+        item["ksiImplementation"].append(f"Not Applicable: {cut.get('not_applicable', 'reason not recorded')} "
+                                         f"{NOT_APPLICABLE_RISK}")
+        item["ksiValidation"].append(
+            f"Reason accepted by a senior official: {cut['approval']['by']}, {cut['approval']['on']}."
+            if (cut.get("approval") or {}).get("by") else "The reason has not been accepted by a senior official.")
+        item["ksiValidation"].append("Automation not necessary: the KSI has no measures because its trigger "
+                                     "cannot happen here.")
         return item
     n = res["passing"]
     item["ksiImplementationStatus"] = ("Implemented" if st == "Implemented"
                                        else "Partially Implemented" if n == 1 and not res["failing"] else "Not Implemented")
-    item["ksiImplementation"].append(
-        f"{n} passing automated method(s); Class C needs two (FRC-CSX-VVK)."
-        + (f" Failing: {', '.join(res['failing'])}." if res["failing"] else ""))
-    for m in res["methods"]:
-        key = m["method"].split(":", 1)[1]
-        what = (methods_by_key[key]["measure"] if m["method"].startswith("check:") and key in methods_by_key
-                else f"OPA rule {key} evaluated the resources it governs")
-        item["ksiValidation"].append(f"{m['method']}@{m['stage']} ({'pass' if m['passed'] else 'FAIL'}): {what}")
+    item["ksiImplementation"] += [f"Measure: {_measure(m, methods_by_key)}" for m in res["methods"]]
+    if st == "Implemented":
+        item["ksiValidation"].append(f"Verification: {n} automated methods pass and none fail; Class C needs two "
+                                     "(FRC-CSX-VVK).")
+    else:
+        item["ksiImplementation"].append(
+            f"Not Demonstrated: {n} of the two automated methods Class C needs (FRC-CSX-VVK) pass"
+            + (f"; failing: {', '.join(res['failing'])}" if res["failing"] else "")
+            + (". A measure in place is failing." if res["failing"] else ". The missing measures are not built yet.")
+            + f" {NOT_FOLLOWED_RISK}")
+        item["ksiValidation"].append(f"Verification: {KSI_NOT_ACCEPTED}")
+    item["ksiValidation"].append(KSI_AUTOMATION)
+    item["ksiValidation"] += [f"Validation: {m['method']}@{m['stage']} {'passed' if m['passed'] else 'FAILED'} "
+                              f"on the results published in {STAGE_SOURCE[m['stage']]}." for m in res["methods"]]
+    if not res["methods"]:
+        item["ksiValidation"].append("Validation: none; no measure is in place.")
     return item
 
 
-def build_fedramp(frr_doc, applicable, ksi_result, methods):
+def build_fedramp(frr_doc, applicable, ksi_result, methods, metadata=None, statements=None, scope_cuts=None):
     """The FedRAMP-shaped part of the SDR, validated against FedRAMP's schema."""
     by_key = {m["key"]: m for m in methods}
+    statements = ksi_statements() if statements is None else statements
+    if scope_cuts is None:
+        scope_cuts = {k["ksi_id"]: k for k in json.loads(_ksi_methods.APPLICABILITY_PATH.read_text())["ksis"]}
     doc = {
         "$schema": _fedramp_schema.BASES[0] + _fedramp_schema.SCHEMAS["sdr"],
         "certificationPackageOverviewUri": _fedramp_schema.CPO_URI,
+        **({"metadata": metadata} if metadata is not None else {}),
         "fedRampRequirements": [_frr_item(r, applicable[r["frr_id"]]) for r in frr_doc["records"]],
-        "keySecurityIndicators": [_ksi_item(k, v, by_key) for k, v in sorted(ksi_result["ksis"].items())],
+        "keySecurityIndicators": [_ksi_item(k, v, by_key, statements.get(k), scope_cuts.get(k))
+                                  for k, v in sorted(ksi_result["ksis"].items())],
     }
     errors = _fedramp_schema.validate(doc, "sdr")
     if errors:
         sys.exit("build-sdr: the FedRAMP section does not match FedRAMP's schema: " + "; ".join(errors[:10]))
     return doc
+
+
+def sdr_metadata(now, commit_sha, run):
+    """SDR-CSO-MTD: version (the commit), date and time of the last update, and its
+    source. FedRAMP's field names, plus the ones this repo's gates read
+    (metadata.last_updated is the freshness timestamp)."""
+    if not commit_sha:
+        sys.exit("build-sdr: no commit to version the record with (SDR-CSO-MTD)")
+    source = (f"scripts/build-sdr.py at commit {commit_sha}, "
+              + (f"deploy run {run}" if run else "local build")
+              + "; derived from the canonical KSI inventory and the control projection")
+    return {"version": commit_sha, "lastUpdated": now.isoformat(), "updateSource": source,
+            "last_updated": now.isoformat(), "source_of_update": source}
 
 
 def status_summary(frr_doc, applicable, ksi_result):
@@ -381,7 +444,9 @@ def main():
     ksi_result = _ksi_methods.decide(_ksi_methods.facts(
         deploy_signal=signal, vdr=vdr, beacon=_optional(a.vdr_status),
         runtime_signal=_verified_runtime(a.runtime_signal), now=now, methods=methods))
-    fedramp = build_fedramp(frr_doc, applicable, ksi_result, methods)
+    metadata = sdr_metadata(now, commit(), run_url())
+    fedramp = build_fedramp(frr_doc, applicable, ksi_result, methods, metadata=metadata,
+                            statements=ksi_statements(a.catalog))
     for r in records:
         r["ksi_status"] = ksi_result["ksis"].get(r["rule_id"], {}).get("status")
     Path(a.ksi_short_output).write_text(json.dumps(ksi_result["short"]) + "\n")
@@ -391,12 +456,7 @@ def main():
         "schema": "fedramp-security-decision-record-schema-2026-06-24.json",
         "note": "The CR26 replacement for the System Security Plan: per-KSI records (20x) and "
                 "per-Rev5-control records (rev5_controls), both from one control projection.",
-        # SDR-CSO-MTD
-        "metadata": {
-            "version": "live (regenerated each deploy)",
-            "last_updated": now.isoformat(),
-            "source_of_update": "scripts/build-sdr.py, derived from the canonical KSI inventory and the control projection",
-        },
+        "metadata": fedramp["metadata"],         # SDR-CSO-MTD
         "class": prof.get("fedramp_class"),
         "impact_level": prof.get("impact_level"),
         "ksi_signal_id": (signal or {}).get("signal_id"),
@@ -408,7 +468,7 @@ def main():
         "certificationPackageOverviewUri": fedramp["certificationPackageOverviewUri"],
         "fedRampRequirements": fedramp["fedRampRequirements"],
         "keySecurityIndicators": fedramp["keySecurityIndicators"],
-        "rule_records": records,                 # SDR-CSO-FRR + SDR-CSX-KSI
+        "rule_records": records,                 # per-KSI control mapping; SDR-CSX-KSI is keySecurityIndicators
         "rev5_controls": build_rev5_controls(irs, catalog),   # SDR-CSF-CTF
         "metrics": metrics,                      # SDR-CSX-KMT
         # REQ-ASR-1: verified, signed assessor records not tied to one rule, and
@@ -491,11 +551,15 @@ def render_markdown(sdr):
            "(no FedRAMP Recognized assessor). Verification and validation below are the "
            "provider-side evidence an assessor would consume.", "",
            *_assessor_lines(sdr), "",
-           "| KSI | Controls | Explanation |", "|---|---|---|"]
-    for r in sdr["rule_records"]:
-        cids = ", ".join(c["control_id"] for c in r["controls"]) or "—"
-        out.append("| `{rid}` | {cids} | {ex} |".format(
-            rid=r["rule_id"], cids=cids, ex=r["explanation"].replace("|", "\\|")))
+           "| KSI | Status | Objective and measures | Verification and validation | Controls |",
+           "|---|---|---|---|---|"]
+    controls = {r["rule_id"]: ", ".join(c["control_id"] for c in r["controls"]) or "—" for r in sdr["rule_records"]}
+
+    def cell(parts):
+        return "<br>".join(parts).replace("|", "\\|").replace("\n", " ")
+    for k in sdr.get("keySecurityIndicators", []):
+        out.append(f"| `{k['ksiId']}` | {k['statusDetail']['status']} | {cell(k['ksiImplementation'])} | "
+                   f"{cell(k['ksiValidation'])} | {controls.get(k['ksiId'], '—')} |")
     rc = sdr.get("rev5_controls", [])
     by_status = {}
     for c in rc:

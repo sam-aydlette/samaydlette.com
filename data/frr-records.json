@@ -1744,8 +1744,8 @@
     },
     {
       "frr_id": "SDR-CSO-MTD",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: 3 test(s).",
+      "status": "Implemented",
+      "implementation": "Every deploy writes the Security Decision Record with metadata in FedRAMP's fields: the version (the commit it was built from), the date and time of the update, and its source (the builder, the commit and the deploy run). The metadata is validated against FedRAMP's schema with the rest of the FedRAMP section, and the builder fails when there is no commit. The JSON and Markdown are published together; the JSON is signed.",
       "evidence": [
         {
           "kind": "step",
@@ -1754,13 +1754,20 @@
         {
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_the_metadata_carries_version_time_and_source_in_fedramps_fields_and_ours"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_a_record_without_a_commit_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_the_metadata_is_validated_against_fedramps_schema"
         }
-      ],
-      "acceptance": {
-        "by": "Sam Aydlette",
-        "on": "2026-11-09",
-        "review_by": "2027-11-09"
-      }
+      ]
     },
     {
       "frr_id": "SDR-CSX-KMT",
@@ -1780,8 +1787,8 @@
     },
     {
       "frr_id": "SDR-CSX-KSI",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
+      "status": "Implemented",
+      "implementation": "Every deploy writes a summary for each Key Security Indicator in the Security Decision Record: its objective (the KSI statement), each measure in place and how often it runs, or the reason no measure is in place and the resulting risk to customers; whether the measures meet the two-method count or whether the reason is accepted (a KSI not met because its measures are not built yet is published as not accepted); how the automation that counts the methods is itself tested; and whether each measure passed on the results it was counted from. A Not Applicable KSI gives its missing trigger and who accepted it. The builder fails on a KSI with no objective.",
       "evidence": [
         {
           "kind": "step",
@@ -1790,13 +1797,36 @@
         {
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_every_ksi_states_its_objective_from_the_catalog"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_a_ksi_with_no_objective_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_each_measure_says_what_it_does_and_how_often_it_runs"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_an_implemented_ksi_is_verified_and_validated_by_what_ran"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_a_failing_method_changes_the_summary"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_a_ksi_not_met_gives_the_reason_the_risk_and_that_the_reason_is_not_accepted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi.py::test_a_not_applicable_ksi_gives_the_missing_trigger_and_who_accepted_it"
         }
-      ],
-      "acceptance": {
-        "by": "Sam Aydlette",
-        "on": "2026-11-09",
-        "review_by": "2027-11-09"
-      }
+      ]
     },
     {
       "frr_id": "VDR-CSO-ADT",

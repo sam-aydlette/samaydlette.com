@@ -36,14 +36,13 @@
 
 import argparse
 import json
-import os
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _fedramp_schema as fs  # noqa: E402
+from _common import commit as _commit, run_url as _run_url  # noqa: E402
 
 BASE = "https://samaydlette.com/.well-known/"
 TRUST_CENTER = "https://samaydlette.com/trust/index.html"
@@ -141,23 +140,6 @@ def metadata(off, now, commit, run_url):
             "last_updated": now.isoformat(),
             "source_of_update": f"scripts/build-cpo.py at commit {commit}, "
                                 + (f"deploy run {run_url}" if run_url else "local build")}
-
-
-def _commit():
-    if os.environ.get("GITHUB_SHA"):
-        return os.environ["GITHUB_SHA"]
-    try:
-        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
-                              check=True, cwd=Path(__file__).resolve().parent).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return None
-
-
-def _run_url():
-    e = os.environ
-    if all(e.get(k) for k in ("GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID")):
-        return f"{e['GITHUB_SERVER_URL']}/{e['GITHUB_REPOSITORY']}/actions/runs/{e['GITHUB_RUN_ID']}"
-    return None
 
 
 def build(off, prof, signal, now, commit, run_url):
