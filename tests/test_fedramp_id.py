@@ -36,6 +36,7 @@ CERTIFICATION_DATA = {
     "vdr-status.json": ".github/workflows/evidence-nightly.yml",
     "ksi-signal.json": "scripts/build-ksi-signal.py",
     "ongoing-certification-report.json": "scripts/build-ocr.py",
+    "ocr-issues.json": "scripts/issue-ocr.py",
     "availability.json": "scripts/build-availability.py",
     "policy-index.json": "scripts/build-policy-index.py",
     "security-decision-record.json": "scripts/build-sdr.py",

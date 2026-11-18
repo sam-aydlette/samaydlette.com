@@ -175,7 +175,7 @@
     {
       "frr_id": "CCM-OCR-AVL",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s)."
+      "not_demonstrated": "Built, not yet run: the deploy issues each quarter's report when due (scripts/issue-ocr.py), freezing it with the package under /.well-known/ocr/<id>/ and listing it in the signed ocr-issues.json. Missing: a first issue published and verified (2026-Q4, due 2026-11-15, is issued by the next deploy)."
     },
     {
       "frr_id": "CCM-OCR-FBM",
@@ -549,7 +549,7 @@
     {
       "frr_id": "CDS-CSO-HAD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s)."
+      "not_demonstrated": "Built, not yet run: each issued report's package snapshot is frozen under /.well-known/ocr/<id>/, its files' SHA-256s recorded in the signed ocr-issues.json, published once and never replaced by the deploy (the bucket itself has no Object Lock; versioning keeps earlier versions). Missing: a first snapshot published and verified."
     },
     {
       "frr_id": "CDS-CSO-IRP",

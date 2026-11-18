@@ -75,7 +75,7 @@ def build_ocr(vdr, decisions, scn_rows, signal_id, now, cal, issued=()):
     """The OCR in FedRAMP's schema (CCM-OCR-AVL), for the period since the last
     issued report, with the next report and review dates from the calendar."""
     today = now.date()
-    start = _ocr_calendar.period_start(cal, issued)
+    start = _ocr_calendar.period_start(cal, issued, today)
     target, overdue = _ocr_calendar.next_report(cal, issued, today)
     review = _ocr_calendar.next_review(cal, issued, today)
 
@@ -115,6 +115,9 @@ def build_ocr(vdr, decisions, scn_rows, signal_id, now, cal, issued=()):
         "next_ongoing_certification_report_date": target.isoformat(),          # CCM-OCR-NRD
         "next_ongoing_certification_report_overdue": overdue,
         "next_quarterly_review_date": review.isoformat(),                      # CCM-QTR-NRD
+        # On the day a report is issued, the OCR is that issue: say which, and how late.
+        "issue": next(({"id": i["id"], "due": i["due"], "days_late": i.get("days_late", 0)}
+                       for i in issued if i["issued_on"] == today.isoformat()), None),
         "reportable_incidents_attestation": NO_INCIDENTS,
         "lessons_learned_from_incidents": [],
         "relationship_obligations_status": RELATIONSHIP,
@@ -126,6 +129,9 @@ def render_markdown(r):
            f"- **FedRAMP ID:** {r['fedramp_id']} | **Class:** {r['class']}",
            f"- **Reporting period:** {r['reportPeriod']['from']} to {r['reportPeriod']['to']}",
            f"- **Emitted:** {r['emitted_at']}",
+           *([f"- **Issue:** {r['issue']['id']}, due {r['issue']['due']}"
+              + (f", issued {r['issue']['days_late']} days late" if r["issue"]["days_late"] else "")]
+             if r["issue"] else []),
            f"- **Bound to inventory signal:** `{r['ksi_signal_id']}`",
            f"- **Next Ongoing Certification Report (CCM-OCR-NRD):** {r['next_ongoing_certification_report_date']}"
            + (" (overdue)" if r["next_ongoing_certification_report_overdue"] else ""),
@@ -155,6 +161,7 @@ def main():
     ap.add_argument("--decisions", default="../data/decisions.json")
     ap.add_argument("--scn-register", default="../docs/scn/scn-register.csv")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
+    ap.add_argument("--issues", default=None, help="the index of issued reports (ocr-issues.json), if any")
     ap.add_argument("--output", default="ongoing-certification-report.json")
     ap.add_argument("--md-output", default="ongoing-certification-report.md")
     a = ap.parse_args()
@@ -166,7 +173,8 @@ def main():
     signal_id = sig.get("signal_id") if sig else None
     scn_rows = _scn_rows(a.scn_register)
 
-    report = build_ocr(vdr, decisions, scn_rows, signal_id, now, _ocr_calendar.load())
+    report = build_ocr(vdr, decisions, scn_rows, signal_id, now, _ocr_calendar.load(),
+                       _ocr_calendar.load_issued(a.issues))
     fs.write_validated(report, "ocr", a.output)
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(report) + "\n")

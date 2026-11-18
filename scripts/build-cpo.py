@@ -62,6 +62,9 @@ PACKAGE = [
      "Ongoing Certification Report (CCM). Signed."),
     ("availability.json", ["Availability"], "Availability feed. Signed."),
     ("policy-index.json", ["Policies and Procedures"], "Policy and procedure index (CDS-CSO-IRP). Signed."),
+    ("ocr-issues.json", ["Ongoing Certification Report"],
+     "Every issued quarterly report, with the snapshot of this package frozen beside it and each file's "
+     "SHA-256 (CDS-CSO-HAD). Signed."),
 ]
 
 NO_INDEPENDENT_ASSESSMENT = ("None performed. Independent assessment is Impractical here: one-person, no-budget. "
@@ -173,6 +176,7 @@ def main(argv=None):
     ap.add_argument("--offering", default="../data/cds/offering.json")
     ap.add_argument("--profile", default="../data/system-profile.json")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
+    ap.add_argument("--issues", default=None, help="the index of issued reports (ocr-issues.json), if any")
     ap.add_argument("--output", default="certification-package-overview.json")
     ap.add_argument("--md-output", default="certification-package-overview.md")
     a = ap.parse_args(argv)
@@ -183,7 +187,8 @@ def main(argv=None):
         _fail(f"{a.ksi_signal} not found: the package must be bound to the inventory")
     signal = json.loads(Path(a.ksi_signal).read_text())
 
-    cpo = build(off, prof, signal, datetime.now(timezone.utc), _commit(), _run_url())
+    cpo = build(off, prof, signal, datetime.now(timezone.utc), _commit(), _run_url(),
+                issued=_ocr_calendar.load_issued(a.issues))
     fs.write_validated(cpo, "cpo", a.output)
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(cpo) + "\n")

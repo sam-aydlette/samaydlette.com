@@ -224,8 +224,36 @@ else
 fi
 
 echo ""
+echo "== 6. Issued quarterly reports (CDS-CSO-HAD) =="
+# The signed index (checked in section 1) records each issued snapshot's files
+# and SHA-256s. Every listed file is fetched from its frozen path and must
+# match; the snapshot's signed files must also verify against their copied
+# signatures, as when they were first published.
+mkdir -p "$work/ocr"
+while IFS=$'\t' read -r id name; do
+  [ -n "$id" ] || continue
+  mkdir -p "$work/ocr/$id"
+  curl -fsS --max-time 30 -o "$work/ocr/$id/$name" "$BASE/ocr/$id/$name" </dev/null 2>/dev/null \
+    || rm -f "$work/ocr/$id/$name"
+done < <(jq -r '.issues[] | .id as $id | (.files // {}) | keys[] | "\($id)\t\(.)"' "$work/ocr-issues.json")
+if issued=$(python3 "$SCRIPTS/issue-ocr.py" check --index "$work/ocr-issues.json" --root "$work/ocr" 2>&1); then
+  ok "$issued"
+else
+  bad "$issued"
+fi
+for b in "$work"/ocr/*/*.bundle; do
+  [ -f "$b" ] || continue
+  art="${b%.bundle}.json"
+  if verify_blob_any_identity "$b" "$art" "$IDENTITY" </dev/null; then
+    ok "ocr/$(basename "$(dirname "$b")")/$(basename "$art") signed by the pinned deploy workflow on main"
+  else
+    bad "ocr/$(basename "$(dirname "$b")")/$(basename "$art") signature"
+  fi
+done
+
+echo ""
 echo "== Scope =="
-echo "  Independently verified   : signatures + provenance (Sigstore + pinned identity); CR26 schema conformance; no AWS account ID published."
+echo "  Independently verified   : signatures + provenance (Sigstore + pinned identity); CR26 schema conformance; no AWS account ID published; issued snapshots match their signed index."
 echo "  Verified via public code : cross-artifact reconciliation (this repo, invariants b–j and l)."
 echo "  NOT externally verifiable: live-state invariants (a completeness, i tag-match) need AWS."
 

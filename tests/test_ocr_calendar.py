@@ -86,11 +86,15 @@ def test_an_unissued_due_date_is_the_next_report_and_is_reported_overdue():
 
 def test_once_issued_the_next_report_is_the_following_quarter():
     assert oc.next_report(CAL, ISSUED_Q4, NOW.date()) == (date(2027, 2, 15), False)
-    assert oc.period_start(CAL, ISSUED_Q4) == date(2026, 11, 19)
+    assert oc.period_start(CAL, ISSUED_Q4, date(2026, 11, 19)) == date(2026, 11, 19)
 
 
-def _ocr(issued=()):
-    return ocr.build_ocr({"risk_accepted": [{"tracking_id": "t"}]}, _decisions.load(), [], "sig", NOW, CAL, issued)
+def test_on_the_issue_day_the_current_period_is_the_issued_one():
+    assert oc.period_start(CAL, ISSUED_Q4, NOW.date()) == date(2026, 11, 4)
+
+
+def _ocr(issued=(), now=NOW):
+    return ocr.build_ocr({"risk_accepted": [{"tracking_id": "t"}]}, _decisions.load(), [], "sig", now, CAL, issued)
 
 
 def test_the_ocr_is_in_fedramps_schema_and_publishes_the_calendar_dates():
@@ -104,8 +108,8 @@ def test_the_ocr_is_in_fedramps_schema_and_publishes_the_calendar_dates():
 
 
 def test_the_ocrs_period_starts_after_the_last_issue():
-    doc = _ocr(ISSUED_Q4)
-    assert doc["reportPeriod"]["from"] == "2026-11-19"
+    doc = _ocr(ISSUED_Q4, datetime(2026, 12, 1, tzinfo=timezone.utc))
+    assert doc["reportPeriod"] == {"from": "2026-11-19", "to": "2026-12-01"}
     assert doc["next_ongoing_certification_report_date"] == "2027-02-15"
 
 
@@ -116,3 +120,10 @@ def test_the_cpo_publishes_the_same_next_dates():
     assert fs.validate(doc, "cpo") == []
     assert doc["serviceProperties"]["nextOngoingCertificationReportDate"] == "2026-11-15"
     assert doc["next_quarterly_review_date"] == _ocr()["next_quarterly_review_date"]
+
+
+def test_on_its_issue_day_the_ocr_names_the_issue_and_how_late_it_is():
+    issued = [{**ISSUED_Q4[0], "days_late": 3}]
+    assert _ocr(issued)["issue"] == {"id": "2026-Q4", "due": "2026-11-15", "days_late": 3}
+    assert "issued 3 days late" in ocr.render_markdown(_ocr(issued))
+    assert _ocr()["issue"] is None
