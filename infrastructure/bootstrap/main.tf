@@ -644,7 +644,16 @@ resource "aws_iam_group_policy" "operators_assessment_readonly" {
         "signer:ListSigningProfiles", "signer:GetSigningProfile", "signer:ListSigningJobs", "signer:DescribeSigningJob",
         "bedrock:ListFoundationModels", "bedrock:GetFoundationModel", "bedrock:GetFoundationModelAvailability",
         "bedrock:ListFoundationModelAgreementOffers", "bedrock:GetUseCaseForModelAccess",
-        "resource-explorer-2:ListIndexes", "resource-explorer-2:Search", "resource-explorer-2:ListViews", "resource-explorer-2:GetView"
+        "resource-explorer-2:ListIndexes", "resource-explorer-2:Search", "resource-explorer-2:ListViews", "resource-explorer-2:GetView",
+        # Whether the AWS security services are on, and their findings (read only;
+        # none of these can enable, disable or change a service). Added 2026-11-19,
+        # operator-approved, before they become pipeline evidence.
+        "access-analyzer:ListAnalyzers", "access-analyzer:GetAnalyzer", "access-analyzer:ListFindingsV2", "access-analyzer:GetFindingV2",
+        "securityhub:DescribeHub", "securityhub:GetEnabledStandards", "securityhub:GetFindings",
+        "inspector2:BatchGetAccountStatus", "inspector2:ListCoverage", "inspector2:ListFindings",
+        "config:DescribeConfigurationRecorders", "config:DescribeConfigurationRecorderStatus",
+        "config:DescribeConfigRules", "config:DescribeComplianceByConfigRule",
+        "guardduty:ListDetectors", "guardduty:GetDetector", "guardduty:ListFindings", "guardduty:GetFindings"
       ]
       Resource = "*"
     }]
