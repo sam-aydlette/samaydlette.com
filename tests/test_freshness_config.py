@@ -148,7 +148,8 @@ def test_every_artifact_the_pipelines_publish_has_a_governed_window():
         body = body[:body.find("\n    - name:")]
         assert "published-set.py" in body and "--by deploy" in body, step
     nightly = _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/") \
-        | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog")
+        | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog") \
+        | _published("evidence-nightly.yml", "Daily KSI metrics (SDR-CSX-KMT)")
     assert "vdr-report.json" in nightly and "vdr-status.json" in nightly
     assert not nightly - listed, f"published without a governed freshness window: {sorted(nightly - listed)}"
     by_nightly = {a["path"].removeprefix(".well-known/") for a in cfg["artifacts"] if "nightly" in a["published_by"]}
@@ -157,7 +158,8 @@ def test_every_artifact_the_pipelines_publish_has_a_governed_window():
 
 def test_every_listed_signature_is_published():
     nightly = _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/", signatures=True) \
-        | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog", signatures=True)
+        | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog", signatures=True) \
+        | _published("evidence-nightly.yml", "Daily KSI metrics (SDR-CSX-KMT)", signatures=True)
     for a in good()["artifacts"]:
         if "signature" in a:
             assert a["signed"], a["path"]

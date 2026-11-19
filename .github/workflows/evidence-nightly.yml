@@ -16,7 +16,8 @@
 # freshly-pulled Grype database, rebuild the VDR and its trend ledger, put them
 # through the same vulnerability and reconciliation gates, and republish exactly
 # those five objects. No Terraform apply. No website sync. No write outside
-# `.well-known/vdr-*`. One more object in that prefix, vdr-status.json, is a
+# `.well-known/vdr-*`, except the daily KSI metric history
+# (`.well-known/ksi-metrics*`, SDR-CSX-KMT; see its step). One more object in that prefix, vdr-status.json, is a
 # status beacon written on every run, pass or fail, for the evidence SLA
 # watchdog (infrastructure/watchdog.tf). It carries outcomes, not evidence.
 #
@@ -331,7 +332,8 @@ jobs:
     # unattended. This is the trade named at the top of this file. The `prod`
     # environment and its reviewer requirement are untouched, and the role this
     # environment's OIDC subject can assume cannot apply Terraform, cannot sync
-    # the website, and cannot write outside `.well-known/vdr-*`.
+    # the website, and cannot write outside `.well-known/vdr-*` and the daily KSI
+    # metric history (`.well-known/ksi-metrics*`).
     environment: evidence-nightly
     # Detect-and-recover gate events (infrastructure/schemas/gate-modes.json) are
     # appended here by scripts/_gates.py and published with this run's evidence.
@@ -399,6 +401,7 @@ jobs:
         path: infrastructure/
 
     - name: Verify the pinned inventory
+      id: pinned
       working-directory: infrastructure
       env:
         PINNED_COMMIT: ${{ needs.pin.outputs.commit }}
@@ -517,6 +520,7 @@ jobs:
     # The builder evaluates policies/triage.rego for every decision and fails
     # closed without opa. Same version and SHA pin as the deploy job.
     - name: Setup OPA (triage policy)
+      id: opa
       run: |
         curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \
           -o opa "https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static"
@@ -840,6 +844,53 @@ jobs:
           aws s3 cp vdr-status.bundle "s3://${SITE_BUCKET}/.well-known/vdr-status.bundle" \
             --content-type application/json --cache-control "no-cache"
         fi
+
+    # -------------------------------------------------------------------------
+    # DAILY KSI METRICS (SDR-CSX-KMT): after the beacon, pass or fail
+    # -------------------------------------------------------------------------
+    # Class C needs daily metric data for each KSI, including the status of
+    # persistent validation, and only this workflow runs every day. It decides
+    # each KSI's status with the deploy's evaluator (scripts/_ksi_metrics.py:
+    # scripts/_ksi_methods.py and policies/compliance/ksi.rego) from inputs this
+    # run verified: the pinned inventory, this run's VDR, this run's beacon (only
+    # when it was signed) and the runtime signal (checked against its key). A
+    # failed run still records its day: that is the persistent-validation status.
+    # It appends to the published history only after the history's signature
+    # verifies against the deploy or this workflow (scripts/fetch-verified.sh).
+    # The role writes `.well-known/ksi-metrics*`, its second prefix
+    # (infrastructure/bootstrap/evidence-nightly.tf). The SDR, which carries this
+    # history, stays on the reviewed deploy path.
+    - name: Daily KSI metrics (SDR-CSX-KMT)
+      if: ${{ always() && steps.awscreds.outcome == 'success' && steps.pinned.outcome == 'success' && steps.opa.outcome == 'success' }}
+      working-directory: infrastructure
+      env:
+        DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        NIGHTLY_SIGNER_IDENTITY: 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
+      run: |
+        set -euo pipefail
+        bash ../scripts/fetch-verified.sh ksi-metrics ksi-metrics-previous.json \
+          "${DEPLOY_SIGNER_IDENTITY}" "${NIGHTLY_SIGNER_IDENTITY}"
+        args=(--source nightly --ksi-signal ksi-signal.json --vdr vdr-report.json
+              --runtime-signal ksi-signal-runtime.json)
+        if [ -f vdr-status.bundle ]; then args+=(--vdr-status vdr-status.json); fi
+        if [ -f ksi-metrics-previous.json ]; then args+=(--previous ksi-metrics-previous.json); fi
+        if [ -f security-decision-record.json ]; then args+=(--sdr security-decision-record.json); fi
+        python3 ../scripts/build-ksi-metrics.py "${args[@]}"
+        # The publication gates over exactly this file (the run's gate results are already in the beacon).
+        python3 ../scripts/check-fedramp-id.py ksi-metrics.json
+        python3 ../scripts/check-published-redaction.py ksi-metrics.json
+        rm -f ksi-metrics.bundle
+        cosign sign-blob --yes --new-bundle-format --bundle ksi-metrics.bundle ksi-metrics.json
+        put() {
+          aws s3api put-object --bucket "${SITE_BUCKET}" --key ".well-known/$1" --body "$1" \
+            --content-type application/json --cache-control "public, max-age=300" \
+            --query 'ETag' --output text > /dev/null
+          echo "published .well-known/$1"
+        }
+        put ksi-metrics.json
+        put ksi-metrics.bundle
+        aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" \
+          --paths "/.well-known/ksi-metrics*" --query 'Invalidation.Id' --output text
 
     - name: Upload the gate results for the alert job
       if: always()

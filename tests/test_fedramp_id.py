@@ -40,6 +40,7 @@ CERTIFICATION_DATA = {
     "availability.json": "scripts/build-availability.py",
     "policy-index.json": "scripts/build-policy-index.py",
     "security-decision-record.json": "scripts/build-sdr.py",
+    "ksi-metrics.json": "scripts/build-ksi-metrics.py",
     "certification-package-overview.json": "scripts/build-cpo.py",
     "trust-center.json": "scripts/build-trust-center.py",
 }

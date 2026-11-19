@@ -1373,8 +1373,16 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Building Security Decision Record (SDR-CSO-FRR per KSI, SDR-CSF-CTF per Rev5 control) from the control projection..."
-        curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
-          || echo '{}' > previous-sdr.json
+        # The published SDR (regressions; the first metric history) and the
+        # published daily KSI metric history (SDR-CSX-KMT) are read only when
+        # their signatures verify: the SDR against this workflow, the history
+        # against this workflow or the nightly, whichever wrote it last. Only a
+        # 404 means there is none yet; anything else stops the build.
+        DEPLOY_ID='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main'
+        NIGHTLY_ID='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
+        bash ../scripts/fetch-verified.sh security-decision-record previous-sdr.json "$DEPLOY_ID"
+        [ -f previous-sdr.json ] || echo '{}' > previous-sdr.json
+        bash ../scripts/fetch-verified.sh ksi-metrics ksi-metrics-previous.json "$DEPLOY_ID" "$NIGHTLY_ID"
         # The nightly beacon: a nightly-stage KSI method counts only while it is
         # inside its freshness window and its signature verifies against the
         # nightly workflow. The runtime signal fetched above counts only when its
@@ -1390,11 +1398,19 @@ jobs:
           rm -f vdr-status-nightly.json
           echo "note: no verified nightly beacon; nightly methods earn no credit"
         fi
+        # SDR-CSX-KMT: today's point on the daily KSI metric history, with the
+        # nightly's evaluator and format; the SDR carries the history and checks
+        # that today's statuses are its own.
+        args=(--source deploy --ksi-signal ksi-signal.json --vdr vdr-report.json
+              --runtime-signal ksi-signal-runtime.json --sdr previous-sdr.json)
+        if [ -f vdr-status-nightly.json ]; then args+=(--vdr-status vdr-status-nightly.json); fi
+        if [ -f ksi-metrics-previous.json ]; then args+=(--previous ksi-metrics-previous.json); fi
+        python3 ../scripts/build-ksi-metrics.py "${args[@]}"
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
           --runtime-signal ksi-signal-runtime.json --vdr-status vdr-status-nightly.json \
-          --ksi-short-output ksi-short.json
+          --ksi-metrics ksi-metrics.json --ksi-short-output ksi-short.json
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.
         python3 ../scripts/_assessor.py --sdr security-decision-record.json
@@ -1494,6 +1510,7 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle availability.bundle availability.json
         cosign sign-blob --yes --new-bundle-format --bundle policy-index.bundle policy-index.json
         cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json
+        cosign sign-blob --yes --new-bundle-format --bundle ksi-metrics.bundle ksi-metrics.json
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
 
     - name: Sign trust-center artifacts (boundary map, gate report, trust center)

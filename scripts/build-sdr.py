@@ -9,7 +9,8 @@
 # comments, and rule-specific artifacts. SDR-CSO-MTD carries version + last
 # update + source; the 20x extension SDR-CSX-KSI carries per-KSI summaries, and
 # SDR-CSX-KMT (Class C) carries metric summaries over 30 days / up to a year /
-# all daily metric data.
+# all daily metric data, per KSI: the history scripts/build-ksi-metrics.py
+# wrote just before this, whose statuses for today must be this record's.
 #
 # It carries both views CR26 defines over the same rule families: per KSI
 # (SDR-CSX-KSI, the 20x record) and per applicable Rev5 control (SDR-CSF-CTF,
@@ -19,11 +20,10 @@
 # per-control statements is retired (CR26); this record replaces it.
 #
 #   build-sdr.py --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
-#       --vdr vdr-report.json --previous-sdr prev.json
+#       --vdr vdr-report.json --previous-sdr prev.json --ksi-metrics ksi-metrics.json
 # =============================================================================
 
 import argparse
-import importlib.util
 import json
 import os
 import sys
@@ -37,12 +37,11 @@ from _common import commit, fedramp_id, prop, run_url  # noqa: E402
 import _assessor  # noqa: E402
 import _controls  # noqa: E402
 import _fedramp_schema  # noqa: E402
+import _ksi_metrics  # noqa: E402
 import _frr  # noqa: E402
 import _ksi_methods  # noqa: E402
 import _rules  # noqa: E402
 import _triage  # noqa: E402
-
-HISTORY_DAYS = 366  # SDR-CSX-KMT: all daily metric data up to the past year
 
 REGRESSION_POLICY = Path(__file__).resolve().parent.parent / "policies" / "compliance" / "regression.rego"
 NO_IVV = "None performed. Independent verification and validation are Impractical here: one-person, no-budget."
@@ -335,44 +334,23 @@ def compare_statuses(previous, fedramp):
     return {"compared": True, "compared_with": (previous.get("metadata") or {}).get("last_updated"), "items": out["items"]}
 
 
-def build_metrics(records, controls_in_scope, vdr, signal, history, now):
-    """SDR-CSX-KMT: metric snapshot + appended daily history (toward one year)."""
-    sig_vals = signal.get("validations", []) if signal else []
-    failing = sum(1 for v in sig_vals if v.get("result") == "fail")
-    vsum = (vdr or {}).get("summary", {})
-    today = now.date().isoformat()
-    point = {
-        "date": today,
-        "ksi_in_scope": len(records),
-        "controls_in_scope": controls_in_scope,
-        "signal_validations": len(sig_vals),
-        "signal_failing": failing,
-        "vdr_total": vsum.get("total_findings", 0),
-        "vdr_blocking": vsum.get("blocking", 0),
-        "vdr_accepted": vsum.get("risk_accepted", 0),
-        "vdr_kev": vsum.get("kev", 0),
-    }
-    history = [h for h in history if h.get("date") != today]
-    history.append(point)
-    history = sorted(history, key=lambda h: h.get("date", ""))[-HISTORY_DAYS:]
-    last30 = history[-30:]
-
-    def _summ(window):
-        if not window:
-            return {}
-        return {"days": len(window),
-                "max_blocking": max(h.get("vdr_blocking", 0) for h in window),
-                "max_failing_validations": max(h.get("signal_failing", 0) for h in window),
-                "current_accepted": window[-1].get("vdr_accepted", 0)}
-
-    return {
-        "current": point,
-        "summary_30d": _summ(last30),
-        "summary_1y": _summ(history),
-        "daily_metric_data": history,   # all daily points up to a year (SDR-CSX-KMT)
-        "note": ("Daily metric history accumulates one point per deploy/day; the full "
-                 "one-year window builds over time from the first published SDR."),
-    }
+def build_metrics(doc, ksi_result, now):
+    """SDR-CSX-KMT: the daily history this deploy publishes, written just before
+    this by scripts/build-ksi-metrics.py --source deploy, with today's point as
+    the current one. Fails closed unless that point is this deploy's and holds
+    the statuses this record publishes."""
+    last = ((doc or {}).get("daily_metric_data") or [{}])[-1]
+    if last.get("source") != "deploy" or last.get("date") != now.date().isoformat():
+        sys.exit("build-sdr: the KSI metric history has no point from this deploy today (SDR-CSX-KMT)")
+    if {k: v["status"] for k, v in (last.get("ksis") or {}).items()} != \
+            {k: v["status"] for k, v in ksi_result["ksis"].items()}:
+        sys.exit("build-sdr: the KSI metric history's statuses for today differ from this record's (SDR-CSX-KMT)")
+    return {"current": doc["daily_metric_data"][-1],
+            "summary_30d": doc["summary_30d"], "summary_1y": doc["summary_1y"],
+            "daily_metric_data": doc["daily_metric_data"],
+            "history_uri": _ksi_metrics.URI,
+            "note": ("All daily metric data up to this record's last update. The nightly adds a point "
+                     "every day to the published history at history_uri, signed by its own identity.")}
 
 
 def main():
@@ -381,7 +359,9 @@ def main():
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--vdr", default="vdr-report.json")
     ap.add_argument("--profile", default="../data/system-profile.json")
-    ap.add_argument("--previous-sdr", default=None)
+    ap.add_argument("--previous-sdr", default=None, help="the published SDR, signature verified (regressions)")
+    ap.add_argument("--ksi-metrics", default="ksi-metrics.json",
+                    help="the daily history scripts/build-ksi-metrics.py --source deploy wrote for this run")
     ap.add_argument("--output", default="security-decision-record.json")
     ap.add_argument("--md-output", default="security-decision-record.md")
     ap.add_argument("--runtime-signal", default="ksi-signal-runtime.json",
@@ -402,12 +382,6 @@ def main():
     signal = json.loads(Path(a.ksi_signal).read_text()) if Path(a.ksi_signal).exists() else {}
     vdr = json.loads(Path(a.vdr).read_text()) if Path(a.vdr).exists() else {}
     prof = json.loads(Path(a.profile).read_text()) if Path(a.profile).exists() else {}
-    history = []
-    if a.previous_sdr and Path(a.previous_sdr).exists():
-        try:
-            history = json.loads(Path(a.previous_sdr).read_text()).get("metrics", {}).get("daily_metric_data", []) or []
-        except Exception:
-            history = []
 
     # The projection needs the inventory: without it there is no control state
     # to record, so a missing signal stops the build (fail-closed).
@@ -418,33 +392,21 @@ def main():
     # that does not verify fails the build. They are carried verbatim.
     assessor_records = _assessor.load_records(a.assessor_records, a.assessor_identity)
     assessor_block = _assessor.attach(records, assessor_records)
-    metrics = build_metrics(records, len(cmap), vdr, signal, history, now)
 
     def _optional(path):
         try:
             return json.loads(Path(path).read_text())
         except (OSError, json.JSONDecodeError):
             return None
-    def _verified_runtime(path):
-        """The runtime signal only when its signature verifies against the
-        pinned key (the VDR builder's check); otherwise no live credit."""
-        spec = importlib.util.spec_from_file_location(
-            "build_vdr_report", Path(__file__).resolve().parent / "build-vdr-report.py")
-        assert spec and spec.loader
-        vdr_mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(vdr_mod)
-        check = vdr_mod.load_runtime_signal(path, now=now)
-        if not check["verified"]:
-            print(f"note: no live KSI credit: {check['reason']}")
-            return None
-        return _optional(path)
     frr_doc = _frr.load(a.frr_records)
     applicable = _rules.applicable_provider_rules()
     methods = _ksi_methods.load_methods()
-    ksi_result = _ksi_methods.decide(_ksi_methods.facts(
-        deploy_signal=signal, vdr=vdr, beacon=_optional(a.vdr_status),
-        runtime_signal=_verified_runtime(a.runtime_signal), now=now, methods=methods))
+    beacon = _optional(a.vdr_status)
+    runtime = _ksi_metrics.verified_runtime(a.runtime_signal, now)
+    ksi_result, _ = _ksi_metrics.evaluate(deploy_signal=signal, vdr=vdr, beacon=beacon,
+                                              runtime_signal=runtime, now=now, methods=methods)
     metadata = sdr_metadata(now, commit(), run_url())
+    metrics = build_metrics(_ksi_metrics.load(a.ksi_metrics), ksi_result, now)
     fedramp = build_fedramp(frr_doc, applicable, ksi_result, methods, metadata=metadata,
                             statements=ksi_statements(a.catalog))
     for r in records:
@@ -527,6 +489,19 @@ def _rule_lines(sdr):
     return out
 
 
+def _metric_lines(metrics):
+    s30 = metrics.get("summary_30d") or {}
+    ksis = s30.get("ksis") or {}
+    lines = [f"- Daily metric history: {len(metrics['daily_metric_data'])} day(s) on record, "
+             f"{s30.get('days_with_ksi_data', 0)} of the last {s30.get('days', 0)} with per-KSI data "
+             f"([daily history]({metrics.get('history_uri', _ksi_metrics.URI)}))"]
+    if ksis:
+        lines.append(f"- Over the last 30 days: {sum(1 for v in ksis.values() if v['days_implemented'] == v['days'])} "
+                     f"of {len(ksis)} KSIs Implemented every day with data; "
+                     f"{sum(1 for v in ksis.values() if v['days_with_failing_method'])} had a failing method on some day")
+    return lines
+
+
 def render_markdown(sdr):
     m = sdr["metadata"]
     cur = sdr["metrics"]["current"]
@@ -542,8 +517,7 @@ def render_markdown(sdr):
            f"- Signal validations: {cur['signal_validations']} ({cur['signal_failing']} failing)",
            f"- Vulnerabilities: {cur['vdr_total']} total, {cur['vdr_blocking']} blocking, "
            f"{cur['vdr_accepted']} accepted, {cur['vdr_kev']} KEV",
-           f"- Daily metric history: {len(sdr['metrics']['daily_metric_data'])} day(s) on record "
-           "(builds toward one year)",
+           *_metric_lines(sdr["metrics"]),
            "",
            *_status_lines(sdr), "",
            *_rule_lines(sdr), "",

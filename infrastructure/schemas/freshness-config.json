@@ -5,7 +5,7 @@
   "decided_by": "Operator",
   "decided_on": "2026-11-03",
   "review_by": "2027-11-03",
-  "rationale": "Nightly evidence (the VDR, its trend and attestation) must be under 24 hours old, the reporting policy. The runtime signal and the nightly's status beacon get 26 hours: one daily (or twice-daily) run plus one late run. Artifacts regenerated only on a deploy, which is human-initiated and human-approved, get 30 days, the monthly continuous-monitoring cadence: older than that, the inventory has not been re-derived from live state within a reporting month. The operator-run independent corroboration gets the same 30 days. The certification package (the CPO and the files it lists, with their attestations) gets 14 days: Class C must keep the package up to date at least every 2 weeks (CPO-CSX-CPM), and the watchdog's stale-artifact alarm pages when a package file passes it (Sam Aydlette, 2026-11-18).",
+  "rationale": "Nightly evidence (the VDR, its trend and attestation) must be under 24 hours old, the reporting policy. The runtime signal and the nightly's status beacon get 26 hours: one daily (or twice-daily) run plus one late run. Artifacts regenerated only on a deploy, which is human-initiated and human-approved, get 30 days, the monthly continuous-monitoring cadence: older than that, the inventory has not been re-derived from live state within a reporting month. The operator-run independent corroboration gets the same 30 days. The certification package (the CPO and the files it lists, with their attestations) gets 14 days: Class C must keep the package up to date at least every 2 weeks (CPO-CSX-CPM), and the watchdog's stale-artifact alarm pages when a package file passes it (Sam Aydlette, 2026-11-18). The daily KSI metric history gets 26 hours, like the beacon: Class C needs a point for every day (SDR-CSX-KMT), and the nightly adds one twice a day (Sam Aydlette, 2026-11-19).",
   "artifacts": [
     {
       "path": ".well-known/vdr-report.json", "generator": "scripts/build-vdr-report.py",
@@ -121,6 +121,23 @@
         "nightly"
       ],
       "note": "The nightly's status beacon, signed by the nightly workflow's identity. The deploy gives nightly KSI method credit only when that signature verifies; if the nightly cannot sign, it publishes the beacon without a bundle and earns no credit. The watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
+    },
+    {
+      "path": ".well-known/ksi-metrics.json", "generator": "scripts/build-ksi-metrics.py",
+      "certification_data": true,
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/ksi-metrics.bundle",
+      "published_by": [
+        "deploy",
+        "nightly"
+      ],
+      "note": "Daily metric data for each KSI and the status of persistent validation, up to a year (SDR-CSX-KMT). Both workflows add a point with scripts/build-ksi-metrics.py: the deploy just before it builds the SDR, which carries the history, and the nightly every day. Each writer appends to the published history only after its signature verifies against either workflow."
     },
     {
       "path": ".well-known/ksi-signal-runtime.json", "generator": "infrastructure/lambda/index.js",
