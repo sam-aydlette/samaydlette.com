@@ -60,10 +60,10 @@ done
 
 def test_every_listed_signature_is_checked_against_its_publisher(tmp_path):
     rows = _signed()
-    assert len(rows) == 22
+    assert len(rows) == 23
     _, lines = _run(tmp_path, _site(tmp_path))
     sig_lines = [line for line in lines if "bound to the published inventory" not in line]
-    assert len(sig_lines) == 22 and all(line.startswith("PASS") for line in sig_lines), sig_lines
+    assert len(sig_lines) == 23 and all(line.startswith("PASS") for line in sig_lines), sig_lines
     assert "PASS  vdr-status.json signed by the pinned nightly workflow on main" in sig_lines
 
 
