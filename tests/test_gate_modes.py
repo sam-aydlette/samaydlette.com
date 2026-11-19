@@ -323,7 +323,8 @@ def _detection(tmp_path, e):
     """The detection gate on its good inputs with one feed swapped for the fixture."""
     det = REPO / "tests" / "fixtures" / "detection"
     good = {"kev": "kev.json", "epss": "epss.csv", "grype": "grype.json", "dependabot": "dependabot.json",
-            "previous-vdr": "previous-vdr.json", "checkov": "checkov.sarif", "tfsec": "tfsec.json"}
+            "previous-vdr": "previous-vdr.json", "checkov": "checkov.sarif", "tfsec": "tfsec.json",
+            "inspector": "inspector.json", "access-analyzer": "access-analyzer.json"}
     feed = e["check"].split(".", 1)[1]
     work = tmp_path / "w"
     work.mkdir()

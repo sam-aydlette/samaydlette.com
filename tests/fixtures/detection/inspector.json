@@ -1,0 +1,18 @@
+{
+  "fetched_at": "2026-11-04T11:00:00Z",
+  "account": {"accountId": "000000000000", "state": {"status": "ENABLED"},
+              "resourceState": {"lambda": {"status": "ENABLED"}, "lambdaCode": {"status": "DISABLED"}, "ec2": {"status": "DISABLED"}}},
+  "coverage": [
+    {"resourceType": "AWS_LAMBDA_FUNCTION", "resourceId": "arn:aws:lambda:us-east-2:000000000000:function:samaydlette-com-silk-reeling:$LATEST",
+     "scanType": "PACKAGE", "scanStatus": {"statusCode": "ACTIVE", "reason": "SUCCESSFUL"}}
+  ],
+  "findings": [
+    {"type": "PACKAGE_VULNERABILITY", "status": "ACTIVE", "severity": "HIGH", "title": "CVE-2026-0001 - examplepkg",
+     "firstObservedAt": "2026-11-01T00:00:00Z", "fixAvailable": "YES",
+     "resources": [{"type": "AWS_LAMBDA_FUNCTION", "id": "arn:aws:lambda:us-east-2:000000000000:function:samaydlette-com-silk-reeling:$LATEST",
+                    "details": {"awsLambdaFunction": {"functionName": "samaydlette-com-silk-reeling", "runtime": "PYTHON_3_12"}}}],
+     "packageVulnerabilityDetails": {"vulnerabilityId": "CVE-2026-0001", "source": "NVD",
+       "cvss": [{"version": "3.1", "baseScore": 7.5, "scoringVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", "source": "NVD"}],
+       "vulnerablePackages": [{"name": "examplepkg", "version": "1.0.0", "fixedInVersion": "1.0.1", "packageManager": "PIP"}]}}
+  ]
+}

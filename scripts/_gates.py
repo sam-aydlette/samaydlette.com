@@ -94,6 +94,8 @@ CHECKS = {
     "detection.previous-vdr": "G7",
     "detection.checkov": "G7",
     "detection.tfsec": "G7",
+    "detection.inspector": "G7",
+    "detection.access-analyzer": "G7",
     "opa.plan": PIPELINE,
     "policy.annotations": PIPELINE,
     "policy.wasm-safe": PIPELINE,
