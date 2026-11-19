@@ -561,6 +561,59 @@ resource "aws_iam_role_policy" "evidence_watchdog_management" {
   policy = data.aws_iam_policy_document.evidence_watchdog_management.json
 }
 
+# AWS security services as evidence (infrastructure/security-services.tf): IAM
+# Access Analyzer's account-level external-access analyzer and Amazon Inspector's
+# Lambda scanning, whose findings the deploy reads into the VDR. Like the
+# CloudTrail grant, this DELIBERATELY omits access-analyzer:DeleteAnalyzer and
+# inspector2:Disable: the automated deploy identity can turn these on and read
+# them, never turn them off. Disabling either is an operator break-glass action
+# with the operator's own credentials. Approved by the operator, 2026-11-19.
+data "aws_iam_policy_document" "security_services_management" {
+  # checkov:skip=CKV_AWS_356:access-analyzer:ListAnalyzers and the inspector2 account-level calls (Enable, BatchGetAccountStatus, ListCoverage, ListFindings) do not support resource-level scoping; the analyzer statement is ARN-scoped and no statement can delete or disable. Documented exception.
+  statement {
+    sid    = "ManageExternalAccessAnalyzer"
+    effect = "Allow"
+    actions = [
+      "access-analyzer:CreateAnalyzer", "access-analyzer:GetAnalyzer",
+      "access-analyzer:TagResource", "access-analyzer:UntagResource", "access-analyzer:ListTagsForResource",
+      # The findings calls (ListFindingsV2/GetFindingV2) under both action names:
+      # AWS's managed read-only policies list only the older names.
+      "access-analyzer:ListFindings", "access-analyzer:ListFindingsV2",
+      "access-analyzer:GetFinding", "access-analyzer:GetFindingV2",
+    ]
+    resources = ["arn:aws:access-analyzer:${var.aws_region}:${data.aws_caller_identity.current.account_id}:analyzer/${local.domain_dashed}-external-access"]
+  }
+  statement {
+    sid    = "InspectorLambdaScanning"
+    effect = "Allow"
+    actions = [
+      "access-analyzer:ListAnalyzers",
+      "inspector2:Enable", "inspector2:BatchGetAccountStatus",
+      "inspector2:ListCoverage", "inspector2:ListFindings",
+    ]
+    resources = ["*"]
+  }
+  statement {
+    # Each service creates its own AWS-managed role the first time it is turned on.
+    sid       = "ServiceLinkedRolesForTheseServicesOnly"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["access-analyzer.amazonaws.com", "inspector2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "security_services_management" {
+  # checkov:skip=CKV_AWS_356:Account-level Access Analyzer and Inspector calls cannot be resource-scoped; no delete or disable action. Documented exception.
+  name   = "security-services-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.security_services_management.json
+}
+
 output "github_actions_role_arn" {
   value       = aws_iam_role.deploy.arn
   description = "Set as the workflow's aws-actions/configure-aws-credentials role-to-assume."

@@ -178,6 +178,41 @@ resource "aws_iam_role_policy" "evidence_nightly_reconcile_reads" {
   policy = data.aws_iam_policy_document.evidence_nightly_reconcile_reads.json
 }
 
+# Findings from the AWS security services (infrastructure/security-services.tf)
+# for the daily VDR: the nightly fetches them as detection feeds
+# (scripts/fetch-detection-feeds.sh), so a newly reported finding reaches the
+# published VDR within a day, as the scanner feeds already do. Read only: it
+# checks each service is on and covering the Lambdas before trusting an empty
+# result, and reads findings. It cannot create, change, archive or disable
+# anything. Approved by the operator, 2026-11-19.
+data "aws_iam_policy_document" "evidence_nightly_security_findings" {
+  # checkov:skip=CKV_AWS_356:access-analyzer:ListAnalyzers and inspector2 BatchGetAccountStatus/ListCoverage/ListFindings do not support resource-level scoping; the analyzer read is ARN-scoped and every action is read-only. Documented exception.
+  statement {
+    sid    = "ReadExternalAccessFindings"
+    effect = "Allow"
+    # ListFindingsV2 under both action names: AWS's managed read-only policies
+    # list only the older one.
+    actions   = ["access-analyzer:GetAnalyzer", "access-analyzer:ListFindings", "access-analyzer:ListFindingsV2"]
+    resources = ["arn:aws:access-analyzer:${var.aws_region}:${data.aws_caller_identity.current.account_id}:analyzer/${local.domain_dashed}-external-access"]
+  }
+  statement {
+    sid    = "ReadInspectorFindings"
+    effect = "Allow"
+    actions = [
+      "access-analyzer:ListAnalyzers",
+      "inspector2:BatchGetAccountStatus", "inspector2:ListCoverage", "inspector2:ListFindings",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "evidence_nightly_security_findings" {
+  # checkov:skip=CKV_AWS_356:Read-only account-level calls that cannot be resource-scoped; explicit read-only Action list. Documented exception.
+  name   = "evidence-nightly-security-findings"
+  role   = aws_iam_role.evidence_nightly.id
+  policy = data.aws_iam_policy_document.evidence_nightly_security_findings.json
+}
+
 output "evidence_nightly_role_arn" {
   value       = aws_iam_role.evidence_nightly.arn
   description = "Set as the repository variable AWS_EVIDENCE_NIGHTLY_ROLE_ARN, which evidence-nightly.yml passes to configure-aws-credentials."
