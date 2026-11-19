@@ -81,6 +81,7 @@ missing_classification(r) := {key |
 #   nist_controls: [cm-8, cm-12]
 #   ksi_ids: [KSI-PIY-GIV]
 #   resource_types:
+#     - aws_accessanalyzer_analyzer
 #     - aws_apigatewayv2_api
 #     - aws_apigatewayv2_stage
 #     - aws_cloudwatch_event_rule
@@ -122,6 +123,7 @@ violations contains violation if {
 #   nist_controls: [cm-8, cm-8.1, cm-12]
 #   ksi_ids: [KSI-PIY-GIV]
 #   resource_types:
+#     - aws_accessanalyzer_analyzer
 #     - aws_apigatewayv2_api
 #     - aws_apigatewayv2_stage
 #     - aws_cloudwatch_event_rule
