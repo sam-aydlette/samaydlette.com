@@ -1,0 +1,7 @@
+{
+  "fetched_at": "2026-11-04T11:00:00Z",
+  "account": {"accountId": "000000000000", "state": {"status": "ENABLED"},
+              "resourceState": {"lambda": {"status": "DISABLED"}, "lambdaCode": {"status": "DISABLED"}, "ec2": {"status": "DISABLED"}}},
+  "coverage": [],
+  "findings": []
+}

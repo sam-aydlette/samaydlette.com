@@ -16,7 +16,7 @@
     "feeds": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kev", "epss", "grype", "dependabot", "previous-vdr", "checkov", "tfsec"],
+      "required": ["kev", "epss", "grype", "dependabot", "previous-vdr", "checkov", "tfsec", "inspector", "access-analyzer"],
       "patternProperties": {
         "^[a-z-]+$": {
           "type": "object",

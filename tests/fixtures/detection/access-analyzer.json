@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-11-04T11:00:00Z",
+  "analyzer": {"arn": "arn:aws:access-analyzer:us-east-2:000000000000:analyzer/samaydlette-com-external-access",
+               "name": "samaydlette-com-external-access", "type": "ACCOUNT", "status": "ACTIVE"},
+  "findings": [
+    {"id": "11111111-2222-3333-4444-555555555555", "resourceType": "AWS::IAM::Role",
+     "resource": "arn:aws:iam::000000000000:role/github-actions-deploy-oidc", "resourceOwnerAccount": "000000000000",
+     "status": "ACTIVE", "isPublic": false, "principal": {"Federated": "arn:aws:iam::000000000000:oidc-provider/token.actions.githubusercontent.com"},
+     "action": ["sts:AssumeRoleWithWebIdentity"],
+     "condition": {"token.actions.githubusercontent.com:sub": "repo:example/example:environment:prod"},
+     "createdAt": "2026-11-01T00:00:00Z", "analyzedAt": "2026-11-01T00:00:00Z", "updatedAt": "2026-11-01T00:00:00Z"}
+  ]
+}

@@ -96,6 +96,7 @@ case "$cmd" in
       --grype "${grype_files[@]}" \
       --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
       --checkov checkov-results.sarif --tfsec tfsec-results.json \
+      --inspector inspector-findings.json --access-analyzer access-analyzer-findings.json \
       --output detection.json
     ;;
   vdr)
@@ -107,6 +108,8 @@ case "$cmd" in
       --dependabot dependabot-alerts.json \
       --grype grype.json \
       --zap zap-report.json \
+      --inspector inspector-findings.json \
+      --access-analyzer access-analyzer-findings.json \
       --kev kev-catalog.json \
       --epss epss-scores.csv.gz \
       --detection detection.json \

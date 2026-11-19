@@ -1161,6 +1161,31 @@
       "source": {
         "detector": "OWASP ZAP baseline scan"
       }
+    },
+    {
+      "id": "DEC-041",
+      "title": "IAM Access Analyzer: GitHub's OIDC provider can assume the three CI roles",
+      "disposition": "accepted",
+      "status": "in-force",
+      "justification": "Intended access, partially mitigated. The deploy, plan and nightly roles are the CI trust root: GitHub Actions signs in to AWS through GitHub's OIDC provider, with no stored keys. Each role's trust policy accepts only tokens for sts.amazonaws.com from this repository, scoped to the prod environment (deploy), the evidence-nightly environment (nightly), or pull requests and main (plan). The residual risk is a compromise of GitHub, or of a workflow in this repository that may sign in. It can be reduced, not removed: the next step pins each role to the one workflow file that uses it (job_workflow_ref). Reviewed after that change, within 90 days.",
+      "controls": ["ac-3", "ac-6", "ia-2", "ia-5"],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "access-analyzer-20ea0634-7fe0-4393-97f2-54ad79e36462",
+          "access-analyzer-c471f183-d7c4-4d8e-8577-0569f2f2bb1e",
+          "access-analyzer-d5125db0-4daf-4b87-af6a-6a2432b98664"
+        ],
+        "resources": ["github-actions-deploy-oidc", "github-actions-plan-oidc", "github-actions-evidence-nightly-oidc"]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-19",
+      "review_by": "2027-02-19",
+      "original_detection_date": "2026-11-19",
+      "source": {
+        "detector": "IAM Access Analyzer (external access)"
+      }
     }
   ]
 }

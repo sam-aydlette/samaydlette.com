@@ -58,6 +58,8 @@ SOURCES = {
     "zap": "OWASP ZAP (dynamic application scan)",
     "grype": "Grype (software composition analysis)",
     "dependabot": "GitHub Dependabot (software composition analysis)",
+    "inspector": "Amazon Inspector (scan of the deployed Lambda functions)",
+    "access-analyzer": "IAM Access Analyzer (external access to account resources)",
     "opa": "OPA policy evaluation of the deployed configuration",
 }
 

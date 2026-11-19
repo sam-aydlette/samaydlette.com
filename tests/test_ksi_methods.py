@@ -53,7 +53,8 @@ def test_the_committed_registers_load():
     known = km.catalog_ksis()
     assert len(known) == 46
     assert {m["key"] for m in km.load_methods(known=known)} == {
-        "grype", "dependabot", "checkov-tfsec", "runtime-divergence", "reconcile", "plan-gate"}
+        "grype", "dependabot", "checkov-tfsec", "inspector", "access-analyzer", "runtime-divergence", "reconcile",
+        "plan-gate"}
     assert km.load_applicability(known=known) == [{
         "ksi_id": "KSI-SVC-RUD", "approved": True,
         "not_applicable": km.load_applicability(known=known)[0]["not_applicable"]}]

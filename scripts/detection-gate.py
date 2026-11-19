@@ -14,6 +14,14 @@ input it is given:
     previous-vdr  the published VDR (the first-detected ledger): an object with findings[]
     checkov       Checkov SARIF: runs[] present, not the old empty "fallback" document
     tfsec         tfsec JSON: an object with a results key
+    inspector     Amazon Inspector: the account and its Lambda scanning ENABLED, at
+                  least one Lambda covered and every covered one scanning (ACTIVE),
+                  and a findings list
+    access-analyzer  IAM Access Analyzer: the account-level analyzer ACTIVE, and a
+                  findings list
+
+An empty findings list from a service that is off, or not scanning, is not
+evidence of no findings; the two AWS checks refuse it.
 
 A fetch step that fails writes `<file>.error` instead of a substitute, and that
 text is carried into the failure. The windows come from the governed
@@ -38,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _gates  # noqa: E402
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "infrastructure" / "schemas" / "detection-feeds.json"
-FEEDS = ("kev", "epss", "grype", "dependabot", "previous-vdr", "checkov", "tfsec")
+FEEDS = ("kev", "epss", "grype", "dependabot", "previous-vdr", "checkov", "tfsec", "inspector", "access-analyzer")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -216,6 +224,50 @@ def check_tfsec(path):
     return {**r, "count": len(doc["results"] or [])}
 
 
+def check_inspector(path):
+    doc, problem = _load_json(path)
+    r = {"feed": "inspector", "file": str(path)}
+    if problem:
+        return {**r, "problem": problem}
+    if not isinstance(doc, dict):
+        return {**r, "problem": "not an object"}
+    account = doc.get("account") or {}
+    if (account.get("state") or {}).get("status") != "ENABLED":
+        return {**r, "problem": "Inspector is not ENABLED for the account"}
+    if ((account.get("resourceState") or {}).get("lambda") or {}).get("status") != "ENABLED":
+        return {**r, "problem": "Inspector's Lambda scanning is not ENABLED"}
+    coverage = doc.get("coverage")
+    if not isinstance(coverage, list):
+        return {**r, "problem": "no coverage[]"}
+    lambdas = [c for c in coverage if isinstance(c, dict) and c.get("resourceType") == "AWS_LAMBDA_FUNCTION"]
+    if not lambdas:
+        return {**r, "problem": "no Lambda function is covered"}
+    idle = [c for c in lambdas if (c.get("scanStatus") or {}).get("statusCode") != "ACTIVE"]
+    if idle:
+        reasons = sorted({(c.get("scanStatus") or {}).get("reason") or "no reason given" for c in idle})
+        return {**r, "problem": f"{len(idle)} covered Lambda function(s) not being scanned ({', '.join(reasons)})"}
+    if not isinstance(doc.get("findings"), list):
+        return {**r, "problem": "no findings[]"}
+    return {**r, "count": len(doc["findings"])}
+
+
+def check_access_analyzer(path):
+    doc, problem = _load_json(path)
+    r = {"feed": "access-analyzer", "file": str(path)}
+    if problem:
+        return {**r, "problem": problem}
+    if not isinstance(doc, dict):
+        return {**r, "problem": "not an object"}
+    analyzer = doc.get("analyzer") or {}
+    if analyzer.get("type") != "ACCOUNT":
+        return {**r, "problem": "not the account-level external-access analyzer"}
+    if analyzer.get("status") != "ACTIVE":
+        return {**r, "problem": f"the analyzer is {analyzer.get('status') or 'in no status'}, not ACTIVE"}
+    if not isinstance(doc.get("findings"), list):
+        return {**r, "problem": "no findings[]"}
+    return {**r, "count": len(doc["findings"])}
+
+
 def evaluate(args, cfg, now):
     results = []
     if args.kev:
@@ -232,6 +284,10 @@ def evaluate(args, cfg, now):
         results.append(check_checkov(args.checkov))
     if args.tfsec:
         results.append(check_tfsec(args.tfsec))
+    if args.inspector:
+        results.append(check_inspector(args.inspector))
+    if args.access_analyzer:
+        results.append(check_access_analyzer(args.access_analyzer))
     return results
 
 
@@ -244,6 +300,8 @@ def main(argv=None):
     ap.add_argument("--previous-vdr")
     ap.add_argument("--checkov")
     ap.add_argument("--tfsec")
+    ap.add_argument("--inspector", help="Amazon Inspector status, coverage and findings (scripts/fetch-detection-feeds.sh)")
+    ap.add_argument("--access-analyzer", help="IAM Access Analyzer analyzer and findings (scripts/fetch-detection-feeds.sh)")
     ap.add_argument("--config", default=None, help="detection feed requirements (default: the governed file)")
     ap.add_argument("--output", default="detection.json")
     ap.add_argument("--now", default=None, help="ISO time to evaluate at (tests)")

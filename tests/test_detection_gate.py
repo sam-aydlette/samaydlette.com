@@ -21,7 +21,8 @@ SCHEMA = REPO / "infrastructure" / "schemas" / "detection-feeds.schema.json"
 NOW = "2026-11-04T12:00:00+00:00"
 
 GOOD = {"kev": "kev.json", "epss": "epss.csv", "grype": "grype.json", "dependabot": "dependabot.json",
-        "previous-vdr": "previous-vdr.json", "checkov": "checkov.sarif", "tfsec": "tfsec.json"}
+        "previous-vdr": "previous-vdr.json", "checkov": "checkov.sarif", "tfsec": "tfsec.json",
+        "inspector": "inspector.json", "access-analyzer": "access-analyzer.json"}
 
 
 def _load():
@@ -77,6 +78,10 @@ def test_all_good_inputs_pass(tmp_path):
     ("previous-vdr", "previous-vdr-bad.json", "no findings[]"),
     ("checkov", "checkov-fallback.sarif", "the empty fallback document"),
     ("tfsec", "absent.json", "missing"),
+    ("inspector", "inspector-lambda-off.json", "Lambda scanning is not ENABLED"),
+    ("inspector", "absent.json", "missing"),
+    ("access-analyzer", "access-analyzer-inactive.json", "the analyzer is DISABLED, not ACTIVE"),
+    ("access-analyzer", "absent.json", "missing"),
 ])
 def test_t52_each_failed_input_fails_the_gate_for_its_reason(tmp_path, feed, bad, reason):
     rc, summary, err = run(tmp_path, **{feed: bad})
@@ -177,3 +182,44 @@ def test_a_missing_dast_report_now_blocks_the_build(tmp_path):
                         "--output", "out.json"], cwd=work, capture_output=True, text=True, env=env)
     assert r.returncode == 1 and "No ZAP report at zap-report.json (no zap-dast-report artifact)" in r.stderr
     assert not (work / "out.json").exists()
+
+
+def _aws_doc(tmp_path, name, base, **change):
+    doc = json.loads((FIX / base).read_text())
+    for path, value in change.items():
+        node = doc
+        keys = path.split("__")
+        for k in keys[:-1]:
+            node = node[k]
+        node[keys[-1]] = value
+    p = tmp_path / name
+    p.write_text(json.dumps(doc))
+    return p
+
+
+@pytest.mark.parametrize("change,reason", [
+    ({"account__state__status": "DISABLED"}, "not ENABLED for the account"),
+    ({"coverage": []}, "no Lambda function is covered"),
+    ({"coverage": [{"resourceType": "AWS_LAMBDA_FUNCTION",
+                    "scanStatus": {"statusCode": "INACTIVE", "reason": "UNSUPPORTED_RUNTIME"}}]},
+     "1 covered Lambda function(s) not being scanned (UNSUPPORTED_RUNTIME)"),
+    ({"findings": None}, "no findings[]"),
+])
+def test_an_empty_inspector_result_counts_only_while_it_is_on_and_scanning(tmp_path, change, reason):
+    r = _load().check_inspector(_aws_doc(tmp_path, "i.json", "inspector.json", **change))
+    assert reason in r["problem"]
+
+
+@pytest.mark.parametrize("change,reason", [
+    ({"analyzer__type": "ORGANIZATION"}, "not the account-level external-access analyzer"),
+    ({"findings": None}, "no findings[]"),
+])
+def test_an_empty_access_analyzer_result_counts_only_from_the_active_account_analyzer(tmp_path, change, reason):
+    r = _load().check_access_analyzer(_aws_doc(tmp_path, "a.json", "access-analyzer.json", **change))
+    assert reason in r["problem"]
+
+
+def test_a_good_inspector_and_analyzer_feed_count_their_findings():
+    gate = _load()
+    assert gate.check_inspector(FIX / "inspector.json")["count"] == 1
+    assert gate.check_access_analyzer(FIX / "access-analyzer.json")["count"] == 1
