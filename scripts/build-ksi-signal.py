@@ -100,6 +100,10 @@ TYPE_BY_TF_TYPE = {
     # The Terraform state lock (bootstrap stack). Found missing from the inventory
     # by the independent corroboration (RAMPART on TAP), 2026-10-01.
     "aws_dynamodb_table": "kv_table",
+    # IAM Access Analyzer's external-access analyzer (infrastructure/security-services.tf).
+    # Inspector's Lambda scanning is an account setting with no resource, so it is
+    # a leveraged service in the boundary classification, not a component.
+    "aws_accessanalyzer_analyzer": "access_analyzer",
 }
 
 # Authoritative, external type vocabulary: each normalized component.type maps
@@ -130,6 +134,7 @@ CFN_TYPE_BY_NORMALIZED = {
     "metric_alarm": "AWS::CloudWatch::Alarm",
     "message_queue": "AWS::SQS::Queue",
     "kv_table": "AWS::DynamoDB::Table",
+    "access_analyzer": "AWS::AccessAnalyzer::Analyzer",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -253,6 +258,14 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
         "information_flow": [
             {"direction": "inbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "audit"},
+        ],
+    },
+    # Its findings name which resources a principal outside the account can
+    # reach: internal. Integrity moderate: a suppressed finding hides exposure.
+    "access_analyzer": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "access-findings"},
         ],
     },
     "log_group": {
@@ -425,6 +438,13 @@ IIW_DEFAULTS = {
         "public": False,
         "baseline_configuration": "Account-managed; default management-event capture",
         "iiw_asset_type": "Audit Log Trail (CloudTrail)",
+    },
+    "access_analyzer": {
+        "function": "Reports which resources a principal outside the account can reach (IAM Access Analyzer, external access)",
+        "diagram_label": "IAM Access Analyzer",
+        "public": False,
+        "baseline_configuration": "Account-level external-access analyzer; findings read into the VDR as a detection feed",
+        "iiw_asset_type": "Access Analyzer (IAM)",
     },
     "log_group": {
         "function": "CloudWatch log group for Lambda execution / Route 53 query logs",
@@ -746,6 +766,7 @@ CLASSIFICATION_DEFAULTS = {
     "iam_role":            (False,              "identity-secrets"),
     "iam_policy":          (False,              "identity-secrets"),
     "audit_log_trail":     (False,              "security-tooling"),
+    "access_analyzer":     (False,              "security-tooling"),
     "log_group":           (False,              "security-tooling"),
     "external_service":    (False,              "internal-tooling"),
     "api_gateway":         (True,               "public-edge"),

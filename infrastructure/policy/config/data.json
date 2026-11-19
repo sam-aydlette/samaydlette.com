@@ -19,7 +19,8 @@
       "aws_cognito_user_pool",
       "aws_apigatewayv2_api",
       "aws_apigatewayv2_stage",
-      "aws_cloudwatch_event_rule"
+      "aws_cloudwatch_event_rule",
+      "aws_accessanalyzer_analyzer"
     ],
     "required_classification_tags": [
       "DataSensitivity",
@@ -42,7 +43,8 @@
       "aws_cognito_user_pool",
       "aws_apigatewayv2_api",
       "aws_apigatewayv2_stage",
-      "aws_cloudwatch_event_rule"
+      "aws_cloudwatch_event_rule",
+      "aws_accessanalyzer_analyzer"
     ],
     "tls": {
       "minimum": "TLSv1.2_2021",
