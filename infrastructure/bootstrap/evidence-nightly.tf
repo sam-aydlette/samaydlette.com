@@ -16,7 +16,8 @@
 # PutObject under one S3 key prefix". It cannot apply Terraform (it has no
 # Terraform state access and no resource-mutating permission of any kind), it
 # cannot sync the website, and it cannot write a single object outside
-# `.well-known/vdr-*`. Everything else it can do is read-only.
+# `.well-known/vdr-*` and `.well-known/ksi-metrics*`. Everything else it can do
+# is read-only.
 #
 # The scope below is the whole permission set, and it is short on purpose. If a
 # future change to the nightly workflow needs a permission that is not here,
@@ -63,7 +64,7 @@ data "aws_iam_policy_document" "evidence_nightly_trust" {
 
 resource "aws_iam_role" "evidence_nightly" {
   name                 = "github-actions-evidence-nightly-oidc"
-  description          = "Unattended nightly VDR refresh. PutObject under .well-known/vdr-* plus read-only reconciliation reads. No Terraform, no website sync."
+  description          = "Unattended nightly VDR and KSI metrics refresh. PutObject under .well-known/vdr-* and .well-known/ksi-metrics* plus read-only reconciliation reads. No Terraform, no website sync."
   assume_role_policy   = data.aws_iam_policy_document.evidence_nightly_trust.json
   max_session_duration = 3600
 
@@ -71,7 +72,7 @@ resource "aws_iam_role" "evidence_nightly" {
 }
 
 # -----------------------------------------------------------------------------
-# WRITE: five objects under one prefix, and nothing else in the bucket
+# WRITE: two prefixes, and nothing else in the bucket
 # -----------------------------------------------------------------------------
 # The published set the nightly refreshes is vdr-report.json, vdr-report.bundle,
 # vdr-report.md, vdr-trend.json and vdr-trend.bundle. The resource pattern is
@@ -80,6 +81,14 @@ resource "aws_iam_role" "evidence_nightly" {
 # IIW, the provenance attestations and every byte of website
 # content stay out of reach.
 #
+# The second prefix, ksi-metrics*, is the daily KSI metric history
+# (SDR-CSX-KMT): ksi-metrics.json and its signature bundle. FedRAMP 20x Class C
+# needs a point for every day, and only this unattended path runs every day.
+# The nightly decides each KSI's status with the same evaluator the deploy uses
+# (scripts/_ksi_methods.py, policies/compliance/ksi.rego) and appends one point;
+# the SDR itself stays on the reviewed deploy path. Approved by the operator,
+# 2026-11-19.
+#
 # No s3:DeleteObject: an unattended job should never be able to unpublish
 # evidence. No s3:GetObject either — the workflow verifies its own publish by
 # fetching the public URL through CloudFront, which is both a stronger check
@@ -87,11 +96,12 @@ resource "aws_iam_role" "evidence_nightly" {
 # The bucket default-encrypts with SSE-S3, so no KMS permission is involved.
 data "aws_iam_policy_document" "evidence_nightly_publish" {
   statement {
-    sid     = "PublishVdrArtifactsOnly"
+    sid     = "PublishVdrAndKsiMetricsOnly"
     effect  = "Allow"
     actions = ["s3:PutObject"]
     resources = [
       "arn:aws:s3:::${var.domain_name}/.well-known/vdr-*",
+      "arn:aws:s3:::${var.domain_name}/.well-known/ksi-metrics*",
     ]
   }
 }
