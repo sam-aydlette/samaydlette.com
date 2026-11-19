@@ -186,20 +186,18 @@ resource "aws_iam_role_policy" "evidence_nightly_reconcile_reads" {
 # result, and reads findings. It cannot create, change, archive or disable
 # anything. Approved by the operator, 2026-11-19.
 data "aws_iam_policy_document" "evidence_nightly_security_findings" {
-  # checkov:skip=CKV_AWS_356:access-analyzer:ListAnalyzers and inspector2 BatchGetAccountStatus/ListCoverage/ListFindings do not support resource-level scoping; the analyzer read is ARN-scoped and every action is read-only. Documented exception.
+  # checkov:skip=CKV_AWS_356:The inspector2 calls BatchGetAccountStatus/ListCoverage/ListFindings do not support resource-level scoping; the analyzer read is ARN-scoped and every action is read-only. Documented exception.
   statement {
     sid    = "ReadExternalAccessFindings"
     effect = "Allow"
-    # ListFindingsV2 under both action names: AWS's managed read-only policies
-    # list only the older one.
-    actions   = ["access-analyzer:GetAnalyzer", "access-analyzer:ListFindings", "access-analyzer:ListFindingsV2"]
+    # The ListFindingsV2 API call is authorized by this older action name.
+    actions   = ["access-analyzer:GetAnalyzer", "access-analyzer:ListFindings"]
     resources = ["arn:aws:access-analyzer:${var.aws_region}:${data.aws_caller_identity.current.account_id}:analyzer/${local.domain_dashed}-external-access"]
   }
   statement {
     sid    = "ReadInspectorFindings"
     effect = "Allow"
     actions = [
-      "access-analyzer:ListAnalyzers",
       "inspector2:BatchGetAccountStatus", "inspector2:ListCoverage", "inspector2:ListFindings",
     ]
     resources = ["*"]
