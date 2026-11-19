@@ -569,17 +569,15 @@ resource "aws_iam_role_policy" "evidence_watchdog_management" {
 # them, never turn them off. Disabling either is an operator break-glass action
 # with the operator's own credentials. Approved by the operator, 2026-11-19.
 data "aws_iam_policy_document" "security_services_management" {
-  # checkov:skip=CKV_AWS_356:access-analyzer:ListAnalyzers and the inspector2 account-level calls (Enable, BatchGetAccountStatus, ListCoverage, ListFindings) do not support resource-level scoping; the analyzer statement is ARN-scoped and no statement can delete or disable. Documented exception.
+  # checkov:skip=CKV_AWS_356:The inspector2 account-level calls (Enable, BatchGetAccountStatus, ListCoverage, ListFindings) do not support resource-level scoping; the analyzer statement is ARN-scoped and no statement can delete or disable. Documented exception.
   statement {
     sid    = "ManageExternalAccessAnalyzer"
     effect = "Allow"
     actions = [
       "access-analyzer:CreateAnalyzer", "access-analyzer:GetAnalyzer",
       "access-analyzer:TagResource", "access-analyzer:UntagResource", "access-analyzer:ListTagsForResource",
-      # The findings calls (ListFindingsV2/GetFindingV2) under both action names:
-      # AWS's managed read-only policies list only the older names.
-      "access-analyzer:ListFindings", "access-analyzer:ListFindingsV2",
-      "access-analyzer:GetFinding", "access-analyzer:GetFindingV2",
+      # The ListFindingsV2 API call is authorized by this older action name.
+      "access-analyzer:ListFindings",
     ]
     resources = ["arn:aws:access-analyzer:${var.aws_region}:${data.aws_caller_identity.current.account_id}:analyzer/${local.domain_dashed}-external-access"]
   }
@@ -587,7 +585,6 @@ data "aws_iam_policy_document" "security_services_management" {
     sid    = "InspectorLambdaScanning"
     effect = "Allow"
     actions = [
-      "access-analyzer:ListAnalyzers",
       "inspector2:Enable", "inspector2:BatchGetAccountStatus",
       "inspector2:ListCoverage", "inspector2:ListFindings",
     ]
@@ -608,7 +605,7 @@ data "aws_iam_policy_document" "security_services_management" {
 }
 
 resource "aws_iam_role_policy" "security_services_management" {
-  # checkov:skip=CKV_AWS_356:Account-level Access Analyzer and Inspector calls cannot be resource-scoped; no delete or disable action. Documented exception.
+  # checkov:skip=CKV_AWS_356:Account-level Inspector calls cannot be resource-scoped; no delete or disable action. Documented exception.
   name   = "security-services-management"
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.security_services_management.json
@@ -701,7 +698,7 @@ resource "aws_iam_group_policy" "operators_assessment_readonly" {
         # Whether the AWS security services are on, and their findings (read only;
         # none of these can enable, disable or change a service). Added 2026-11-19,
         # operator-approved, before they become pipeline evidence.
-        "access-analyzer:ListAnalyzers", "access-analyzer:GetAnalyzer", "access-analyzer:ListFindingsV2", "access-analyzer:GetFindingV2",
+        "access-analyzer:ListAnalyzers", "access-analyzer:GetAnalyzer", "access-analyzer:ListFindings",
         "securityhub:DescribeHub", "securityhub:GetEnabledStandards", "securityhub:GetFindings",
         "inspector2:BatchGetAccountStatus", "inspector2:ListCoverage", "inspector2:ListFindings",
         "config:DescribeConfigurationRecorders", "config:DescribeConfigurationRecorderStatus",
