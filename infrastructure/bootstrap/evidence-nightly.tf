@@ -59,6 +59,15 @@ data "aws_iam_policy_document" "evidence_nightly_trust" {
       variable = "token.actions.githubusercontent.com:sub"
       values   = ["repo:${var.github_repo}:environment:${var.evidence_nightly_environment}"]
     }
+
+    # Only the nightly workflow as merged to main (its schedule and workflow_run
+    # triggers run on main). Another workflow that declared the
+    # evidence-nightly environment, which has no reviewer, is refused.
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:job_workflow_ref"
+      values   = ["${var.github_repo}/.github/workflows/evidence-nightly.yml@refs/heads/main"]
+    }
   }
 }
 

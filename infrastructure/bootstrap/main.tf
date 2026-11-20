@@ -141,6 +141,15 @@ data "aws_iam_policy_document" "trust" {
         "repo:${var.github_repo}:environment:${var.deploy_environment}",
       ]
     }
+
+    # Only the deploy workflow as merged to main. Without this, any workflow
+    # file on main that declared the prod environment could assume the role
+    # once a reviewer approved it.
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:job_workflow_ref"
+      values   = ["${var.github_repo}/.github/workflows/deploy-with-opa.yml@refs/heads/main"]
+    }
   }
 }
 
