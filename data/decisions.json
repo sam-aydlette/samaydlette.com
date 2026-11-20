@@ -1186,6 +1186,40 @@
       "source": {
         "detector": "IAM Access Analyzer (external access)"
       }
+    },
+    {
+      "id": "DEC-042",
+      "title": "IAM users rather than SSO (IAM Identity Center) for access to the account",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Access to the account is through three IAM users (infrastructure/bootstrap/iam-users.tf): the operator (operators group) and two read-only machine users (their own groups). None has a console password; each signs in with an access key, and no policy is attached to any user. Checkov CKV_AWS_273 asks for SSO through IAM Identity Center instead; it is inline-skipped on the three users. Identity Center grants access to an account only through AWS Organizations, which this single-account system does not use. Residual risk: long-lived access keys on the three users, rotated by hand, and no central sign-in. Compensating: an MFA device on the operator, permissions only through groups, read-only groups for the machine users, CI uses short-lived OIDC roles with no stored keys, and the read-only user's key was deactivated on 2026-11-20 when its use could not be accounted for. Reviewed within 90 days: adopt Organizations and Identity Center, or narrow the keys further.",
+      "controls": [
+        "ac-2",
+        "ia-2",
+        "ia-5"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_273"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-iam-user::operator",
+          "aws-iam-user::read_only",
+          "aws-iam-user::corroboration_collector"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-20",
+      "review_by": "2027-02-18",
+      "original_detection_date": "2026-11-20",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_273",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
     }
   ]
 }

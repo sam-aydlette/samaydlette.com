@@ -46,7 +46,7 @@ def _env():
 
 def test_the_committed_register_loads_and_matches_its_schema():
     reg = _decisions.load()
-    assert len(reg["decisions"]) == 40  # 37 carried over from the POA&M, 3 new
+    assert len(reg["decisions"]) == 41  # 37 carried over from the POA&M, 4 new
     jsonschema = pytest.importorskip("jsonschema")
     jsonschema.validate(json.loads(REGISTER.read_text()), json.loads(SCHEMA.read_text()))
 
@@ -140,19 +140,22 @@ def test_every_poam_item_landed_in_the_register_with_its_decision():
 
 def test_the_check_maps_are_the_ones_the_poam_held():
     frozen = json.loads((MIG / "check-maps-2026-11-04.json").read_text())
-    accepted, false_pos = _decisions.check_maps(_decisions.load())
+    reg = _decisions.load()
+    migrated = {r["id"] for r in reg["decisions"] if r.get("former_id")}
+    accepted, false_pos = ({c: d for c, d in m.items() if d in migrated} for m in _decisions.check_maps(reg))
     rename = lambda m: {c: "DEC-" + p.split("-")[1] for c, p in m.items()}  # noqa: E731
     assert accepted == rename(frozen["risk_accepted"])
     assert false_pos == rename(frozen["false_positive"])
 
 
-def test_the_only_new_records_are_the_two_dast_false_positives_and_the_ci_role_acceptance():
+def test_the_only_new_records_are_the_two_dast_false_positives_and_two_acceptances():
     new = [r for r in _decisions.load()["decisions"] if not r.get("former_id")]
     assert [(r["id"], r["disposition"], r["applies_to"]["vuln_ids"]) for r in new] == [
         ("DEC-039", "false-positive", ["zap-10099"]), ("DEC-040", "false-positive", ["zap-10036-2"]),
         ("DEC-041", "accepted", ["access-analyzer-20ea0634-7fe0-4393-97f2-54ad79e36462",
                                  "access-analyzer-c471f183-d7c4-4d8e-8577-0569f2f2bb1e",
-                                 "access-analyzer-d5125db0-4daf-4b87-af6a-6a2432b98664"])]
+                                 "access-analyzer-d5125db0-4daf-4b87-af6a-6a2432b98664"]),
+        ("DEC-042", "risk-accepted", [])]
     assert all(r["decided_by"] == "Sam Aydlette" for r in new)
 
 
