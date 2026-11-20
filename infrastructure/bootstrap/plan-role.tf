@@ -47,6 +47,18 @@ data "aws_iam_policy_document" "plan_trust" {
         "repo:${var.github_repo}:ref:refs/heads/main",
       ]
     }
+
+    # Only the deploy workflow's compliance-check, never another workflow file.
+    # On a pull request the file comes from the PR branch, so this pins the
+    # name, not the content: the role's read-only scope is what bounds a PR.
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:job_workflow_ref"
+      values = [
+        "${var.github_repo}/.github/workflows/deploy-with-opa.yml@refs/pull/*/merge",
+        "${var.github_repo}/.github/workflows/deploy-with-opa.yml@refs/heads/main",
+      ]
+    }
   }
 }
 
