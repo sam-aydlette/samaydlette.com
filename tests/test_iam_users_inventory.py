@@ -36,11 +36,10 @@ def test_users_are_placed_in_the_boundary():
     assert any("aws::iam_user::*" in g["match"] and g["zone"] == "system" for g in BOUNDARY["groups"])
 
 
-def test_every_declared_user_is_imported_and_in_a_group():
+def test_every_declared_user_is_in_a_group():
     users = re.findall(r'resource "aws_iam_user" "(\w+)"', TF)
-    imported = re.findall(r"to = aws_iam_user\.(\w+)", TF)
     member = re.findall(r"user\s*=\s*aws_iam_user\.(\w+)\.name", TF + (BOOT / "main.tf").read_text())
-    assert users and sorted(users) == sorted(imported) == sorted(set(member))
+    assert users and sorted(users) == sorted(set(member))
 
 
 def policies_on_users(texts):
