@@ -1659,12 +1659,32 @@
     },
     {
       "frr_id": "SDR-CSX-KMT",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Partly built: the SDR carries system-level metrics with 30-day and one-year summaries and a point per deploy day. Missing: metrics per KSI, a point for every day (36 points over 104 days), the status of persistent validation per day, and a signature check on the history the SDR builds on. Per-KSI status is decided only on a deploy, and the daily runtime check covers 5 validations, not the 46 KSIs; a daily per-KSI record needs the nightly to evaluate KSIs (widening its role by one key) or a larger runtime check (step 5).",
+      "status": "Implemented",
+      "implementation": "Daily metric data per KSI, published as .well-known/ksi-metrics.json and carried in the SDR (scripts/_ksi_metrics.py, scripts/build-ksi-metrics.py). The nightly and every deploy evaluate all 46 KSIs and add the day's point: each KSI's status, the day's persistent-validation status and system-level counts, with 30-day and one-year summaries per KSI. Each run first fetches the published history and keeps it only when its Sigstore bundle verifies against the deploy or nightly workflow; a history that does not verify is refused. Points have been daily since 2026-11-19. The 36 earlier points come from the SDR's deploy-day history and carry no per-KSI data; the days missing before 2026-11-19 are not backfilled.",
       "evidence": [
         {
           "kind": "artifact",
+          "ref": ".well-known/ksi-metrics.json"
+        },
+        {
+          "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Daily KSI metrics (SDR-CSX-KMT)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ksi_metrics.py::test_every_ksi_has_a_status_every_day"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ksi_metrics.py::test_a_failed_nightly_changes_the_days_ksi_statuses_and_validation_status"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_ksi_metrics.py::test_a_history_that_does_not_verify_is_refused_and_removed"
         }
       ]
     },
