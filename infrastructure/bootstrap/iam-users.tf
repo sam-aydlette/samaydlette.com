@@ -3,7 +3,7 @@
 # =============================================================================
 # Every IAM user in the account is declared here, so the inventory lists each
 # one and a user created outside Terraform stands out. The users existed before
-# they were managed here; the import blocks adopt them without recreating them.
+# they were managed here and were adopted into state on 2026-11-20 (#596).
 #
 # Permissions live on groups, never on users (AC-2(1)/AC-6), as with the
 # operators and read-only groups in main.tf.
@@ -12,26 +12,6 @@
 # secret in Terraform state. Keys are created and rotated by the operator.
 # Managing tags here also replaces the key-description tags the console adds.
 # =============================================================================
-
-import {
-  to = aws_iam_user.operator
-  id = var.operator_user_name
-}
-
-import {
-  to = aws_iam_user.read_only
-  id = "readonly"
-}
-
-import {
-  to = aws_iam_user.corroboration_collector
-  id = "tap-samsite-collector"
-}
-
-import {
-  to = aws_iam_user_group_membership.read_only
-  id = "readonly/read-only"
-}
 
 # The human operator: a member of the operators group
 # (aws_iam_user_group_membership.operator in main.tf).
