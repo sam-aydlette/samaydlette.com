@@ -185,6 +185,8 @@ data "aws_iam_policy_document" "reconcile_reads" {
       "kms:DescribeKey",
       "s3:ListAllMyBuckets",
       "logs:DescribeLogGroups",
+      # Invariant (a): every IAM user in the account must be in the inventory.
+      "iam:ListUsers",
       # Reconciliation invariant (i): read live resource tags to assert they
       # match the inventory's projected classification. Read-only, metadata only.
       "tag:GetResources",

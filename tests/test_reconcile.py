@@ -6,6 +6,8 @@
 # =============================================================================
 import copy
 import importlib.util
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -319,3 +321,25 @@ def test_j_unknown_dec_reference_fails():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def _fake_aws(monkeypatch, users):
+    """Stand in for the AWS CLI: no system resources, and the given IAM users."""
+    def run(cmd, **_):
+        out = {"list-users": {"Users": [{"Arn": a} for a in users]}}.get(cmd[2], {})
+        return subprocess.CompletedProcess(cmd, 0, json.dumps(out), "")
+    monkeypatch.setattr(rc.subprocess, "run", run)
+
+
+def test_a_enumerates_every_iam_user_whatever_its_name(monkeypatch):
+    users = [f"arn:aws:iam::{ACCOUNT}:user/operator", f"arn:aws:iam::{ACCOUNT}:user/someone-else"]
+    _fake_aws(monkeypatch, users)
+    assert rc.enumerate_live_arns() == set(users)
+
+
+def test_a_an_iam_user_outside_the_inventory_fails_completeness(monkeypatch):
+    known, rogue = f"arn:aws:iam::{ACCOUNT}:user/operator", f"arn:aws:iam::{ACCOUNT}:user/rogue"
+    _fake_aws(monkeypatch, [known, rogue])
+    signal = {"components": [{"component_id": "aws::iam_user::operator", "native_id": known}]}
+    v = rc.check_a_completeness(signal, rc.enumerate_live_arns())
+    assert v == ["(a) live resource not in inventory: arn:aws:iam::ACCOUNT:user/rogue"]

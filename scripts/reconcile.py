@@ -197,6 +197,10 @@ def enumerate_live_arns(region_primary="us-east-2", region_edge="us-east-1"):
     for lg in (cli(["logs", "describe-log-groups", "--region", region_primary]) or {}).get("logGroups", []):
         if in_boundary(lg["logGroupName"]):
             arns.add(lg["arn"].rstrip(":*"))
+    # IAM users (global): every user in the account is in the boundary, whatever
+    # its name, so a user created outside Terraform fails the gate.
+    for u in (cli(["iam", "list-users"]) or {}).get("Users", []):
+        arns.add(u["Arn"])
     return arns
 
 

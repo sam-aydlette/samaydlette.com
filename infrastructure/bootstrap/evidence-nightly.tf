@@ -171,6 +171,7 @@ data "aws_iam_policy_document" "evidence_nightly_reconcile_reads" {
       "kms:DescribeKey",
       "s3:ListAllMyBuckets",
       "logs:DescribeLogGroups",
+      "iam:ListUsers",
       "tag:GetResources",
     ]
     # Resource "*" is required: these are account-wide enumeration actions that
