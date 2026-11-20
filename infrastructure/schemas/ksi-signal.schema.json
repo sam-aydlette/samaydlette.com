@@ -265,6 +265,7 @@
             "iam_role",
             "iam_policy",
             "iam_group",
+            "iam_user",
             "oidc_provider",
             "audit_log_trail",
             "log_group",

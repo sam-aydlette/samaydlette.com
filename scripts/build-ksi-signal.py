@@ -75,6 +75,9 @@ TYPE_BY_TF_TYPE = {
     # so they are inventoried, not excused — ingested from the bootstrap module's
     # separate Terraform state by build_bootstrap_components().
     "aws_iam_group": "iam_group",
+    # Every IAM user (infrastructure/bootstrap/iam-users.tf): the operator and the
+    # machine users. Before 2026-11-20 they were outside Terraform and invisible here.
+    "aws_iam_user": "iam_user",
     "aws_iam_openid_connect_provider": "oidc_provider",
     "aws_cloudtrail": "audit_log_trail",
     "aws_cloudwatch_log_group": "log_group",
@@ -123,6 +126,7 @@ CFN_TYPE_BY_NORMALIZED = {
     "iam_role": "AWS::IAM::Role",
     "iam_policy": "AWS::IAM::RolePolicy",
     "iam_group": "AWS::IAM::Group",
+    "iam_user": "AWS::IAM::User",
     "oidc_provider": "AWS::IAM::OIDCProvider",
     "audit_log_trail": "AWS::CloudTrail::Trail",
     "log_group": "AWS::Logs::LogGroup",
@@ -168,7 +172,7 @@ NOT_COMPONENTS = {
     "aws_iam_role_policy_attachment": "binds a managed policy to a role; both are components",
     "aws_iam_group_policy": "an inline policy on the operators group, a component; not inventoried itself, unlike a role's inline policy",
     "aws_iam_group_policy_attachment": "binds a managed policy to the operators group, a component",
-    "aws_iam_user_group_membership": "a group membership; the users are outside Terraform's inventory",
+    "aws_iam_user_group_membership": "a user's group membership; the user and the group are components",
     "aws_iam_account_password_policy": "an account-wide setting with no resource ARN",
     "aws_lambda_permission": "a statement in a function's resource policy, a component",
     "aws_cloudwatch_event_target": "binds a schedule to the function it invokes; both are components",
@@ -245,6 +249,10 @@ MAS_DEFAULTS = {
         ],
     },
     "iam_group": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [],
+    },
+    "iam_user": {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
         "information_flow": [],
     },
@@ -550,6 +558,13 @@ IIW_DEFAULTS = {
         "baseline_configuration": "Bootstrap module; group-attached managed policies; human members (console password) authenticate with MFA (POAM-025); machine members authenticate with access keys and have no console password. Broad IAM admin tracked as POAM-026.",
         "iiw_asset_type": "IAM Group",
     },
+    "iam_user": {
+        "function": "IAM user; its permissions come only from its groups",
+        "diagram_label": "IAM — user",
+        "public": False,
+        "baseline_configuration": "Bootstrap module (iam-users.tf); no policies on the user, permissions from group membership; access keys created and rotated by the operator, outside Terraform state.",
+        "iiw_asset_type": "IAM User",
+    },
     "oidc_provider": {
         "function": "GitHub Actions OIDC identity provider trusted by the CI/CD deploy role (workload identity; replaced long-lived keys per POAM-001)",
         "diagram_label": "IAM — GitHub OIDC provider",
@@ -596,6 +611,23 @@ IIW_OVERRIDES = {
     },
     ("iam_role", "deploy"): {
         "function": "CI deploy role (reviewer-gated prod environment)",
+    },
+    ("iam_group", "corroboration"): {
+        "function": "IAM group for the independent corroboration collector (SecurityAudit plus metadata reads)",
+        "diagram_label": "IAM — corroboration collector group",
+        "baseline_configuration": "Bootstrap module; group-attached SecurityAudit plus a metadata-only supplement; no secret values, decryption or object contents.",
+    },
+    ("iam_user", "operator"): {
+        "function": "The human operator's IAM user (operators group; access key and MFA device, no console password)",
+        "diagram_label": "IAM — operator user",
+    },
+    ("iam_user", "read_only"): {
+        "function": "Read-only machine user (read-only group; access key, no console password)",
+        "diagram_label": "IAM — read-only user",
+    },
+    ("iam_user", "corroboration_collector"): {
+        "function": "Machine user for the independent corroboration collector (corroboration-collector group; access key, no console password)",
+        "diagram_label": "IAM — corroboration collector user",
     },
     ("iam_role", "plan"): {
         "function": "Read-only plan role for pull-request and main-branch checks",
@@ -806,6 +838,7 @@ CLASSIFICATION_DEFAULTS = {
     "kv_table":            (False,              "platform-foundation"),
     "oidc_provider":       (False,              "identity-secrets"),
     "iam_group":           (False,              "identity-secrets"),
+    "iam_user":            (False,              "identity-secrets"),
 }
 
 # Per-RESOURCE overrides keyed by (component type, Terraform resource name).
@@ -1652,7 +1685,7 @@ KSI_FAMILY_EVIDENCE_TYPES = {
     "CMT": {"function", "object_store", "cdn_distribution"},
     "CNA": {"object_store", "cdn_distribution", "function", "api_gateway",
             "dns_zone", "tls_certificate", "secrets_manager", "identity_provider", "kms_key"},
-    "IAM": {"iam_role", "iam_policy", "iam_group", "oidc_provider", "identity_provider", "secrets_manager"},
+    "IAM": {"iam_role", "iam_policy", "iam_group", "iam_user", "oidc_provider", "identity_provider", "secrets_manager"},
     "INR": {"log_group", "function", "notification_topic", "metric_alarm"},
     "MLA": {"log_group", "function", "cdn_distribution", "notification_topic", "metric_alarm", "message_queue"},
     "PIY": None,  # policy & inventory — whole inventory is the evidence

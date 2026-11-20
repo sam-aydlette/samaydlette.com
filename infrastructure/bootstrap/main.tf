@@ -827,7 +827,7 @@ variable "operator_user_name" {
 }
 
 resource "aws_iam_user_group_membership" "operator" {
-  user   = var.operator_user_name
+  user   = aws_iam_user.operator.name
   groups = [aws_iam_group.operators.name]
 }
 
