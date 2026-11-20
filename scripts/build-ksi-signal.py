@@ -160,6 +160,33 @@ ATTRIBUTE_PARENTS = {
     "aws_sns_topic_policy": "notification_topic",
 }
 
+# Resource types that are neither a component nor folded into one, each with
+# the reason. Every managed resource in a state must be in TYPE_BY_TF_TYPE,
+# ATTRIBUTE_PARENTS or here; build_cloud_components refuses any other type, so
+# a new resource type can't drop out of the inventory unnoticed.
+NOT_COMPONENTS = {
+    "aws_iam_role_policy_attachment": "binds a managed policy to a role; both are components",
+    "aws_iam_group_policy": "an inline policy on the operators group, a component; not inventoried itself, unlike a role's inline policy",
+    "aws_iam_group_policy_attachment": "binds a managed policy to the operators group, a component",
+    "aws_iam_user_group_membership": "a group membership; the users are outside Terraform's inventory",
+    "aws_iam_account_password_policy": "an account-wide setting with no resource ARN",
+    "aws_lambda_permission": "a statement in a function's resource policy, a component",
+    "aws_cloudwatch_event_target": "binds a schedule to the function it invokes; both are components",
+    "aws_cloudwatch_log_resource_policy": "an account-level policy letting a service write to log groups",
+    "aws_s3_bucket_lifecycle_configuration": "a bucket setting",
+    "aws_s3_bucket_logging": "a bucket setting",
+    "aws_s3_bucket_ownership_controls": "a bucket setting",
+    "aws_kms_alias": "a name for the KMS key, a component",
+    "aws_route53_record": "a DNS record in the zone, a component",
+    "aws_route53_hosted_zone_dnssec": "the zone's DNSSEC setting",
+    "aws_route53_key_signing_key": "the zone's DNSSEC signing key, held in the KMS key (a component); not inventoried itself",
+    "aws_route53_query_log": "the zone's query-logging setting",
+    "aws_cloudfront_function": "code attached to the distribution, a component; not inventoried itself",
+    "aws_cloudfront_origin_access_control": "the distribution's signed access to its bucket",
+    "aws_inspector2_enabler": "an account setting; Inspector is a leveraged service in the boundary",
+    "terraform_data": "Terraform-internal, with no cloud resource",
+}
+
 # =============================================================================
 # MAS (Minimum Assessment Scope) attributes per component type
 # =============================================================================
@@ -946,6 +973,15 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         # Recurse into child modules if any exist (this repo has none today).
         for child in root.get("child_modules", []) or []:
             state_resources.extend(child.get("resources", []))
+
+    unknown = sorted({r.get("address") or r.get("type") for r in state_resources
+                      if r.get("mode", "managed") == "managed"
+                      and r.get("type") not in TYPE_BY_TF_TYPE
+                      and r.get("type") not in ATTRIBUTE_PARENTS
+                      and r.get("type") not in NOT_COMPONENTS})
+    if unknown:
+        sys.exit(f"build-ksi-signal: {module_dir} has resource types the inventory does not classify: "
+                 f"{', '.join(unknown)}. Add each type to TYPE_BY_TF_TYPE, ATTRIBUTE_PARENTS or NOT_COMPONENTS.")
 
     # First pass: create the primary components.
     for r in state_resources:
