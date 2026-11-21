@@ -82,6 +82,7 @@ missing_classification(r) := {key |
 #   ksi_ids: [KSI-PIY-GIV]
 #   resource_types:
 #     - aws_accessanalyzer_analyzer
+#     - aws_guardduty_detector
 #     - aws_apigatewayv2_api
 #     - aws_apigatewayv2_stage
 #     - aws_cloudwatch_event_rule
@@ -124,6 +125,7 @@ violations contains violation if {
 #   ksi_ids: [KSI-PIY-GIV]
 #   resource_types:
 #     - aws_accessanalyzer_analyzer
+#     - aws_guardduty_detector
 #     - aws_apigatewayv2_api
 #     - aws_apigatewayv2_stage
 #     - aws_cloudwatch_event_rule

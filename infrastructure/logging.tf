@@ -62,7 +62,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
   }
 }
 
-# Allow the AWS log-delivery services to write to their respective prefixes,
+# Allow the AWS log-delivery services (and AWS Config) to write to their respective prefixes,
 # constrained to this account (and, for S3 server access logs, the website
 # bucket as the source).
 resource "aws_s3_bucket_policy" "logs" {
@@ -89,6 +89,31 @@ resource "aws_s3_bucket_policy" "logs" {
         Resource  = "${aws_s3_bucket.logs.arn}/cloudfront/*"
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+        }
+      },
+      # AWS Config (infrastructure/security-services.tf) checks the bucket and
+      # delivers configuration history under config/, for this account only.
+      {
+        Sid       = "AWSConfigBucketCheck"
+        Effect    = "Allow"
+        Principal = { Service = "config.amazonaws.com" }
+        Action    = ["s3:GetBucketAcl", "s3:ListBucket"]
+        Resource  = aws_s3_bucket.logs.arn
+        Condition = {
+          StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+        }
+      },
+      {
+        Sid       = "AWSConfigDelivery"
+        Effect    = "Allow"
+        Principal = { Service = "config.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.logs.arn}/config/AWSLogs/${data.aws_caller_identity.current.account_id}/Config/*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+            "s3:x-amz-acl"      = "bucket-owner-full-control"
+          }
         }
       },
       # Deny any request not made over TLS (SC-8 / SC-13; Prowler

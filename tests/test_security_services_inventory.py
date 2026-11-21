@@ -75,3 +75,70 @@ def test_opa_requires_governance_and_classification_tags_on_the_analyzer():
     data = json.loads((REPO / "infrastructure" / "policy" / "config" / "data.json").read_text())["gate"]
     assert "aws_accessanalyzer_analyzer" in data["governance_tag_types"]
     assert "aws_accessanalyzer_analyzer" in data["taggable_types"]
+
+
+# --- Slice 2: AWS Config, Security Hub CSPM, GuardDuty ------------------------
+
+def _slice2_components():
+    state = {"values": {"root_module": {"resources": [
+        {"type": "aws_securityhub_account", "name": "this", "address": "aws_securityhub_account.this",
+         "values": {"arn": "arn:aws:securityhub:us-east-2:1:hub/default", "id": "1"}},
+        {"type": "aws_securityhub_standards_subscription", "name": "nist_800_53",
+         "address": "aws_securityhub_standards_subscription.nist_800_53",
+         "values": {"id": "arn:aws:securityhub:us-east-2:1:subscription/nist-800-53/v/5.0.0"}},
+        {"type": "aws_guardduty_detector", "name": "this", "address": "aws_guardduty_detector.this",
+         "values": {"arn": "arn:aws:guardduty:us-east-2:1:detector/abc", "id": "abc"}},
+        {"type": "aws_config_configuration_recorder", "name": "this",
+         "address": "aws_config_configuration_recorder.this", "values": {"id": "samaydlette-com-recorder"}},
+        {"type": "aws_config_configuration_recorder_status", "name": "this",
+         "address": "aws_config_configuration_recorder_status.this", "values": {"id": "samaydlette-com-recorder"}},
+        {"type": "aws_config_delivery_channel", "name": "this",
+         "address": "aws_config_delivery_channel.this", "values": {"id": "samaydlette-com-config"}},
+    ]}}}
+    return ksi.build_cloud_components(state, {})
+
+
+def test_the_hub_and_the_detector_are_components_and_config_is_not():
+    got = {c["component_id"]: c["resource_type"] for c in _slice2_components()}
+    assert got == {"aws::security_hub::this": "AWS::SecurityHub::Hub",
+                   "aws::threat_detector::this": "AWS::GuardDuty::Detector"}
+    for t in ("aws_config_configuration_recorder", "aws_config_configuration_recorder_status",
+              "aws_config_delivery_channel", "aws_securityhub_standards_subscription"):
+        assert t in ksi.NOT_COMPONENTS and t not in ksi.TYPE_BY_TF_TYPE
+
+
+def test_the_detectors_classification_equals_the_tags_terraform_applies():
+    (c,) = [c for c in _slice2_components() if c["type"] == "threat_detector"]
+    profile = re.search(r'resource "aws_guardduty_detector" "this" \{.*?merge\(local\.cls\.(\w+),', TF, re.S).group(1)
+    tags = _profile(profile)
+    cls = c["attributes"]["classification"]
+    assert (cls["data_sensitivity"], cls["mission_criticality"], cls["internet_reachable"], cls["archetype"]) == (
+        tags["DataSensitivity"], tags["MissionCriticality"], tags["InternetReachable"] == "true", tags["Archetype"])
+
+
+def test_the_hub_and_detector_are_placed_and_config_is_leveraged():
+    for pattern in ("aws::security_hub::*", "aws::threat_detector::*"):
+        groups = [g for g in BOUNDARY["groups"] if pattern in g["match"]]
+        assert len(groups) == 1 and groups[0]["zone"] == "system"
+    assert "AWS Config" in BOUNDARY["leveraged"]["services"]
+
+
+def test_only_the_nist_standard_is_subscribed_and_config_records_everything():
+    hub = TF.split('resource "aws_securityhub_account" "this"')[1].split("resource ")[0]
+    assert re.search(r"enable_default_standards\s*=\s*false", hub)
+    assert re.findall(r"standards/([a-z0-9-]+)/v/", TF) == ["nist-800-53"]
+    rec = TF.split('resource "aws_config_configuration_recorder" "this"')[1].split("resource ")[0]
+    assert re.search(r"all_supported\s*=\s*true", rec) and re.search(r"include_global_resource_types\s*=\s*true", rec)
+
+
+def test_opa_requires_tags_on_the_detector_not_the_untaggable_hub():
+    data = json.loads((REPO / "infrastructure" / "policy" / "config" / "data.json").read_text())["gate"]
+    assert "aws_guardduty_detector" in data["governance_tag_types"] and "aws_guardduty_detector" in data["taggable_types"]
+    assert "aws_securityhub_account" not in data["taggable_types"]
+
+
+def test_config_may_deliver_only_to_its_prefix_for_this_account():
+    logging = (REPO / "infrastructure" / "logging.tf").read_text()
+    stmt = logging.split('Sid       = "AWSConfigDelivery"')[1].split("},\n      {")[0]
+    assert '"${aws_s3_bucket.logs.arn}/config/AWSLogs/' in stmt
+    assert '"aws:SourceAccount" = data.aws_caller_identity.current.account_id' in stmt
