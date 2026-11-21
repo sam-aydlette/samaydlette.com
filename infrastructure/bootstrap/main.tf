@@ -574,13 +574,17 @@ resource "aws_iam_role_policy" "evidence_watchdog_management" {
 
 # AWS security services as evidence (infrastructure/security-services.tf): IAM
 # Access Analyzer's account-level external-access analyzer and Amazon Inspector's
-# Lambda scanning, whose findings the deploy reads into the VDR. Like the
-# CloudTrail grant, this DELIBERATELY omits access-analyzer:DeleteAnalyzer and
-# inspector2:Disable: the automated deploy identity can turn these on and read
-# them, never turn them off. Disabling either is an operator break-glass action
-# with the operator's own credentials. Approved by the operator, 2026-11-19.
+# Lambda scanning, whose findings the deploy reads into the VDR (2026-11-19); and
+# AWS Config, Security Hub CSPM and GuardDuty (2026-11-21). Like the CloudTrail
+# grant, this DELIBERATELY omits every delete, disable, stop, unsubscribe and
+# update action (access-analyzer:DeleteAnalyzer, inspector2:Disable,
+# config:StopConfigurationRecorder and Delete*, securityhub:DisableSecurityHub
+# and BatchDisableStandards, guardduty:UpdateDetector and DeleteDetector): the
+# automated deploy identity can turn these on and read them, never turn them
+# off. Disabling any is an operator break-glass action with the operator's own
+# credentials. Approved by the operator, 2026-11-19 and 2026-11-21.
 data "aws_iam_policy_document" "security_services_management" {
-  # checkov:skip=CKV_AWS_356:The inspector2 account-level calls (Enable, BatchGetAccountStatus, ListCoverage, ListFindings) do not support resource-level scoping; the analyzer statement is ARN-scoped and no statement can delete or disable. Documented exception.
+  # checkov:skip=CKV_AWS_356:The inspector2, AWS Config and GuardDuty create/list calls do not support resource-level scoping; the analyzer, hub and detector statements are ARN-scoped and no statement can delete, stop or disable. Documented exception.
   statement {
     sid    = "ManageExternalAccessAnalyzer"
     effect = "Allow"
@@ -602,6 +606,65 @@ data "aws_iam_policy_document" "security_services_management" {
     resources = ["*"]
   }
   statement {
+    # AWS Config: record and deliver, never stop or delete. These calls take no
+    # resource ARN.
+    sid    = "ConfigRecorderAndDelivery"
+    effect = "Allow"
+    actions = [
+      "config:PutConfigurationRecorder", "config:StartConfigurationRecorder",
+      "config:DescribeConfigurationRecorders", "config:DescribeConfigurationRecorderStatus",
+      "config:PutDeliveryChannel", "config:DescribeDeliveryChannels",
+    ]
+    resources = ["*"]
+  }
+  statement {
+    # The recorder runs as Config's own service-linked role, passed to Config only.
+    sid       = "PassConfigServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["config.amazonaws.com"]
+    }
+  }
+  statement {
+    # Security Hub CSPM: turn on the hub and subscribe a standard, never disable
+    # or unsubscribe.
+    sid    = "SecurityHubEnable"
+    effect = "Allow"
+    actions = [
+      "securityhub:EnableSecurityHub", "securityhub:DescribeHub",
+      "securityhub:BatchEnableStandards", "securityhub:GetEnabledStandards",
+      "securityhub:TagResource", "securityhub:UntagResource", "securityhub:ListTagsForResource",
+    ]
+    resources = ["arn:aws:securityhub:${var.aws_region}:${data.aws_caller_identity.current.account_id}:hub/default"]
+  }
+  statement {
+    sid       = "SecurityHubDescribeStandards"
+    effect    = "Allow"
+    actions   = ["securityhub:DescribeStandards"]
+    resources = ["*"]
+  }
+  statement {
+    # GuardDuty: create and read the detector, never update (which can disable)
+    # or delete it.
+    sid       = "GuardDutyCreate"
+    effect    = "Allow"
+    actions   = ["guardduty:CreateDetector", "guardduty:ListDetectors"]
+    resources = ["*"]
+  }
+  statement {
+    sid    = "GuardDutyReadAndTagDetector"
+    effect = "Allow"
+    actions = [
+      "guardduty:GetDetector",
+      "guardduty:TagResource", "guardduty:UntagResource", "guardduty:ListTagsForResource",
+    ]
+    resources = ["arn:aws:guardduty:${var.aws_region}:${data.aws_caller_identity.current.account_id}:detector/*"]
+  }
+  statement {
     # Each service creates its own AWS-managed role the first time it is turned on.
     sid       = "ServiceLinkedRolesForTheseServicesOnly"
     effect    = "Allow"
@@ -610,13 +673,16 @@ data "aws_iam_policy_document" "security_services_management" {
     condition {
       test     = "StringEquals"
       variable = "iam:AWSServiceName"
-      values   = ["access-analyzer.amazonaws.com", "inspector2.amazonaws.com"]
+      values = [
+        "access-analyzer.amazonaws.com", "inspector2.amazonaws.com",
+        "config.amazonaws.com", "securityhub.amazonaws.com", "guardduty.amazonaws.com",
+      ]
     }
   }
 }
 
 resource "aws_iam_role_policy" "security_services_management" {
-  # checkov:skip=CKV_AWS_356:Account-level Inspector calls cannot be resource-scoped; no delete or disable action. Documented exception.
+  # checkov:skip=CKV_AWS_356:Account-level Inspector, Config and GuardDuty create/list calls cannot be resource-scoped; no delete, stop or disable action. Documented exception.
   name   = "security-services-management"
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.security_services_management.json
