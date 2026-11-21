@@ -674,11 +674,20 @@ data "aws_iam_policy_document" "security_services_management" {
       test     = "StringEquals"
       variable = "iam:AWSServiceName"
       values = [
+        # Config's role is created by this stack (aws_iam_service_linked_role.config).
         "access-analyzer.amazonaws.com", "inspector2.amazonaws.com",
-        "config.amazonaws.com", "securityhub.amazonaws.com", "guardduty.amazonaws.com",
+        "securityhub.amazonaws.com", "guardduty.amazonaws.com",
       ]
     }
   }
+}
+
+# AWS Config's service-linked role, which the recorder in
+# infrastructure/security-services.tf runs as. AWS defines its permissions and
+# only Config can assume it. Created here, by the operator, so the deploy role
+# needs no read on it (operator decision, 2026-11-21).
+resource "aws_iam_service_linked_role" "config" {
+  aws_service_name = "config.amazonaws.com"
 }
 
 resource "aws_iam_role_policy" "security_services_management" {

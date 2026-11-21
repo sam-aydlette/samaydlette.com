@@ -32,8 +32,12 @@ def test_each_service_can_be_turned_on():
 def test_service_linked_roles_only_for_these_services():
     block = POLICY.split('sid       = "ServiceLinkedRolesForTheseServicesOnly"')[1]
     names = set(re.findall(r'"([a-z0-9-]+\.amazonaws\.com)"', block.split("statement {")[0]))
-    assert names == {"access-analyzer.amazonaws.com", "inspector2.amazonaws.com", "config.amazonaws.com",
+    assert names == {"access-analyzer.amazonaws.com", "inspector2.amazonaws.com",
                      "securityhub.amazonaws.com", "guardduty.amazonaws.com"}
+
+
+def test_configs_role_is_created_by_the_operator_applied_stack():
+    assert re.search(r'resource "aws_iam_service_linked_role" "config" \{\s*aws_service_name = "config.amazonaws.com"', MAIN)
 
 
 def test_passrole_is_only_configs_own_role_passed_to_config():

@@ -19,8 +19,8 @@
      "match": ["aws::api_gateway::silk_reeling", "aws::identity_provider::silk_reeling", "aws::function::silk_reeling", "aws::iam_role::silk_reeling", "aws::iam_policy::silk_reeling", "aws::log_group::silk_*", "aws::secrets_manager::silk_*", "aws::kms_key::silk_reeling"]},
     {"key": "audit", "zone": "system", "label": "Audit and shared keys",
      "match": ["aws::audit_log_trail::*", "aws::object_store::cloudtrail", "aws::kms_key::at_rest"]},
-    {"key": "security-findings", "zone": "system", "label": "AWS security findings (IAM Access Analyzer)",
-     "match": ["aws::access_analyzer::*"]},
+    {"key": "security-findings", "zone": "system", "label": "AWS security findings (IAM Access Analyzer, Security Hub CSPM, GuardDuty)",
+     "match": ["aws::access_analyzer::*", "aws::security_hub::*", "aws::threat_detector::*"]},
     {"key": "trust-root", "zone": "system", "label": "CI/CD trust root (operator-applied bootstrap stack)",
      "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_user::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
     {"key": "github", "zone": "external", "label": "GitHub repository, Actions and OIDC",
@@ -46,7 +46,7 @@
     "package_id": "AGENCYAMAZONEW",
     "name": "AWS East/West",
     "status": "FedRAMP Certified Class C",
-    "services": ["VPC networking", "KMS HSM", "IAM control plane", "S3", "CloudFront edge", "Lambda", "API Gateway", "Cognito", "Secrets Manager", "EventBridge", "ACM", "CloudTrail", "Inspector", "CloudWatch", "SNS", "SQS", "Route 53"],
+    "services": ["VPC networking", "KMS HSM", "IAM control plane", "S3", "CloudFront edge", "Lambda", "API Gateway", "Cognito", "Secrets Manager", "EventBridge", "ACM", "CloudTrail", "Inspector", "AWS Config", "CloudWatch", "SNS", "SQS", "Route 53"],
     "why": "Per Key Concept #6: the underlying infrastructure is inherited from the AWS package under the customer responsibility matrix."
   },
   "flows": [

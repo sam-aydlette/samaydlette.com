@@ -278,7 +278,9 @@
             "metric_alarm",
             "message_queue",
             "kv_table",
-            "access_analyzer"
+            "access_analyzer",
+            "security_hub",
+            "threat_detector"
           ]
         },
         "resource_type": {

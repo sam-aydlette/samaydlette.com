@@ -20,7 +20,8 @@
       "aws_apigatewayv2_api",
       "aws_apigatewayv2_stage",
       "aws_cloudwatch_event_rule",
-      "aws_accessanalyzer_analyzer"
+      "aws_accessanalyzer_analyzer",
+      "aws_guardduty_detector"
     ],
     "required_classification_tags": [
       "DataSensitivity",
@@ -44,7 +45,8 @@
       "aws_apigatewayv2_api",
       "aws_apigatewayv2_stage",
       "aws_cloudwatch_event_rule",
-      "aws_accessanalyzer_analyzer"
+      "aws_accessanalyzer_analyzer",
+      "aws_guardduty_detector"
     ],
     "tls": {
       "minimum": "TLSv1.2_2021",

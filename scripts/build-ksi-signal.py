@@ -107,6 +107,11 @@ TYPE_BY_TF_TYPE = {
     # Inspector's Lambda scanning is an account setting with no resource, so it is
     # a leveraged service in the boundary classification, not a component.
     "aws_accessanalyzer_analyzer": "access_analyzer",
+    # Security Hub CSPM's hub and GuardDuty's detector (infrastructure/security-services.tf).
+    # AWS Config's recorder and delivery channel are account settings with no ARN,
+    # so AWS Config is a leveraged service, not a component.
+    "aws_securityhub_account": "security_hub",
+    "aws_guardduty_detector": "threat_detector",
 }
 
 # Authoritative, external type vocabulary: each normalized component.type maps
@@ -139,6 +144,8 @@ CFN_TYPE_BY_NORMALIZED = {
     "message_queue": "AWS::SQS::Queue",
     "kv_table": "AWS::DynamoDB::Table",
     "access_analyzer": "AWS::AccessAnalyzer::Analyzer",
+    "security_hub": "AWS::SecurityHub::Hub",
+    "threat_detector": "AWS::GuardDuty::Detector",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -174,6 +181,7 @@ NOT_COMPONENTS = {
     "aws_iam_group_policy_attachment": "binds a managed policy to the operators group, a component",
     "aws_iam_user_group_membership": "a user's group membership; the user and the group are components",
     "aws_iam_account_password_policy": "an account-wide setting with no resource ARN",
+    "aws_iam_service_linked_role": "an AWS-managed role whose permissions AWS defines and only its service (AWS Config, a leveraged service) can assume",
     "aws_lambda_permission": "a statement in a function's resource policy, a component",
     "aws_cloudwatch_event_target": "binds a schedule to the function it invokes; both are components",
     "aws_cloudwatch_log_resource_policy": "an account-level policy letting a service write to log groups",
@@ -188,6 +196,10 @@ NOT_COMPONENTS = {
     "aws_cloudfront_function": "code attached to the distribution, a component; not inventoried itself",
     "aws_cloudfront_origin_access_control": "the distribution's signed access to its bucket",
     "aws_inspector2_enabler": "an account setting; Inspector is a leveraged service in the boundary",
+    "aws_config_configuration_recorder": "an account setting with no ARN; AWS Config is a leveraged service in the boundary",
+    "aws_config_configuration_recorder_status": "turns the Config recorder on; an account setting",
+    "aws_config_delivery_channel": "where the Config recorder delivers; an account setting",
+    "aws_securityhub_standards_subscription": "a standard subscribed on the Security Hub hub, a component",
     "terraform_data": "Terraform-internal, with no cloud resource",
 }
 
@@ -301,6 +313,20 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
         "information_flow": [
             {"direction": "inbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "access-findings"},
+        ],
+    },
+    # Their findings name weaknesses and threats in this account's resources:
+    # internal. Integrity moderate: a suppressed finding hides a weakness.
+    "security_hub": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "configuration-findings"},
+        ],
+    },
+    "threat_detector": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "threat-findings"},
         ],
     },
     "log_group": {
@@ -480,6 +506,20 @@ IIW_DEFAULTS = {
         "public": False,
         "baseline_configuration": "Account-level external-access analyzer; findings read into the VDR as a detection feed",
         "iiw_asset_type": "Access Analyzer (IAM)",
+    },
+    "security_hub": {
+        "function": "Evaluates the account's resources against NIST SP 800-53 Rev. 5 from AWS Config's records (AWS Security Hub CSPM)",
+        "diagram_label": "Security Hub CSPM",
+        "public": False,
+        "baseline_configuration": "Account hub; AWS default standards off; NIST SP 800-53 Rev. 5 subscribed; us-east-2 only",
+        "iiw_asset_type": "Security Hub (CSPM)",
+    },
+    "threat_detector": {
+        "function": "Detects threats from CloudTrail, DNS and network activity (Amazon GuardDuty)",
+        "diagram_label": "GuardDuty",
+        "public": False,
+        "baseline_configuration": "Account detector with AWS's default protection plans; us-east-2 only",
+        "iiw_asset_type": "Threat Detector (GuardDuty)",
     },
     "log_group": {
         "function": "CloudWatch log group for Lambda execution / Route 53 query logs",
@@ -826,6 +866,8 @@ CLASSIFICATION_DEFAULTS = {
     "iam_policy":          (False,              "identity-secrets"),
     "audit_log_trail":     (False,              "security-tooling"),
     "access_analyzer":     (False,              "security-tooling"),
+    "security_hub":        (False,              "security-tooling"),
+    "threat_detector":     (False,              "security-tooling"),
     "log_group":           (False,              "security-tooling"),
     "external_service":    (False,              "internal-tooling"),
     "api_gateway":         (True,               "public-edge"),

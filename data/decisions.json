@@ -1192,7 +1192,7 @@
       "title": "IAM users rather than SSO (IAM Identity Center) for access to the account",
       "disposition": "risk-accepted",
       "status": "in-force",
-      "justification": "Access to the account is through three IAM users (infrastructure/bootstrap/iam-users.tf): the operator (operators group) and two read-only machine users (their own groups). None has a console password; each signs in with an access key, and no policy is attached to any user. Checkov CKV_AWS_273 asks for SSO through IAM Identity Center instead; it is inline-skipped on the three users. Identity Center grants access to an account only through AWS Organizations, which this single-account system does not use. Residual risk: long-lived access keys on the three users, rotated by hand, and no central sign-in. Compensating: an MFA device on the operator, permissions only through groups, read-only groups for the machine users, CI uses short-lived OIDC roles with no stored keys, and the read-only user's key was deactivated on 2026-11-20 when its use could not be accounted for. Reviewed within 90 days: adopt Organizations and Identity Center, or narrow the keys further.",
+      "justification": "Access to the account is through three IAM users (infrastructure/bootstrap/iam-users.tf): the operator (operators group) and two read-only machine users (their own groups). None has a console password; each signs in with an access key, and no policy is attached to any user. Checkov CKV_AWS_273 asks for SSO through IAM Identity Center instead; it is inline-skipped on the three users. Identity Center grants access to an account only through AWS Organizations, which this single-account system does not use. Residual risk: long-lived access keys on the three users, rotated by hand, and no central sign-in. Compensating: an MFA device on the operator, permissions only through groups, read-only groups for the machine users, CI uses short-lived OIDC roles with no stored keys, and the read-only user's key is the operator's TAP tool's key to call the Control Tower API (deactivated on 2026-11-20 while its use was unexplained, reactivated on 2026-11-21 once accounted for). Reviewed within 90 days: adopt Organizations and Identity Center, or narrow the keys further.",
       "controls": [
         "ac-2",
         "ia-2",
@@ -1219,6 +1219,34 @@
         "identifier": "CKV_AWS_273",
         "original_risk_rating": "low",
         "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-043",
+      "title": "GuardDuty not configured through an AWS Organization",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Checkov CKV2_AWS_3 flags the GuardDuty detector (infrastructure/security-services.tf) because no GuardDuty organization configuration enables it across an AWS Organization's accounts and regions. This is a false positive: the system is one AWS account that is not part of an Organization, so there are no member accounts to enroll. The detector covers that account in us-east-2, the region of every regional resource in the system except CloudFront's certificate (us-east-1), which is a stated gap of the AWS-native evidence, not a claim.",
+      "controls": [
+        "si-4"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV2_AWS_3"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-guardduty-detector::this"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-21",
+      "review_by": "2027-11-21",
+      "original_detection_date": "2026-11-21",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV2_AWS_3",
+        "original_risk_rating": "low"
       }
     }
   ]
