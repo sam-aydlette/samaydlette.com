@@ -934,97 +934,56 @@ def ingest_grype(path):
     return findings
 
 
-def _aws_feed(path, key):
-    """The findings list from a wrapped AWS feed (scripts/fetch-detection-feeds.sh).
-    Absent or unreadable gives [], as for every scanner here: whether the feed was
-    present and the service on is the detection gate's job (G7), which runs first."""
-    if not path or not Path(path).exists():
-        return []
+# =============================================================================
+# NORMALIZED FINDINGS (--findings): the platform-neutral input
+# =============================================================================
+# A platform adapter (scripts/aws-findings-adapter.py for AWS) turns a cloud
+# provider's own findings into this form; the build reads nothing
+# platform-specific. The rules are infrastructure/schemas/findings.schema.json,
+# checked here without a schema library (the deploy job installs none).
+FINDINGS_SCHEMA_VERSION = "findings/v1"
+_FINDING_REQUIRED = ("source", "tool_id", "tracking_id", "title", "severity", "resource")
+_FINDING_OPTIONAL = {"description", "cve", "detected_at", "cvss_vector", "fix_state", "fix_versions"}
+_FINDING_SEVERITIES = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "INFORMATIONAL"}
+_FINDING_FIX_STATES = {"fixed", "not-fixed", "unknown"}
+
+
+def ingest_findings(path):
+    """The findings of one normalized findings document. Unlike a scanner's own
+    output, it is always written (empty when there is nothing to report), so an
+    absent, unreadable or invalid document fails the build: a missing adapter
+    run must not read as zero findings."""
+    p = Path(path)
+    where = f"normalized findings {path}"
+    if not p.is_file():
+        raise SystemExit(f"::error::{where}: not found (did the platform adapter run?)")
     try:
-        doc = json.loads(Path(path).read_text())
-    except json.JSONDecodeError:
-        return []
-    items = doc.get(key) if isinstance(doc, dict) else None
-    return items if isinstance(items, list) else []
-
-
-# Inspector severities onto the vocabulary SEVERITY_TO_PAIN understands, as Grype's are.
-INSPECTOR_SEVERITY = {"INFORMATIONAL": "LOW", "UNTRIAGED": "MEDIUM"}
-INSPECTOR_FIX_STATE = {"YES": "fixed", "NO": "not-fixed", "PARTIAL": "fixed"}
-
-
-def ingest_inspector(path):
-    """Amazon Inspector findings for the deployed Lambda functions: a second,
-    AWS-run scan of what is deployed, beside Grype's scan of the build. Each
-    finding is one CVE in one package of one function; the resource is the
-    function's ARN without its version, so it resolves to the inventoried
-    function. Suppressed findings are kept: the decision lives in the register."""
-    findings = []
-    for f in _aws_feed(path, "findings"):
-        if f.get("type") != "PACKAGE_VULNERABILITY":
-            continue
-        det = f.get("packageVulnerabilityDetails") or {}
-        vid = det.get("vulnerabilityId") or "inspector"
-        res = (f.get("resources") or [{}])[0]
-        # Published, so the account ID is masked as the inventory masks it
-        # (scripts/_redact.py); resolve_component matches the masked form.
-        arn = _redact.redact_text(re.sub(r":(\$LATEST|\d+)$", "", str(res.get("id") or "")))
-        function = ((res.get("details") or {}).get("awsLambdaFunction") or {}).get("functionName") \
-            or arn.rsplit(":", 1)[-1]
-        pkgs = det.get("vulnerablePackages") or [{}]
-        pkg = pkgs[0]
-        sev = (f.get("severity") or "MEDIUM").upper()
-        findings.append({
-            "source": "inspector",
-            "tool_id": vid,
-            "tracking_id": f"inspector-{vid}-{function}-{pkg.get('name', '')}",
-            "title": f"{vid} in {pkg.get('name', '')} ({function})",
-            "description": det.get("source", ""),
-            "severity": INSPECTOR_SEVERITY.get(sev, sev),
-            "resource": arn,
-            "cve": vid if str(vid).upper().startswith("CVE-") else None,
-            "detected_at": f.get("firstObservedAt"),
-            "cvss_vector": _extract_cvss_vector([{"version": c.get("version"), "vector": c.get("scoringVector")}
-                                                 for c in det.get("cvss") or [] if isinstance(c, dict)]),
-            "fix_state": INSPECTOR_FIX_STATE.get(f.get("fixAvailable"), "unknown"),
-            "fix_versions": [p.get("fixedInVersion") for p in pkgs if p.get("fixedInVersion")],
-        })
-    return findings
-
-
-def ingest_access_analyzer(path):
-    """IAM Access Analyzer external-access findings: a resource a principal
-    outside the account can reach. Public access is HIGH; access granted to a
-    named outside principal (a federated identity provider, another account, a
-    service) is MEDIUM. Each is decided by a record naming its tracking_id, which
-    is stable for one resource, principal and access: a change to any of them is
-    a new finding, decided anew. Archived findings are kept: the decision lives
-    in the register, never in an archive rule."""
-    findings = []
-    for f in _aws_feed(path, "findings"):
-        if f.get("status") == "RESOLVED":
-            continue
-        arn = _redact.redact_text(str(f.get("resource") or ""))
-        rtype = f.get("resourceType") or "resource"
-        name = arn.rsplit("/", 1)[-1] if "/" in arn else arn.rsplit(":", 1)[-1]
-        principal = f.get("principal") or {}
-        who = ", ".join(f"{k}: {v}" for k, v in sorted(principal.items())) or "unknown principal"
-        actions = ", ".join(f.get("action") or []) or "unknown actions"
-        public = f.get("isPublic") is True
-        findings.append({
-            "source": "access-analyzer",
-            "tool_id": f"external-access:{rtype}",
-            "tracking_id": f"access-analyzer-{f.get('id', 'x')}",
-            "title": f"{'Public' if public else 'External'} access to {rtype} {name}",
-            "description": _redact.redact_text(
-                f"{who} can {actions}"
-                + (f" when {json.dumps(f['condition'], sort_keys=True)}" if f.get("condition") else "")
-                + f" (status {f.get('status', 'ACTIVE')})."),
-            "severity": "HIGH" if public else "MEDIUM",
-            "resource": arn,
-            "detected_at": f.get("createdAt"),
-        })
-    return findings
+        doc = json.loads(p.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"::error::{where}: not JSON ({e})") from None
+    if not isinstance(doc, dict) or doc.get("schema_version") != FINDINGS_SCHEMA_VERSION:
+        raise SystemExit(f"::error::{where}: schema_version is not {FINDINGS_SCHEMA_VERSION}")
+    extra = set(doc) - {"schema_version", "platform", "adapter", "findings"}
+    if extra or not all(isinstance(doc.get(k), str) and doc[k] for k in ("platform", "adapter")):
+        raise SystemExit(f"::error::{where}: needs exactly schema_version, platform, adapter and findings")
+    items = doc.get("findings")
+    if not isinstance(items, list):
+        raise SystemExit(f"::error::{where}: findings is not a list")
+    for i, f in enumerate(items):
+        bad = None
+        if not isinstance(f, dict):
+            bad = "not an object"
+        elif missing := [k for k in _FINDING_REQUIRED if not isinstance(f.get(k), str) or not f[k]]:
+            bad = f"missing {', '.join(missing)}"
+        elif unknown := sorted(set(f) - set(_FINDING_REQUIRED) - _FINDING_OPTIONAL):
+            bad = f"fields the build does not take from an adapter: {', '.join(unknown)}"
+        elif f["severity"] not in _FINDING_SEVERITIES:
+            bad = f"severity {f['severity']!r}"
+        elif "fix_state" in f and f["fix_state"] not in _FINDING_FIX_STATES:
+            bad = f"fix_state {f['fix_state']!r}"
+        if bad:
+            raise SystemExit(f"::error::{where}: finding {i}: {bad}")
+    return [dict(f) for f in items]
 
 
 ZAP_RISK_TO_SEVERITY = {"3": "HIGH", "2": "MEDIUM", "1": "LOW", "0": "INFORMATIONAL"}
@@ -2332,8 +2291,7 @@ def main():
     parser.add_argument("--grype", default=None, help="Grype SCA scan output (grype -o json)")
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
-    parser.add_argument("--inspector", default=None, help="Amazon Inspector status, coverage and findings (scripts/fetch-detection-feeds.sh)")
-    parser.add_argument("--access-analyzer", default=None, help="IAM Access Analyzer analyzer and findings (scripts/fetch-detection-feeds.sh)")
+    parser.add_argument("--findings", action="append", default=[], metavar="FILE", help="A normalized findings document (infrastructure/schemas/findings.schema.json) from a platform adapter, e.g. scripts/aws-findings-adapter.py; repeatable. Given but absent or invalid: the build fails.")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--conformance", default=None, help="Signed conformance results (scripts/build-conformance.py): the report names their profile version and sha256 (REQ-GOV-2). Given but missing or invalid: the build fails.")
     parser.add_argument("--detection", default=None, help="The detection gate's summary (scripts/detection-gate.py --output): recorded in the methodology so the report says what its inputs were and how old.")
@@ -2378,8 +2336,8 @@ def main():
     findings.extend(ingest_tfsec(args.tfsec))
     findings.extend(ingest_dependabot(args.dependabot))
     findings.extend(ingest_grype(args.grype))
-    findings.extend(ingest_inspector(args.inspector))
-    findings.extend(ingest_access_analyzer(args.access_analyzer))
+    for path in args.findings:
+        findings.extend(ingest_findings(path))
 
     # DAST: ingest the committed monthly ZAP report. Bootstrapping is allowed —
     # a MISSING report only warns (DAST coverage absent until the first scan is

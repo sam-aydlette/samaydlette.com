@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "findings.schema.json",
+  "title": "Normalized findings document (findings/v1)",
+  "description": "The platform-neutral form of a scanner's findings: what a platform adapter (scripts/aws-findings-adapter.py for AWS) writes and the VDR build reads with --findings. Nothing downstream of it depends on the platform. The VDR build checks every rule here itself (scripts/build-vdr-report.py, ingest_findings) and refuses a document that breaks one; this file states them for an adapter's author. Fields the build computes (first detection, PAIN, deadlines, decisions) are not accepted from an adapter.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "platform", "adapter", "findings"],
+  "properties": {
+    "schema_version": {"const": "findings/v1"},
+    "platform": {"type": "string", "minLength": 1, "description": "Where the findings come from, e.g. aws."},
+    "adapter": {"type": "string", "minLength": 1, "description": "The script that wrote this document."},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "tool_id", "tracking_id", "title", "severity", "resource"],
+        "properties": {
+          "source": {"type": "string", "minLength": 1, "description": "The scanner. A source in VULN_SOURCES (build-vdr-report.py, vuln-gate.py) is decided by a register record naming its cve or tracking_id; any other source is decided as a configuration finding, by its tool_id."},
+          "tool_id": {"type": "string", "minLength": 1, "description": "The scanner's rule or vulnerability ID."},
+          "tracking_id": {"type": "string", "minLength": 1, "description": "Stable for one finding on one resource across runs: the first-detected ledger keys on it."},
+          "title": {"type": "string", "minLength": 1},
+          "description": {"type": "string"},
+          "severity": {"enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "INFORMATIONAL"]},
+          "resource": {"type": "string", "description": "What the finding is about, with any cloud account ID masked; the build resolves it to an inventoried component."},
+          "cve": {"type": ["string", "null"]},
+          "detected_at": {"type": ["string", "null"], "description": "When the scanner first observed it (ISO 8601)."},
+          "cvss_vector": {"type": ["string", "null"]},
+          "fix_state": {"enum": ["fixed", "not-fixed", "unknown"]},
+          "fix_versions": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}
