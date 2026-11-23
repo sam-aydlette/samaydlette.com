@@ -37,6 +37,10 @@
       },
       "terraform_flag": "create_silk_reeling",
       "package_path": "./silk-reeling.zip",
+      "static": {
+        "bundle": "./silk-reeling-spa.zip",
+        "path": "silk-reeling"
+      },
       "sbom_trees": [
         {
           "dir": "_pkg",

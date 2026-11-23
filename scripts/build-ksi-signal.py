@@ -1198,6 +1198,29 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
     return list(components_by_id.values())
 
 
+def apply_static_bundles(components, bundle_dir, doc):
+    """Record each app's static bundle (data/apps.json `static`) on the website
+    bucket's component: the site path it is served under and the SHA-256 of the
+    bundle the deploy publishes there. Code served to visitors stays in the
+    inventory once it is no longer inside a Lambda package. A bundle absent from
+    this run is recorded with no hash and the reason, never left out."""
+    bucket = next((c for c in components if c.get("component_id") == "aws::object_store::website"), None)
+    if bucket is None:
+        return
+    out = []
+    for app, bundle, path in _apps.statics(doc):
+        f = Path(bundle_dir) / bundle
+        entry = {"app": app, "path": f"/{path}/", "bundle": bundle}
+        if f.is_file():
+            entry["sha256"] = sha256_file(f)
+        else:
+            entry["sha256"] = None
+            entry["absent_reason"] = "the bundle was not built in this run"
+        out.append(entry)
+    if out:
+        bucket.setdefault("attributes", {})["app_static_bundles"] = out
+
+
 def build_bootstrap_components(existing=(), bootstrap_dir="bootstrap"):
     """Inventory the CI/CD identity plane defined in infrastructure/bootstrap.
 
@@ -1940,6 +1963,7 @@ def main():
     for sbom in app_sboms:
         components.extend(build_sbom_components(sbom, components, **app_sbom_text[sbom.name]))
     components.extend(build_html_components(website_root))
+    apply_static_bundles(components, cwd, _apps.load())
     components.extend(build_external_components())
 
     # Final safety net: dedupe by PURL across the whole list so no software

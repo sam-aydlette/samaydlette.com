@@ -110,6 +110,7 @@ jobs:
         name: app-build
         path: |
           infrastructure/silk-reeling.zip
+          infrastructure/silk-reeling-spa.zip
           infrastructure/sbom-*.json
           infrastructure/grype*.json
         if-no-files-found: error

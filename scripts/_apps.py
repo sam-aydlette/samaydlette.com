@@ -9,6 +9,7 @@ the shell scripts call the command line below, and Python imports `load`.
     _apps.py [--manifest PATH] grype        ->  the per-tree Grype result files, one per line
     _apps.py [--manifest PATH] builds       ->  "<app>\t<build script>\t<source dir>" per built app
     _apps.py [--manifest PATH] packages     ->  the package file each built app ships, one per line
+    _apps.py [--manifest PATH] statics      ->  "<app>\t<bundle file>\t<site path>" per app with a static bundle
     _apps.py [--manifest PATH] hooks KIND   ->  "<app>\t<hook script>" per app with that deploy hook
 
 A malformed manifest exits non-zero with the reason; nothing downstream runs on
@@ -31,6 +32,8 @@ _DIR = re.compile(r"(\.\./)?[A-Za-z0-9_-][A-Za-z0-9_./-]*")
 _SBOM = re.compile(r"sbom-[a-z0-9-]+\.json")
 _SRC_DIR = re.compile(r"_[a-z0-9_-]+")
 _PACKAGE = re.compile(r"\./([a-z0-9][a-z0-9-]*\.zip)")
+# Where an app's static bundle is served: one path segment under the site root.
+_SITE_PATH = re.compile(r"[a-z0-9][a-z0-9-]*")
 CATALOGERS = {"python", "javascript"}
 # Deploy hook kinds, as app-hooks.sh names them, and each one's script name.
 HOOKS = {"import": "import.sh", "runtime-check": "runtime-check.sh"}
@@ -111,10 +114,27 @@ def load(path=MANIFEST):
         pkg = a.get("package_path")
         if pkg is not None and not (isinstance(pkg, str) and _PACKAGE.fullmatch(pkg)):
             _fail(f"{i!r}: package_path must be ./<name>.zip, not {pkg!r}")
+        static = a.get("static")
+        if static is not None:
+            # Files the app's build produces that the deploy publishes to the
+            # site under one path of their own (the website sync leaves it alone).
+            if not isinstance(static, dict) or set(static) != {"bundle", "path"}:
+                _fail(f"{i!r}: static has exactly a bundle and a path")
+            if not isinstance(static["bundle"], str) or not _PACKAGE.fullmatch(static["bundle"]):
+                _fail(f"{i!r}: the static bundle must be ./<name>.zip, not {static['bundle']!r}")
+            if static["bundle"] == pkg:
+                _fail(f"{i!r}: the static bundle cannot be the package")
+            if not isinstance(static["path"], str) or not _SITE_PATH.fullmatch(static["path"]):
+                _fail(f"{i!r}: the static path must be one lowercase path segment, not {static['path']!r}")
+            if build is None:
+                _fail(f"{i!r} has a static bundle but no build to produce it")
         for t in a.get("sbom_trees", []):
             _tree(t, i, app=True)
     for t in doc.get("platform_sbom_trees", []):
         _tree(t, "platform")
+    paths = [a["static"]["path"] for a in doc["apps"] if a.get("static")]
+    if len(paths) != len(set(paths)):
+        _fail("two apps publish static files to the same path")
     sboms = [t["sbom"] for t in trees(doc)]
     if len(sboms) != len(set(sboms)):
         _fail("two trees write the same SBOM file")
@@ -160,6 +180,13 @@ def packages(doc):
             for a in doc["apps"] if a.get("build") and a.get("package_path")]
 
 
+def statics(doc):
+    """(app, bundle file relative to infrastructure/, site path) for every app
+    whose build produces static files the deploy publishes."""
+    return [(a["id"], _PACKAGE.fullmatch(a["static"]["bundle"]).group(1), a["static"]["path"])
+            for a in doc["apps"] if a.get("static")]
+
+
 def hooks(doc, kind):
     """(app, hook script) for every app with a deploy hook of this kind, in manifest order."""
     if kind not in HOOKS:
@@ -187,6 +214,7 @@ def main(argv=None):
     sub.add_parser("grype")
     sub.add_parser("builds")
     sub.add_parser("packages")
+    sub.add_parser("statics")
     sub.add_parser("hooks").add_argument("kind", choices=sorted(HOOKS))
     args = ap.parse_args(argv)
     doc = load(args.manifest)
@@ -198,6 +226,9 @@ def main(argv=None):
     elif args.cmd == "packages":
         for pkg in packages(doc):
             print(pkg)
+    elif args.cmd == "statics":
+        for s in statics(doc):
+            print(*s, sep="\t")
     elif args.cmd == "hooks":
         for h in hooks(doc, args.kind):
             print(*h, sep="\t")
