@@ -889,11 +889,36 @@ resource "aws_iam_group_policy" "operators_state_backend" {
         Action = [
           "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem",
           "dynamodb:DescribeTable", "dynamodb:DescribeContinuousBackups", "dynamodb:UpdateContinuousBackups",
+          # Table settings such as deletion protection (Security Hub DynamoDB.6).
+          "dynamodb:UpdateTable",
           "dynamodb:DescribeTimeToLive", "dynamodb:ListTagsOfResource", "dynamodb:TagResource", "dynamodb:UntagResource",
         ]
         Resource = aws_dynamodb_table.tflock.arn
       },
     ]
+  })
+}
+
+# Account-level guardrails (account-settings.tf): the operator applies this
+# stack, so the operator needs to read and turn on these account-wide settings.
+# Turning them off is not granted: that is a change to make deliberately, with
+# a policy change first. Neither action supports a resource ARN, so Resource is
+# "*" by AWS design; the actions are named one by one.
+resource "aws_iam_group_policy" "operators_account_guardrails" {
+  # checkov:skip=CKV_AWS_355:Account-level settings have no resource ARN; Resource "*" is required by AWS and the four actions are named explicitly.
+  name  = "account-guardrails"
+  group = aws_iam_group.operators.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AccountGuardrails"
+      Effect = "Allow"
+      Action = [
+        "s3:GetAccountPublicAccessBlock", "s3:PutAccountPublicAccessBlock",
+        "ec2:GetEbsEncryptionByDefault", "ec2:EnableEbsEncryptionByDefault",
+      ]
+      Resource = "*"
+    }]
   })
 }
 
