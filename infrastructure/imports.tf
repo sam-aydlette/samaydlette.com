@@ -32,5 +32,5 @@ import {
 # 2026-11-23.
 import {
   to = aws_s3_bucket.website
-  id = var.domain_name
+  id = "samaydlette.com" # a literal: Terraform 1.5 (CI) allows no variables in an import id
 }
