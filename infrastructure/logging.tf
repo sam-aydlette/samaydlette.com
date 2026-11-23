@@ -78,7 +78,7 @@ resource "aws_s3_bucket_policy" "logs" {
         Resource  = "${aws_s3_bucket.logs.arn}/s3-access/*"
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
-          ArnLike      = { "aws:SourceArn" = data.aws_s3_bucket.website.arn }
+          ArnLike      = { "aws:SourceArn" = aws_s3_bucket.website.arn }
         }
       },
       {
@@ -137,7 +137,7 @@ resource "aws_s3_bucket_policy" "logs" {
 
 # Turn on S3 server access logging for the website bucket (POAM-005).
 resource "aws_s3_bucket_logging" "website" {
-  bucket        = data.aws_s3_bucket.website.id
+  bucket        = aws_s3_bucket.website.id
   target_bucket = aws_s3_bucket.logs.id
   target_prefix = "s3-access/"
 

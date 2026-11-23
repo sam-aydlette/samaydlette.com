@@ -57,3 +57,26 @@ def test_sentinel_fallback_yields_no_native_id_rather_than_garbage():
          "name": "x", "values": {"function_name": "x"}}]}}}
     comps = ksi.build_cloud_components(state, {"lambda_function_arn": {"value": "Not created"}})
     assert "Not created" not in _native_ids(comps)
+
+
+def test_each_bucket_setting_folds_into_the_bucket_it_names():
+    # The site bucket listed last (as once it is managed rather than looked up)
+    # must still get its own settings, and no other bucket may get them.
+    def bucket(name):
+        return {"address": f"aws_s3_bucket.{name}", "mode": "managed", "type": "aws_s3_bucket", "name": name,
+                "values": {"arn": f"arn:aws:s3:::{name}-bucket", "bucket": f"{name}-bucket"}}
+
+    def versioning(name, status):
+        return {"address": f"aws_s3_bucket_versioning.{name}", "mode": "managed", "type": "aws_s3_bucket_versioning",
+                "name": name, "values": {"bucket": f"{name}-bucket", "status": status}}
+
+    state = {"values": {"root_module": {"resources": [
+        bucket("cloudtrail"), bucket("website"),
+        versioning("cloudtrail", "Enabled"), versioning("website", "Suspended"),
+        {"address": "aws_s3_bucket_versioning.elsewhere", "mode": "managed", "type": "aws_s3_bucket_versioning",
+         "name": "elsewhere", "values": {"bucket": "not-in-this-state", "status": "Enabled"}},
+    ]}}}
+    comps = {c["attributes"]["tf_name"]: c for c in ksi.build_cloud_components(state, {})
+             if c.get("type") == "object_store"}
+    assert comps["cloudtrail"]["attributes"]["config"]["aws_s3_bucket_versioning"]["status"] == "Enabled"
+    assert comps["website"]["attributes"]["config"]["aws_s3_bucket_versioning"]["status"] == "Suspended"

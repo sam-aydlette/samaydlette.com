@@ -21,13 +21,13 @@
 # The name of my S3 bucket that holds website files
 output "s3_bucket_name" {
   description = "Name of the existing S3 bucket"
-  value       = data.aws_s3_bucket.website.id
+  value       = aws_s3_bucket.website.id
 }
 
 # The full AWS identifier for my S3 bucket (used by other AWS services)
 output "s3_bucket_arn" {
   description = "ARN of the existing S3 bucket"
-  value       = data.aws_s3_bucket.website.arn
+  value       = aws_s3_bucket.website.arn
 }
 
 # The ID of my CloudFront distribution that serves my website.

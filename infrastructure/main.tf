@@ -79,8 +79,11 @@ locals {
     security_tooling = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "security-tooling" }
     # The compliance DLQ (not an inventory component; classified for completeness).
     security_tooling_internal = { DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "security-tooling" }
-    # The public Silk Reeling app Lambda.
-    app_tier = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "app-tier" }
+    # The Silk Reeling app Lambda: reachable through its API, and it handles
+    # signed-in users' requests, so internal (moderate confidentiality).
+    app_tier = { DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "app-tier" }
+    # The website bucket: public site content, reached only through CloudFront.
+    site_content = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "internal-tooling" }
     # The public API Gateway (and its stage).
     public_edge = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "public-edge" }
     # The daily EventBridge schedule.
@@ -114,9 +117,31 @@ provider "aws" {
 # so Terraform can work with them without breaking anything
 # =============================================================================
 
-# Find my existing S3 bucket that holds the website files
-data "aws_s3_bucket" "website" {
+# The S3 bucket that holds the website files. It was created by hand and only
+# looked up here until 2026-11-23, when it was adopted (imports.tf) so its tags
+# are set in code like every other resource's. It is not reachable on its own:
+# CloudFront reads it through origin access control, so it backs a public
+# component (ExposureIntent) without being one.
+resource "aws_s3_bucket" "website" {
+  # checkov:skip=CKV_AWS_144:Cross-region replication declined; risk-accepted, DEC-003.
+  # checkov:skip=CKV2_AWS_62:No event-driven workflow consumes these objects; risk-accepted, DEC-004.
+  # checkov:skip=CKV_AWS_145:SSE-S3 (AES256) for public site content; a customer CMK adds no confidentiality (DEC-029, by check ID).
   bucket = var.domain_name
+
+  tags = merge(local.cls.site_content, {
+    Name               = var.domain_name
+    Environment        = var.environment
+    CostCenter         = var.cost_center
+    DataClassification = "Public"
+    Owner              = var.owner
+    AutomationExempt   = "false"
+    ComplianceScope    = "Section508"
+    ExposureIntent     = "public-backed"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Find my existing CloudFront distribution that serves the website
@@ -146,7 +171,7 @@ data "aws_acm_certificate" "website" {
 
 # Turn on file versioning so you can recover deleted or changed files
 resource "aws_s3_bucket_versioning" "website" {
-  bucket = data.aws_s3_bucket.website.id
+  bucket = aws_s3_bucket.website.id
 
   versioning_configuration {
     status = "Enabled"
@@ -159,7 +184,7 @@ resource "aws_s3_bucket_versioning" "website" {
 
 # Encrypt files stored in my S3 bucket
 resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
-  bucket = data.aws_s3_bucket.website.id
+  bucket = aws_s3_bucket.website.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -174,7 +199,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
 
 # Block public access to prevent accidental exposure
 resource "aws_s3_bucket_public_access_block" "website" {
-  bucket = data.aws_s3_bucket.website.id
+  bucket = aws_s3_bucket.website.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -190,7 +215,7 @@ resource "aws_s3_bucket_public_access_block" "website" {
 # incomplete multipart uploads and old non-current versions so storage can't grow
 # unbounded. Current object versions (the live site) are never expired.
 resource "aws_s3_bucket_lifecycle_configuration" "website" {
-  bucket = data.aws_s3_bucket.website.id
+  bucket = aws_s3_bucket.website.id
 
   rule {
     id     = "hygiene"
@@ -279,7 +304,7 @@ resource "aws_cloudfront_response_headers_policy" "website" {
 
 # Set up permissions so only CloudFront can access my S3 bucket
 resource "aws_s3_bucket_policy" "website" {
-  bucket     = data.aws_s3_bucket.website.id
+  bucket     = aws_s3_bucket.website.id
   depends_on = [aws_s3_bucket_public_access_block.website]
 
   policy = jsonencode({
@@ -292,7 +317,7 @@ resource "aws_s3_bucket_policy" "website" {
           Service = "cloudfront.amazonaws.com"
         }
         Action   = "s3:GetObject"
-        Resource = "${data.aws_s3_bucket.website.arn}/*"
+        Resource = "${aws_s3_bucket.website.arn}/*"
         Condition = {
           StringEquals = {
             "AWS:SourceArn" = data.aws_cloudfront_distribution.website.arn
@@ -307,8 +332,8 @@ resource "aws_s3_bucket_policy" "website" {
         Principal = "*"
         Action    = "s3:*"
         Resource = [
-          data.aws_s3_bucket.website.arn,
-          "${data.aws_s3_bucket.website.arn}/*",
+          aws_s3_bucket.website.arn,
+          "${aws_s3_bucket.website.arn}/*",
         ]
         Condition = {
           Bool = { "aws:SecureTransport" = "false" }
@@ -448,8 +473,8 @@ resource "aws_iam_role_policy" "lambda_opa" {
           "s3:GetBucketTagging"
         ]
         Resource = [
-          data.aws_s3_bucket.website.arn,
-          "${data.aws_s3_bucket.website.arn}/*"
+          aws_s3_bucket.website.arn,
+          "${aws_s3_bucket.website.arn}/*"
         ]
       },
       {
@@ -493,8 +518,8 @@ resource "aws_iam_role_policy" "lambda_opa" {
           "s3:PutObject"
         ]
         Resource = [
-          "${data.aws_s3_bucket.website.arn}/.well-known/ksi-signal-runtime.json",
-          "${data.aws_s3_bucket.website.arn}/.well-known/runtime-signing-pubkey.pem"
+          "${aws_s3_bucket.website.arn}/.well-known/ksi-signal-runtime.json",
+          "${aws_s3_bucket.website.arn}/.well-known/runtime-signing-pubkey.pem"
         ]
       },
       {
@@ -781,7 +806,7 @@ resource "aws_lambda_function" "opa_compliance" {
       # (alias/<domain-with-dashes>-runtime-signing); no separate key env var is
       # injected. The kms:Sign / kms:GetPublicKey grant on the role is scoped to
       # aws_kms_key.runtime_signing and authorizes use via that alias.
-      S3_BUCKET = data.aws_s3_bucket.website.id
+      S3_BUCKET = aws_s3_bucket.website.id
     }
   }
 
