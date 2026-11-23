@@ -307,7 +307,7 @@ def test_alarm_thresholds_and_reads_come_from_the_governed_config():
     assert 'metric    = "NightlyFailed"\n      threshold = 0' in tf
     assert 'metric    = "StaleArtifacts"\n      threshold = 0' in tf
     assert 'treat_missing_data  = "breaching"' in tf
-    assert '[for p in keys(local.freshness_windows) : "${data.aws_s3_bucket.website.arn}/${p}"]' in tf
+    assert '[for p in keys(local.freshness_windows) : "${aws_s3_bucket.website.arn}/${p}"]' in tf
     assert 'filename = "freshness-config.json"' in tf
     # No window is a literal in the watchdog any more.
     assert "MAX_BEACON_AGE_HOURS" not in logic

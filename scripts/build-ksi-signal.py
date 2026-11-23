@@ -786,6 +786,12 @@ def apply_iiw_defaults(component):
 # for both stacks rather than public site content, so its confidentiality is
 # MODERATE and it talks to CI and the operator, not the CDN.
 MAS_OVERRIDES = {
+    # The Silk Reeling app Lambda handles signed-in users' requests, so its
+    # confidentiality is MODERATE (DataSensitivity internal), unlike the
+    # compliance and watchdog Lambdas, which handle configuration only.
+    ("function", "silk_reeling"): {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+    },
     ("object_store", "tfstate"): {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
         "information_flow": [
@@ -1172,11 +1178,16 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         if tf_type not in ATTRIBUTE_PARENTS:
             continue
         parent_type = ATTRIBUTE_PARENTS[tf_type]
-        # Find the matching parent. For this single-system site, name-matching
-        # the bucket reference / distribution reference is sufficient; in a
-        # larger system the parent reference would need explicit traversal.
+        # A bucket setting names its bucket, so it folds into that bucket and no
+        # other: taking the first bucket put every bucket's settings on whichever
+        # one the state listed first. A setting whose bucket is not in this state
+        # is left out rather than put on the wrong bucket. Other parent types
+        # still take the first of their type (one distribution, one API, ...).
+        bucket = (r.get("values") or {}).get("bucket") if parent_type == "object_store" else None
         for cid, comp in components_by_id.items():
             if comp["type"] != parent_type:
+                continue
+            if parent_type == "object_store" and comp.get("native_id") != f"arn:aws:s3:::{bucket}":
                 continue
             short_attr_key = tf_type.replace(f"aws_{parent_type.split('_')[0]}_", "")
             comp.setdefault("attributes", {}).setdefault("config", {})[short_attr_key] = (

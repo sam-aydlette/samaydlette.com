@@ -27,3 +27,10 @@ import {
   to = aws_route53_record.acm_validation_www[0]
   id = "Z025777934PUN9NPN7X28__44dc48e27c8c30834255eeda9f2c8d63.www.samaydlette.com_CNAME"
 }
+
+# The website bucket, created by hand and looked up as a data source until
+# 2026-11-23.
+import {
+  to = aws_s3_bucket.website
+  id = var.domain_name
+}

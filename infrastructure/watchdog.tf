@@ -164,7 +164,7 @@ resource "aws_iam_role_policy" "evidence_watchdog" {
         Sid      = "ReadPublishedEvidence"
         Effect   = "Allow"
         Action   = "s3:GetObject"
-        Resource = [for p in keys(local.freshness_windows) : "${data.aws_s3_bucket.website.arn}/${p}"]
+        Resource = [for p in keys(local.freshness_windows) : "${aws_s3_bucket.website.arn}/${p}"]
       },
       {
         # PutMetricData has no resource-level scoping; the namespace condition is
@@ -224,7 +224,7 @@ resource "aws_lambda_function" "evidence_watchdog" {
 
   environment {
     variables = {
-      S3_BUCKET        = data.aws_s3_bucket.website.id
+      S3_BUCKET        = aws_s3_bucket.website.id
       METRIC_NAMESPACE = local.watchdog_namespace
     }
   }
