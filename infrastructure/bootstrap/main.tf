@@ -385,11 +385,18 @@ data "aws_iam_policy_document" "log_bucket_management" {
     resources = ["arn:aws:s3:::${local.domain_dashed}-logs"]
   }
   statement {
+    # The website bucket is managed by the application stack (adopted from a
+    # data source on 2026-11-23). Its aws_s3_bucket Read refreshes every bucket
+    # sub-config, so the read side is s3:Get* on the bucket ARN, as for the log
+    # bucket above; object reads need an object ARN and are not covered by it.
+    # Tags are written explicitly; no bucket create or delete is granted.
     sid    = "WebsiteBucketConfig"
     effect = "Allow"
     actions = [
-      "s3:PutBucketLogging", "s3:GetBucketLogging",
-      "s3:PutLifecycleConfiguration", "s3:GetLifecycleConfiguration",
+      "s3:Get*",
+      "s3:PutBucketLogging",
+      "s3:PutLifecycleConfiguration",
+      "s3:PutBucketTagging",
     ]
     resources = ["arn:aws:s3:::${var.domain_name}"]
   }
