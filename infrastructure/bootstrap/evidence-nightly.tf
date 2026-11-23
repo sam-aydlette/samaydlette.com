@@ -190,13 +190,14 @@ resource "aws_iam_role_policy" "evidence_nightly_reconcile_reads" {
 
 # Findings from the AWS security services (infrastructure/security-services.tf)
 # for the daily VDR: the nightly fetches them as detection feeds
-# (scripts/fetch-detection-feeds.sh), so a newly reported finding reaches the
+# (scripts/fetch-aws-feeds.sh), so a newly reported finding reaches the
 # published VDR within a day, as the scanner feeds already do. Read only: it
 # checks each service is on and covering the Lambdas before trusting an empty
 # result, and reads findings. It cannot create, change, archive or disable
-# anything. Approved by the operator, 2026-11-19.
+# anything. Approved by the operator, 2026-11-19 (Access Analyzer, Inspector)
+# and 2026-11-22 (Security Hub CSPM, GuardDuty).
 data "aws_iam_policy_document" "evidence_nightly_security_findings" {
-  # checkov:skip=CKV_AWS_356:The inspector2 calls BatchGetAccountStatus/ListCoverage/ListFindings do not support resource-level scoping; the analyzer read is ARN-scoped and every action is read-only. Documented exception.
+  # checkov:skip=CKV_AWS_356:The inspector2 calls BatchGetAccountStatus/ListCoverage/ListFindings and guardduty ListDetectors/ListFindings/GetFindings do not support resource-level scoping; the analyzer, hub and detector reads are ARN-scoped and every action is read-only. Documented exception.
   statement {
     sid    = "ReadExternalAccessFindings"
     effect = "Allow"
@@ -210,6 +211,30 @@ data "aws_iam_policy_document" "evidence_nightly_security_findings" {
     actions = [
       "inspector2:BatchGetAccountStatus", "inspector2:ListCoverage", "inspector2:ListFindings",
     ]
+    resources = ["*"]
+  }
+  # Security Hub CSPM: the hub, its enabled standards (the NIST SP 800-53 Rev. 5
+  # subscription must be READY before an empty result counts) and its control
+  # findings. All three are scoped to the hub resource.
+  statement {
+    sid       = "ReadSecurityHubFindings"
+    effect    = "Allow"
+    actions   = ["securityhub:DescribeHub", "securityhub:GetEnabledStandards", "securityhub:GetFindings"]
+    resources = ["arn:aws:securityhub:${var.aws_region}:${data.aws_caller_identity.current.account_id}:hub/default"]
+  }
+  # GuardDuty: the detector's status, scoped to the account's detectors; listing
+  # detectors and reading findings name no resource type in the service
+  # authorization reference, so they cannot be scoped.
+  statement {
+    sid       = "ReadGuardDutyDetector"
+    effect    = "Allow"
+    actions   = ["guardduty:GetDetector"]
+    resources = ["arn:aws:guardduty:${var.aws_region}:${data.aws_caller_identity.current.account_id}:detector/*"]
+  }
+  statement {
+    sid       = "ReadGuardDutyFindings"
+    effect    = "Allow"
+    actions   = ["guardduty:ListDetectors", "guardduty:ListFindings", "guardduty:GetFindings"]
     resources = ["*"]
   }
 }
