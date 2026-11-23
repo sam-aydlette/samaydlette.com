@@ -155,6 +155,7 @@ def test_a_build_needs_a_source(tmp_path):
 def test_a_manifest_with_nothing_to_build_builds_nothing(tmp_path):
     doc = json.loads(_apps.MANIFEST.read_text())
     doc["apps"][1]["build"] = None
+    doc["apps"][1]["static"] = None  # a static bundle needs a build to produce it
     none = tmp_path / "apps.json"
     none.write_text(json.dumps(doc))
     r, log, _ = build(tmp_path, "deps", str(none))
@@ -245,11 +246,12 @@ def take(tmp_path, mode, files, manifest=None):
 
 
 def test_take_copies_the_expected_files_and_nothing_else(tmp_path):
-    files = {n: "scan" for n in SCANS} | {"silk-reeling.zip": "pkg", "opa-compliance.zip": "planted",
-                                          "build.sh": "planted"}
+    files = {n: "scan" for n in SCANS} | {"silk-reeling.zip": "pkg", "silk-reeling-spa.zip": "spa",
+                                          "opa-compliance.zip": "planted", "build.sh": "planted"}
     r, work = take(tmp_path, "full", files)
     assert r.returncode == 0, r.stderr
     assert (work / "silk-reeling.zip").read_text() == "pkg"
+    assert (work / "silk-reeling-spa.zip").read_text() == "spa"
     assert all((work / n).read_text() == "scan" for n in SCANS)
     assert not (work / "opa-compliance.zip").exists() and not (work / "build.sh").exists()
     assert not (work / "_app-build").exists()
@@ -341,3 +343,9 @@ def test_app_build_reads_the_manifest_only_at_a_full_commit():
     job = yaml.safe_load((WF / "app-build.yml").read_text())["jobs"]["build"]
     step = next(st for st in job["steps"] if st.get("name") == "Choose the app manifest")
     assert "^[0-9a-f]{40}$" in step["run"] and step["env"]["REF"] == "${{ inputs.manifest-ref }}"
+
+
+def test_take_refuses_a_build_without_its_static_bundle(tmp_path):
+    files = {n: "scan" for n in SCANS} | {"silk-reeling.zip": "pkg"}
+    r, _ = take(tmp_path, "full", files)
+    assert r.returncode != 0 and "no silk-reeling-spa.zip" in r.stderr

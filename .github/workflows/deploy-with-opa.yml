@@ -1646,7 +1646,17 @@ jobs:
         # silk-reeling-auth.json already is. tests/test_wellknown_publish.py
         # fails if a tracked file under website/.well-known/ has no publish
         # step, so this cannot silently drop content.
+        # Each app's static bundle is published under its own path by the next
+        # step; the sync must not delete it (data/apps.json `static`).
+        # A manifest that cannot be read stops the step (set -e) before the sync.
+        statics=$(python3 -I scripts/_apps.py statics)
+        static_excludes=()
+        while IFS=$'\t' read -r _app _bundle path; do
+          if [ -n "$path" ]; then static_excludes+=(--exclude "$path/*"); fi
+        done <<< "$statics"
+
         aws s3 sync website/ s3://$BUCKET_NAME/ \
+          "${static_excludes[@]}" \
           --exclude "*.tf" \
           --exclude "*.tfvars*" \
           --exclude "*.tfstate*" \
@@ -1669,6 +1679,23 @@ jobs:
         echo "✅ Published /.well-known/security.txt"
 
         echo "✅ Website content synced successfully"
+
+        # Each app's static bundle (data/apps.json `static`), built without
+        # credentials and taken from the app build by name. The unpacker refuses
+        # the whole bundle on any unsafe entry (absolute or .. paths, symlinks,
+        # duplicates, size). index.html is never cached, so a new build is seen
+        # at once; the hashed assets it names are cached for a year. No
+        # --delete: an open page may still request the previous build's assets.
+        while IFS=$'\t' read -r app bundle path; do
+          [ -n "$path" ] || continue
+          rm -rf "_static/$path"
+          python3 -I scripts/unpack-static-bundle.py "infrastructure/$bundle" "_static/$path"
+          aws s3 sync "_static/$path/" "s3://$BUCKET_NAME/$path/" --exclude "index.html" \
+            --cache-control "public, max-age=31536000, immutable"
+          aws s3 cp "_static/$path/index.html" "s3://$BUCKET_NAME/$path/index.html" \
+            --content-type "text/html; charset=utf-8" --cache-control "no-cache"
+          echo "✅ Published the $app static bundle under /$path/"
+        done <<< "$statics"
 
     # -------------------------------------------------------------------------
     # ATTEST ARTIFACT PROVENANCE (SLSA v1 / in-toto, DSSE — Task 14 / S2)

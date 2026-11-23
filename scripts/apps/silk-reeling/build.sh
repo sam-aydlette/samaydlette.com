@@ -27,7 +27,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   echo "silk-reeling build: $src is not a Silk Reeling checkout" >&2
   exit 1
 }
-rm -rf _pkg silk-reeling.zip
+rm -rf _pkg silk-reeling.zip silk-reeling-spa.zip
 
 ( cd "$src/frontend" && npm ci )
 mkdir -p _pkg
@@ -67,3 +67,7 @@ cp -r "$src/frontend/dist" _pkg/spa
 rm -rf _pkg/backend/__pycache__
 "$here/../../zip-deterministic.sh" _pkg silk-reeling.zip
 echo "silk-reeling.zip size: $(du -h silk-reeling.zip | cut -f1)"
+# The SPA on its own: the static bundle (data/apps.json) the deploy publishes
+# to the site under /silk-reeling/.
+"$here/../../zip-deterministic.sh" "$src/frontend/dist" silk-reeling-spa.zip
+echo "silk-reeling-spa.zip size: $(du -h silk-reeling-spa.zip | cut -f1)"
