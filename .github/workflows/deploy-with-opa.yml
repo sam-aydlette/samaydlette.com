@@ -1038,7 +1038,10 @@ jobs:
         SITE_ORIGIN: https://samaydlette.com
         DEPENDABOT_TOKEN: ${{ secrets.DEPENDABOT_ALERTS_TOKEN }}
         ACTIONS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: bash ../scripts/fetch-detection-feeds.sh
+      # Cloud-agnostic feeds, then the AWS-native ones (Inspector, Access Analyzer).
+      run: |
+        bash ../scripts/fetch-detection-feeds.sh
+        bash ../scripts/fetch-aws-feeds.sh
 
     # The pre-apply gates the gate register (infrastructure/schemas/gate-modes.json)
     # lists, through the same runner as `make gates` locally: the runtime

@@ -24,6 +24,7 @@ Confirm against the working tree on first use, and correct this file in the same
   - (l) boundary map: fails on an unclassified component.
 - OPA policies live in `infrastructure/policy/` (`accessibility.rego` among them), plus `policies/triage.rego`, which decides the VDR triage.
 - `scripts/vuln-gate.py` is the vulnerability gate; `scripts/detection-gate.py` fails the run when a scanner or feed failed.
+- AWS-native vs cloud-agnostic: `scripts/fetch-detection-feeds.sh` fetches only platform-neutral feeds; `scripts/fetch-aws-feeds.sh` fetches the AWS ones and `scripts/aws-findings-adapter.py` turns them into normalized findings (`infrastructure/schemas/findings.schema.json`), the only form `build-vdr-report.py --findings` reads. A new AWS feed goes in the adapter, never in the builder; each feed's `platform` is in `infrastructure/schemas/detection-feeds.json`.
 - `scripts/check-published-redaction.py` scans what the deploy publishes for identifiers that must not leave.
 
 ## Published artifacts (`/.well-known/`)

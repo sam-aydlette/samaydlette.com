@@ -21,8 +21,9 @@
         "^[a-z-]+$": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["source_date"],
+          "required": ["platform", "source_date"],
           "properties": {
+            "platform": {"enum": ["any", "aws"], "description": "any: works on any platform. aws: depends on an AWS service."},
             "max_age_hours": {"type": "number", "exclusiveMinimum": 0, "maximum": 8760},
             "source_date": {"type": ["string", "null"]}
           }

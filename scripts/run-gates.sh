@@ -100,6 +100,11 @@ case "$cmd" in
       --output detection.json
     ;;
   vdr)
+    # The AWS-native findings reach the build only as normalized findings, the
+    # input any platform's adapter writes (infrastructure/schemas/findings.schema.json).
+    # A stack on another platform swaps this line, and fetch-aws-feeds.sh, for its own.
+    python3 "$here/aws-findings-adapter.py" --inspector inspector-findings.json \
+      --access-analyzer access-analyzer-findings.json --output aws-findings.json
     python3 "$here/build-vdr-report.py" \
       --checkov checkov-results.sarif \
       --tfsec tfsec-results.json \
@@ -108,8 +113,7 @@ case "$cmd" in
       --dependabot dependabot-alerts.json \
       --grype grype.json \
       --zap zap-report.json \
-      --inspector inspector-findings.json \
-      --access-analyzer access-analyzer-findings.json \
+      --findings aws-findings.json \
       --kev kev-catalog.json \
       --epss epss-scores.csv.gz \
       --detection detection.json \

@@ -21,7 +21,8 @@ input it is given:
                   findings list
 
 An empty findings list from a service that is off, or not scanning, is not
-evidence of no findings; the two AWS checks refuse it.
+evidence of no findings; the two AWS checks refuse it. They are the only
+platform-specific checks here; each feed's platform is in detection-feeds.json.
 
 A fetch step that fails writes `<file>.error` instead of a substitute, and that
 text is carried into the failure. The windows come from the governed
@@ -47,6 +48,8 @@ import _gates  # noqa: E402
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "infrastructure" / "schemas" / "detection-feeds.json"
 FEEDS = ("kev", "epss", "grype", "dependabot", "previous-vdr", "checkov", "tfsec", "inspector", "access-analyzer")
+# Whether a feed depends on a cloud provider (detection-feeds.json, platform).
+PLATFORMS = ("any", "aws")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -72,6 +75,9 @@ def load_config(path=None):
     feeds = cfg.get("feeds")
     if not isinstance(feeds, dict) or set(feeds) != set(FEEDS):
         _fail(p, f"feeds must list exactly {list(FEEDS)}")
+    for name, feed in feeds.items():
+        if not isinstance(feed, dict) or feed.get("platform") not in PLATFORMS:
+            _fail(p, f"{name}.platform must be one of {list(PLATFORMS)}")
     for name in ("kev", "epss", "grype"):
         w = feeds[name].get("max_age_hours")
         if isinstance(w, bool) or not isinstance(w, (int, float)) or not 0 < w <= 8760:
@@ -300,8 +306,8 @@ def main(argv=None):
     ap.add_argument("--previous-vdr")
     ap.add_argument("--checkov")
     ap.add_argument("--tfsec")
-    ap.add_argument("--inspector", help="Amazon Inspector status, coverage and findings (scripts/fetch-detection-feeds.sh)")
-    ap.add_argument("--access-analyzer", help="IAM Access Analyzer analyzer and findings (scripts/fetch-detection-feeds.sh)")
+    ap.add_argument("--inspector", help="Amazon Inspector status, coverage and findings (scripts/fetch-aws-feeds.sh)")
+    ap.add_argument("--access-analyzer", help="IAM Access Analyzer analyzer and findings (scripts/fetch-aws-feeds.sh)")
     ap.add_argument("--config", default=None, help="detection feed requirements (default: the governed file)")
     ap.add_argument("--output", default="detection.json")
     ap.add_argument("--now", default=None, help="ISO time to evaluate at (tests)")

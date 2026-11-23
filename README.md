@@ -51,6 +51,27 @@ run nowhere else. **`make` never publishes** — see Deployment Options below.
 
 **What's Different:** Compliance is not just a gate. It is also an output. Every deploy emits a structured, signed KSI signal naming what was deployed, what was validated, and how to verify it. The signal is informed by a canonical inventory of components — names that are global by construction (PURL, ARN, sha256) — so a consumer can curl the document from any machine, validate it against the schema, verify the cosign bundle against the public Sigstore transparency log, and join validations to components by reference. The canonical inventory layer is what makes the signal compose across CSPs and across systems within a portfolio without a separate inventory deliverable; the signal is one report on top of it.
 
+### AWS-native and cloud-agnostic parts
+
+The system runs on AWS and uses AWS services as evidence, but the findings
+pipeline does not depend on them. Vulnerability findings reach the VDR build in
+one platform-neutral form, a normalized findings document
+([`infrastructure/schemas/findings.schema.json`](infrastructure/schemas/findings.schema.json)),
+passed with `--findings`:
+
+| Part | Platform | Files |
+|---|---|---|
+| Scanner and threat-intelligence feeds (Grype, Dependabot, ZAP, Checkov, tfsec, KEV, EPSS) | any | `scripts/fetch-detection-feeds.sh` |
+| AWS service findings (Inspector, Access Analyzer) | AWS | `scripts/fetch-aws-feeds.sh` fetches; `scripts/aws-findings-adapter.py` normalizes |
+| Scoring, decisions, the vulnerability gate, the VDR | any | `scripts/build-vdr-report.py`, `scripts/vuln-gate.py`, `data/decisions.json` |
+
+Each detection feed's platform is recorded in
+[`infrastructure/schemas/detection-feeds.json`](infrastructure/schemas/detection-feeds.json).
+On another platform, write your own fetch script and an adapter that emits the
+same document, and keep the rest. The split covers findings only so far: the
+canonical inventory, the live reconciliation and the boundary map still read
+AWS directly.
+
 ## KSI Signal
 
 Every deploy emits a **KSI signal** at `/.well-known/ksi-signal.json` — a validation report informed by a canonical inventory of this system's components.
@@ -232,7 +253,9 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── _common.py                  # the shared helpers (classify, sha256_file, prop, ...)
 │   ├── build-ksi-signal.py         # THE CANONICAL INVENTORY; everything derives from it
 │   ├── _controls.py                # the control projection (per-control view)
-│   ├── build-vdr-report.py
+│   ├── build-vdr-report.py         # the VDR; reads AWS findings only as normalized findings
+│   ├── fetch-detection-feeds.sh    # cloud-agnostic feeds
+│   ├── fetch-aws-feeds.sh aws-findings-adapter.py   # the AWS-native feeds and their adapter
 │   ├── build-sdr.py build-cpo.py build-ocr.py ...
 │   ├── reconcile.py                # the fail-closed reconciliation gate
 │   ├── vuln-gate.py check-exceptions.py check-policy-annotations.py check-wasm-safe.py

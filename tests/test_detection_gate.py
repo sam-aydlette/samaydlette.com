@@ -6,6 +6,7 @@ documents, so these are the inputs a failed scanner or feed now produces.
 """
 import importlib.util
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -144,7 +145,7 @@ def test_the_workflows_no_longer_substitute_empty_documents():
         # The deploy runs detection through the gate runner, which runs the
         # register's `run` for it: scripts/run-gates.sh detection.
         runs_detection = "scripts/run-gates.sh detection" in text or "run: make gates STAGE=pre-apply" in text
-        assert runs_detection and "fetch-detection-feeds.sh" in text
+        assert runs_detection and "fetch-detection-feeds.sh" in text and "fetch-aws-feeds.sh" in text
     reg = json.loads((REPO / "infrastructure" / "schemas" / "gate-modes.json").read_text())
     assert {c.get("run") for c in reg["checks"] if c["check"] == "detection.kev"} == {"scripts/run-gates.sh detection"}
 
@@ -155,15 +156,36 @@ def test_the_deploy_checks_detection_before_it_applies():
     assert text.index("name: Gates for the pre-apply stage") < text.index("name: Terraform Apply")
 
 
-def test_the_fetch_script_never_writes_a_stand_in():
-    text = (REPO / "scripts" / "fetch-detection-feeds.sh").read_text()
-    assert "fail()" in text and ".error" in text
-    for stand_in in ("echo '[]'", "{\"vulnerabilities\":[]}", "{\"findings\":[]}"):
-        assert stand_in not in text
+def test_the_fetch_scripts_never_write_a_stand_in():
+    assert "fail()" in (REPO / "scripts" / "_fetch-common.sh").read_text()
+    for script in ("fetch-detection-feeds.sh", "fetch-aws-feeds.sh"):
+        text = (REPO / "scripts" / script).read_text()
+        assert "source \"$here/_fetch-common.sh\"" in text and "fail " in text
+        for stand_in in ("echo '[]'", "{\"vulnerabilities\":[]}", "{\"findings\":[]}"):
+            assert stand_in not in text
+
+
+def test_only_the_aws_fetch_script_calls_aws_and_it_fetches_exactly_the_aws_feeds():
+    cfg = json.loads(CONFIG.read_text())["feeds"]
+    aws_feeds = {name for name, f in cfg.items() if f["platform"] == "aws"}
+    assert aws_feeds == {"inspector", "access-analyzer"}
+    assert "aws " not in (REPO / "scripts" / "fetch-detection-feeds.sh").read_text()
+    fetched = set(re.findall(r"^rm -f (.*)$", (REPO / "scripts" / "fetch-aws-feeds.sh").read_text(), re.M)[0].split())
+    assert fetched == {f"{name}-findings.json*" for name in aws_feeds}
+
+
+def test_a_feed_without_a_known_platform_fails_closed(tmp_path):
+    gate = _load()
+    cfg = json.loads(CONFIG.read_text())
+    cfg["feeds"]["kev"]["platform"] = "gcp"
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps(cfg))
+    with pytest.raises(SystemExit, match="kev.platform"):
+        gate.load_config(p)
 
 
 def test_the_fetch_script_keeps_error_text_on_one_line(tmp_path):
-    r = subprocess.run(["bash", "-c", f"source <(sed -n '/^fail() {{/,/^}}/p' {REPO / 'scripts' / 'fetch-detection-feeds.sh'}); "
+    r = subprocess.run(["bash", "-c", f"source {REPO / 'scripts' / '_fetch-common.sh'}; "
                         "cd " + str(tmp_path) + " && fail x.json $'bad\\n::error::forged'"],
                        capture_output=True, text=True)
     assert r.stdout.count("\n") == 1 and "::error::" not in r.stdout
