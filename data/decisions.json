@@ -1192,7 +1192,7 @@
       "title": "IAM users rather than SSO (IAM Identity Center) for access to the account",
       "disposition": "risk-accepted",
       "status": "in-force",
-      "justification": "Access to the account is through three IAM users (infrastructure/bootstrap/iam-users.tf): the operator (operators group) and two read-only machine users (their own groups). None has a console password; each signs in with an access key, and no policy is attached to any user. Checkov CKV_AWS_273 asks for SSO through IAM Identity Center instead; it is inline-skipped on the three users. Identity Center grants access to an account only through AWS Organizations, which this single-account system does not use. Residual risk: long-lived access keys on the three users, rotated by hand, and no central sign-in. Compensating: an MFA device on the operator, permissions only through groups, read-only groups for the machine users, CI uses short-lived OIDC roles with no stored keys, and the read-only user's key is the operator's TAP tool's key to call the Control Tower API (deactivated on 2026-11-20 while its use was unexplained, reactivated on 2026-11-21 once accounted for). Reviewed within 90 days: adopt Organizations and Identity Center, or narrow the keys further.",
+      "justification": "Access to the account is through three IAM users (infrastructure/bootstrap/iam-users.tf): the operator (operators group) and two read-only machine users (their own groups). None has a console password; each signs in with an access key, except the corroboration collector, whose unused key was deleted on 2026-11-23, and no policy is attached to any user. Checkov CKV_AWS_273 asks for SSO through IAM Identity Center instead; it is inline-skipped on the three users. Identity Center grants access to an account only through AWS Organizations, which this single-account system does not use. Residual risk: long-lived access keys on the three users, rotated by hand, and no central sign-in. Compensating: an MFA device on the operator, permissions only through groups, read-only groups for the machine users, CI uses short-lived OIDC roles with no stored keys, and the read-only user's key is the operator's TAP tool's key to call the Control Tower API (deactivated on 2026-11-20 while its use was unexplained, reactivated on 2026-11-21 once accounted for). Reviewed within 90 days: adopt Organizations and Identity Center, or narrow the keys further.",
       "controls": [
         "ac-2",
         "ia-2",
@@ -1247,6 +1247,199 @@
         "detector": "Checkov",
         "identifier": "CKV2_AWS_3",
         "original_risk_rating": "low"
+      }
+    },
+    {
+      "id": "DEC-044",
+      "title": "Read-only machine users have no MFA device",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Security Hub IAM.19 flags the two machine users (infrastructure/bootstrap/iam-users.tf: readonly and tap-samsite-collector) because neither has an MFA device. Neither has a console password; they exist only to call AWS APIs, and an MFA device does not protect a call made with an access key unless every policy also demands an MFA session, which an unattended tool cannot supply. Residual risk: a leaked key on the readonly user can read whatever AWS's ReadOnlyAccess allows until the key is rotated or deleted, which includes S3 object contents (the Terraform state among them) and log events. Compensating: both users hold read-only permissions through groups only, with no write; the readonly group denies secret values and KMS decryption; tap-samsite-collector has had no access key since 2026-11-23, when its unused key was deleted; the readonly key is the operator's TAP tool's key (DEC-042). The operator user is not covered here: it has an MFA device (DEC-025).",
+      "controls": [
+        "ia-2.1",
+        "ia-2.2",
+        "ac-2.1"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "IAM.19"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-iam-user::read_only",
+          "aws-iam-user::corroboration_collector"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-23",
+      "review_by": "2027-11-23",
+      "original_detection_date": "2026-11-21",
+      "source": {
+        "detector": "AWS Security Hub CSPM (NIST SP 800-53 r5 standard)",
+        "identifier": "IAM.19",
+        "original_risk_rating": "medium",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-045",
+      "title": "The account is not a member of an AWS Organization",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Security Hub Account.2 flags that the account is not part of an AWS Organizations organization. The system is one AWS account. An organization holding only this account would make it the management account, which service control policies do not restrict, so it would add no guardrail; the benefit comes only from moving the workloads into a member account under a separate management account. Residual risk: no organization-level guardrails (SCPs) or central identity (IAM Identity Center, see DEC-042) above the account. Compensating: account-level settings in infrastructure/bootstrap/ (public access block, EBS default encryption, password policy), CloudTrail across all regions, and the reviewer-gated deploy role. Same single-account reasoning as DEC-042 and DEC-043.",
+      "controls": [
+        "cm-2",
+        "ca-9.1"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "Account.2"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-account::this"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-23",
+      "review_by": "2027-11-23",
+      "original_detection_date": "2026-11-21",
+      "source": {
+        "detector": "AWS Security Hub CSPM (NIST SP 800-53 r5 standard)",
+        "identifier": "Account.2",
+        "original_risk_rating": "high",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-046",
+      "title": "Amazon Macie is not enabled",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Security Hub Macie.1 flags that Macie, which searches S3 for sensitive data, is not enabled. What each bucket holds is known by design: the public website, the CloudTrail and S3/CloudFront access logs, and Terraform state. None is meant to hold personal or federal data; the access logs do record visitor IP addresses, which is known and is why that bucket is not public. Silk Reeling's user accounts are held by Cognito, not in S3. Residual risk: sensitive data written to a bucket by mistake would not be discovered automatically. Compensating: every bucket blocks public access, at the bucket and (from 2026-11-23) at the account; writes are limited to the deploy role, the evidence-nightly role's listed keys and the log-delivery services.",
+      "controls": [
+        "ra-5",
+        "si-4"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "Macie.1"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-account::this"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-23",
+      "review_by": "2027-11-23",
+      "original_detection_date": "2026-11-21",
+      "source": {
+        "detector": "AWS Security Hub CSPM (NIST SP 800-53 r5 standard)",
+        "identifier": "Macie.1",
+        "original_risk_rating": "medium",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-047",
+      "title": "Terraform lock table is not in an AWS Backup plan",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Security Hub DynamoDB.4 flags the Terraform state-lock table (infrastructure/bootstrap/tf-state-backend.tf) because no AWS Backup plan covers it. The table holds only transient lock items, one per Terraform run while it runs, and no state contents; there is nothing in it to restore. Point-in-time recovery is enabled, and deletion protection is enabled from 2026-11-23 (Security Hub DynamoDB.6). Residual risk: none beyond recreating the table, which Terraform does.",
+      "controls": [
+        "cp-9",
+        "cp-10"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "DynamoDB.4"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-dynamodb-table::samaydlette-com-tflock"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-23",
+      "review_by": "2027-11-23",
+      "original_detection_date": "2026-11-21",
+      "source": {
+        "detector": "AWS Security Hub CSPM (NIST SP 800-53 r5 standard)",
+        "identifier": "DynamoDB.4",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-048",
+      "title": "S3 Object Lock is not enabled on the buckets",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Security Hub S3.15 flags the four buckets (the website, CloudTrail, access-log and Terraform state buckets) because S3 Object Lock is not enabled. Object Lock makes objects undeletable for a retention period. The website and state buckets must be overwritten by design. For the CloudTrail bucket, tamper-evidence comes from CloudTrail log file validation (signed digest files) instead of immutability. Residual risk: an identity able to delete objects in the CloudTrail or log bucket could remove records; validation would show they are missing but could not restore them. Compensating: versioning, write access limited to the AWS log-delivery services, and no human or CI role granted object deletion there.",
+      "controls": [
+        "cp-6.2",
+        "au-9"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "S3.15"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-s3-bucket::samaydlette.com",
+          "aws-s3-bucket::samaydlette-com-cloudtrail",
+          "aws-s3-bucket::samaydlette-com-logs",
+          "aws-s3-bucket::samaydlette-com-tfstate"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-23",
+      "review_by": "2027-11-23",
+      "original_detection_date": "2026-11-21",
+      "source": {
+        "detector": "AWS Security Hub CSPM (NIST SP 800-53 r5 standard)",
+        "identifier": "S3.15",
+        "original_risk_rating": "medium",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-049",
+      "title": "Legacy deploy policy allows KMS decryption with any key",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Security Hub KMS.1 flags the customer-managed policy GitHubActions-SilkReeling because it allows kms:Decrypt and kms:ReEncryptFrom (with Encrypt and GenerateDataKey) on every KMS key. It is one of the legacy deploy policies reattached to the deploy role at the OIDC cutover (infrastructure/bootstrap/main.tf, legacy_deploy_policy_names), and it is not managed by Terraform. Residual risk: during an approved deploy, the deploy role could decrypt data under any key whose key policy defers to IAM. Compensating: the role exists only inside a reviewer-approved deploy of this repository's main branch (OIDC trust on the prod environment and the deploy workflow).",
+      "controls": [
+        "ac-6",
+        "ac-3"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "KMS.1"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-iam-policy::GitHubActions-SilkReeling"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "accepted_by": "role:senior-official",
+      "decided_on": "2026-11-23",
+      "review_by": "2027-02-21",
+      "original_detection_date": "2026-11-21",
+      "remediation_plan": "Bring the legacy deploy policies under Terraform in infrastructure/bootstrap/ and scope the KMS use statement to the Silk Reeling keys, through Secrets Manager only (kms:ViaService); then close this record.",
+      "planned_completion": "2027-02-21",
+      "source": {
+        "detector": "AWS Security Hub CSPM (NIST SP 800-53 r5 standard)",
+        "identifier": "KMS.1",
+        "original_risk_rating": "medium",
+        "risk_adjustment": false
       }
     }
   ]
