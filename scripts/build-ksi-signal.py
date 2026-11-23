@@ -181,6 +181,8 @@ NOT_COMPONENTS = {
     "aws_iam_group_policy_attachment": "binds a managed policy to the operators group, a component",
     "aws_iam_user_group_membership": "a user's group membership; the user and the group are components",
     "aws_iam_account_password_policy": "an account-wide setting with no resource ARN",
+    "aws_s3_account_public_access_block": "an account-wide setting with no resource ARN",
+    "aws_ebs_encryption_by_default": "an account-wide (per-region) setting with no resource ARN",
     "aws_iam_service_linked_role": "an AWS-managed role whose permissions AWS defines and only its service (AWS Config, a leveraged service) can assume",
     "aws_lambda_permission": "a statement in a function's resource policy, a component",
     "aws_cloudwatch_event_target": "binds a schedule to the function it invokes; both are components",

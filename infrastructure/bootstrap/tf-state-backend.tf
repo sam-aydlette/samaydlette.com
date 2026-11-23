@@ -122,6 +122,10 @@ resource "aws_dynamodb_table" "tflock" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
 
+  # Security Hub DynamoDB.6: every Terraform run, both stacks, takes its lock
+  # here, so deleting the table by mistake would stop all deploys.
+  deletion_protection_enabled = true
+
   attribute {
     name = "LockID"
     type = "S"
