@@ -30,10 +30,13 @@ scanned only once it is deployed.
   - `aws_lambda_permission` letting **API Gateway** (`apigateway.amazonaws.com`) invoke the Lambda.
 - `infrastructure/cognito.tf` — the **Cognito** user pool, Hosted-UI domain and app
   client: admin-created users, required TOTP MFA, OAuth2 PKCE login.
-- `infrastructure/bootstrap/cloudfront.tf` — the `/silk-reeling/*` CloudFront
-  behavior (API Gateway origin, caching disabled, forwards the `Authorization`
-  bearer header, prefix-strip viewer-request function). This lives in the
-  operator-applied bootstrap stack, not in this config.
+- `infrastructure/bootstrap/cloudfront.tf` — two CloudFront behaviors.
+  `/silk-reeling/api/*` goes to the API Gateway origin (caching disabled,
+  forwards the `Authorization` bearer header, prefix-strip viewer-request
+  function). `/silk-reeling/*` serves the app's pages from the site bucket,
+  where the deploy publishes the app's static bundle (`data/apps.json`
+  `static`). This lives in the operator-applied bootstrap stack, not in this
+  config.
 - `variables.tf` — `create_silk_reeling` (default **false**), `silk_reeling_package_path`, `silk_reeling_max_concurrency`.
 - `outputs.tf` — API Gateway endpoint.
 

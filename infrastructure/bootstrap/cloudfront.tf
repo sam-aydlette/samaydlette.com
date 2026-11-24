@@ -27,7 +27,7 @@ data "aws_acm_certificate" "website" {
   most_recent = true
 }
 
-# AWS-managed cache / origin-request policies used by the /silk-reeling/* behavior.
+# AWS-managed cache / origin-request policies used by the /silk-reeling/api/* behavior.
 # These are well-known global managed policies (same IDs in every account); read
 # by name so no magic IDs are hard-coded.
 data "aws_cloudfront_cache_policy" "caching_disabled" {
@@ -266,7 +266,7 @@ resource "aws_cloudfront_distribution" "website" {
     connection_timeout       = 10
   }
 
-  # Silk Reeling API Gateway origin (the app behind /silk-reeling/*).
+  # Silk Reeling API Gateway origin (the app's API behind /silk-reeling/api/*).
   origin {
     origin_id           = "apigw-silk-reeling"
     domain_name         = local.silk_reeling_api_origin_domain
@@ -306,11 +306,12 @@ resource "aws_cloudfront_distribution" "website" {
     }
   }
 
-  # App path: no caching, forward everything except Host (so the JWT authorizer
-  # sees the Authorization header), strip the prefix at the edge, and add the
-  # app's security headers.
+  # App API: no caching, forward everything except Host (so the JWT authorizer
+  # sees the Authorization header), strip the /silk-reeling prefix at the edge
+  # (/silk-reeling/api/x reaches the gateway as /api/x), and add the app's
+  # security headers. Listed first: CloudFront matches ordered behaviors in order.
   ordered_cache_behavior {
-    path_pattern               = "/silk-reeling/*"
+    path_pattern               = "/silk-reeling/api/*"
     target_origin_id           = "apigw-silk-reeling"
     response_headers_policy_id = aws_cloudfront_response_headers_policy.silk_reeling.id
     viewer_protocol_policy     = "redirect-to-https"
@@ -322,6 +323,34 @@ resource "aws_cloudfront_distribution" "website" {
     function_association {
       event_type   = "viewer-request"
       function_arn = data.aws_cloudfront_function.strip_prefix.arn
+    }
+  }
+
+  # App pages: the static bundle the deploy publishes under silk-reeling/ in the
+  # site bucket (data/apps.json `static`). Read-only methods, cached like the
+  # site (index.html carries no-cache, hashed assets are immutable), directory
+  # URLs resolved by the same function as the site so /silk-reeling/ (the
+  # Cognito callback) serves index.html, and the app's own security headers.
+  ordered_cache_behavior {
+    path_pattern               = "/silk-reeling/*"
+    target_origin_id           = "S3-${var.domain_name}"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.silk_reeling.id
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["HEAD", "GET", "OPTIONS"]
+    cached_methods             = ["HEAD", "GET"]
+    compress                   = true
+    min_ttl                    = 0
+    default_ttl                = 3600
+    max_ttl                    = 86400
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.directory_index.arn
     }
   }
 
