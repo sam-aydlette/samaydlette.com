@@ -12,7 +12,6 @@
 # =============================================================================
 
 resource "aws_s3_bucket" "cloudtrail" {
-  # checkov:skip=CKV_AWS_18:This is the audit-log sink itself; S3 server access logging on it is declined for the same log-recursion reason as the access-log bucket (POAM-028 pattern). It is BPA-blocked, TLS-only, versioned, lifecycle-managed, and writable only by the CloudTrail service scoped to this account's trail.
   # checkov:skip=CKV_AWS_145:SSE-S3 (AES256) is deliberate, consistent with POAM-029: control-plane audit records about this account's own public-resource infrastructure, written by the CloudTrail service. A customer CMK adds key-sprawl without a confidentiality benefit here.
   # checkov:skip=CKV_AWS_144:Cross-region replication declined — single-account PoC; durability is S3's 11 nines plus versioning, and the trail is multi-region so a regional console outage does not lose capture.
   # checkov:skip=CKV2_AWS_62:No event-driven workflow consumes these objects; retention is handled by the lifecycle rule (same rationale as the access-log bucket).
@@ -24,6 +23,18 @@ resource "aws_s3_bucket" "cloudtrail" {
     DataClassification = "Internal"
     Owner              = var.owner
   })
+}
+
+# Server access logging to the log bucket (Security Hub S3.9, Checkov
+# CKV_AWS_18): who read or changed the audit trail is itself recorded. No
+# recursion: the log bucket does not log itself, and access logs are not trail
+# events.
+resource "aws_s3_bucket_logging" "cloudtrail" {
+  bucket        = aws_s3_bucket.cloudtrail.id
+  target_bucket = aws_s3_bucket.logs.id
+  target_prefix = "s3-access/cloudtrail/"
+
+  depends_on = [aws_s3_bucket_policy.logs]
 }
 
 resource "aws_s3_bucket_public_access_block" "cloudtrail" {

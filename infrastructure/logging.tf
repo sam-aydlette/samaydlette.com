@@ -78,7 +78,13 @@ resource "aws_s3_bucket_policy" "logs" {
         Resource  = "${aws_s3_bucket.logs.arn}/s3-access/*"
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
-          ArnLike      = { "aws:SourceArn" = aws_s3_bucket.website.arn }
+          # The website and CloudTrail buckets (this stack) and the Terraform
+          # state bucket (infrastructure/bootstrap/tf-state-backend.tf).
+          ArnLike = { "aws:SourceArn" = [
+            aws_s3_bucket.website.arn,
+            aws_s3_bucket.cloudtrail.arn,
+            "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-tfstate",
+          ] }
         }
       },
       {
