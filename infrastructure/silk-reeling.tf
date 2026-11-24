@@ -234,7 +234,12 @@ resource "aws_lambda_function" "silk_reeling" {
     replace_triggered_by = [terraform_data.silk_reeling_recreate[0]]
   }
 
-  tags = merge(local.cls.app_tier, local.silk_tags, { Name = "${var.domain_name}-silk-reeling" })
+  # ReceivesFrom (see aws_s3_bucket.website): the HTTP API's one route, which
+  # carries signed-in users' requests.
+  tags = merge(local.cls.app_tier, local.silk_tags, {
+    Name         = "${var.domain_name}-silk-reeling"
+    ReceivesFrom = "${aws_apigatewayv2_api.silk_reeling[0].arn}:internal"
+  })
 }
 
 # -----------------------------------------------------------------------------
@@ -253,7 +258,11 @@ resource "aws_apigatewayv2_api" "silk_reeling" {
   name          = local.silk_name
   protocol_type = "HTTP"
 
-  tags = merge(local.cls.public_edge, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-api" })
+  # ReceivesFrom (see aws_s3_bucket.website): CloudFront forwards /silk-reeling/api/*.
+  tags = merge(local.cls.public_edge, local.silk_tags, {
+    Name         = "${var.domain_name}-silk-reeling-api"
+    ReceivesFrom = "${data.aws_cloudfront_distribution.website.arn}:internal"
+  })
 }
 
 resource "aws_apigatewayv2_integration" "silk_reeling" {

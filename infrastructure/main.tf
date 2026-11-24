@@ -84,8 +84,9 @@ locals {
     app_tier = { DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "app-tier" }
     # The website bucket: public site content, reached only through CloudFront.
     site_content = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "internal-tooling" }
-    # The public API Gateway (and its stage).
-    public_edge = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "public-edge" }
+    # The public API Gateway (and its stage): internet-reachable, and it carries
+    # signed-in users' requests to the app, so internal like the app Lambda.
+    public_edge = { DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "public-edge" }
     # The daily EventBridge schedule.
     internal_tooling_low = { DataSensitivity = "public", MissionCriticality = "low", InternetReachable = "false", Archetype = "internal-tooling" }
     # The Cognito user pool: identity provider, reachable, holds credentials.
@@ -137,6 +138,10 @@ resource "aws_s3_bucket" "website" {
     AutomationExempt   = "false"
     ComplianceScope    = "Section508"
     ExposureIntent     = "public-backed"
+    # ReceivesFrom declares each information flow into a component, as
+    # "<sender ARN>:<data classes it carries>" (classes joined with +, never
+    # above the receiver's DataSensitivity). CloudFront reads the site's pages.
+    ReceivesFrom = "${data.aws_cloudfront_distribution.website.arn}:public"
   })
 
   lifecycle {
@@ -810,7 +815,10 @@ resource "aws_lambda_function" "opa_compliance" {
     }
   }
 
-  tags = merge(local.cls.security_tooling, {
+  # ReceivesFrom (see aws_s3_bucket.website): the schedule that invokes it.
+  tags = merge(local.cls.security_tooling, var.create_eventbridge_rules ? {
+    ReceivesFrom = "${aws_cloudwatch_event_rule.opa_compliance[0].arn}:public"
+    } : {}, {
     Name               = "${var.domain_name}-opa-compliance"
     Environment        = var.environment
     CostCenter         = var.cost_center

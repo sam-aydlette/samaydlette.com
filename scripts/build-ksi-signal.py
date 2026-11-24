@@ -792,6 +792,11 @@ MAS_OVERRIDES = {
     ("function", "silk_reeling"): {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
     },
+    # Its HTTP API (and stage) carries those same requests to it, so the same
+    # confidentiality. It is still internet-reachable (a separate axis).
+    ("api_gateway", "silk_reeling"): {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+    },
     ("object_store", "tfstate"): {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
         "information_flow": [

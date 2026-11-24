@@ -1,0 +1,110 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_apigatewayv2_route.app",
+          "mode": "managed",
+          "type": "aws_apigatewayv2_route",
+          "name": "app",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "api_id": "abc123",
+            "route_key": "$default",
+            "authorization_type": "NONE",
+            "target": "integrations/xyz"
+          }
+        },
+        {
+          "address": "aws_apigatewayv2_route.api",
+          "mode": "managed",
+          "type": "aws_apigatewayv2_route",
+          "name": "api",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "api_id": "abc123",
+            "route_key": "ANY /api/{proxy+}",
+            "authorization_type": "JWT",
+            "authorizer_id": "auth1",
+            "target": "integrations/xyz"
+          }
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_apigatewayv2_route.app",
+      "mode": "managed",
+      "type": "aws_apigatewayv2_route",
+      "name": "app",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "api_id": "abc123",
+          "route_key": "$default",
+          "authorization_type": "NONE",
+          "target": "integrations/xyz"
+        }
+      }
+    },
+    {
+      "address": "aws_apigatewayv2_route.api",
+      "mode": "managed",
+      "type": "aws_apigatewayv2_route",
+      "name": "api",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "api_id": "abc123",
+          "route_key": "ANY /api/{proxy+}",
+          "authorization_type": "JWT",
+          "authorizer_id": "auth1",
+          "target": "integrations/xyz"
+        }
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_apigatewayv2_route.app",
+          "mode": "managed",
+          "type": "aws_apigatewayv2_route",
+          "name": "app",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {}
+        },
+        {
+          "address": "aws_apigatewayv2_route.api",
+          "mode": "managed",
+          "type": "aws_apigatewayv2_route",
+          "name": "api",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {}
+        }
+      ]
+    }
+  },
+  "_fixture": {
+    "name": "apigw-route-no-auth",
+    "synthetic": true,
+    "note": "An HTTP API catch-all route with authorization NONE beside a JWT-authorized route; only the first fails.",
+    "generated_from": "hand-modeled on terraform 1.9.x / hashicorp-aws 4.x plan JSON; no real plan was run (would require cloud credentials)."
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "fixture": "tests/fixtures/plans/apigw-route-no-auth.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "aws_apigatewayv2_route.app",
+        "category": "infrastructure",
+        "control_ids": [
+          "ac-3",
+          "ia-2"
+        ],
+        "id": "unauthenticated_api_route",
+        "ksi_ids": [
+          "KSI-IAM-ELP",
+          "KSI-CNA-MAT"
+        ],
+        "message": "API Gateway routes must require authorization (JWT, AWS_IAM or CUSTOM), not NONE",
+        "resource": "app",
+        "severity": "HIGH",
+        "type": "unauthenticated_api_route"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  },
+  "resource_reports": [
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "api",
+      "resource_type": "aws_apigatewayv2_route",
+      "violations": []
+    },
+    {
+      "compliant": false,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "app",
+      "resource_type": "aws_apigatewayv2_route",
+      "violations": [
+        {
+          "address": "aws_apigatewayv2_route.app",
+          "category": "infrastructure",
+          "control_ids": [
+            "ac-3",
+            "ia-2"
+          ],
+          "id": "unauthenticated_api_route",
+          "ksi_ids": [
+            "KSI-IAM-ELP",
+            "KSI-CNA-MAT"
+          ],
+          "message": "API Gateway routes must require authorization (JWT, AWS_IAM or CUSTOM), not NONE",
+          "resource": "app",
+          "severity": "HIGH",
+          "type": "unauthenticated_api_route"
+        }
+      ]
+    }
+  ]
+}

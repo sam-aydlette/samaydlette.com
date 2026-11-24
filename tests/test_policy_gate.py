@@ -29,6 +29,7 @@ EXPECTED = {
     "empty": (False, {"input_error"}),
     "garbage": (False, {"input_error"}),
     "missing-classification": (False, {"missing_classification_tag"}),
+    "apigw-route-no-auth": (False, {"unauthenticated_api_route"}),
     "cloudfront-insecure-protocol": (False, {"insecure_protocol"}),
     "cloudfront-weak-tls": (False, {"weak_tls"}),
     "s3-missing-tags": (False, {"missing_required_tags"}),
