@@ -9,4 +9,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # A separate assignment so a failing `terraform output` fails the check (set -e)
 # rather than passing an empty string, which means "not deployed".
 expected=$(terraform output -raw silk_reeling_auth_config_json)
-python3 "$here/../../check-silk-runtime-config.py" "$expected"
+# Ask the API Gateway directly, not the site: CloudFront serves the app's pages
+# from S3 now, so /silk-reeling/auth-config on the site no longer reaches it.
+endpoint=$(terraform output -raw silk_reeling_api_endpoint)
+python3 "$here/../../check-silk-runtime-config.py" "$expected" --url "$endpoint/auth-config"
