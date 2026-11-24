@@ -206,6 +206,26 @@ resource "aws_iam_role_policy" "reconcile_reads" {
   policy = data.aws_iam_policy_document.reconcile_reads.json
 }
 
+# The deploy's Silk Reeling runtime check (POAM-038, scripts/apps/silk-reeling/
+# runtime-check.sh) asks the running function which Cognito settings it sees and
+# compares them with Terraform. The API Gateway has no unauthenticated route to
+# reach it through, so the check invokes the function directly. One action, one
+# function; it cannot change the function or read its environment.
+data "aws_iam_policy_document" "runtime_check_invoke" {
+  statement {
+    sid       = "InvokeSilkReelingForRuntimeCheck"
+    effect    = "Allow"
+    actions   = ["lambda:InvokeFunction"]
+    resources = ["arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.domain_dashed}-silk-reeling"]
+  }
+}
+
+resource "aws_iam_role_policy" "runtime_check_invoke" {
+  name   = "silk-reeling-runtime-check-invoke"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.runtime_check_invoke.json
+}
+
 # Task 6 (POAM-011/018): permissions the deploy role needs to manage the at-rest
 # CMK-encrypted log groups and to encrypt the Lambda env blocks. Added here (not
 # in the main state) because this is the deploy identity itself; applied live and
