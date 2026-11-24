@@ -2,7 +2,8 @@
 # SILK REELING MIRROR — gated app deployment (DRAFT / proposal)
 # =============================================================================
 # Adds a small Python API Lambda that serves the gated "Silk Reeling Mirror"
-# app (static SPA + /api). Pose extraction runs in the browser, so this Lambda
+# app's API (/api). Its pages are a static bundle the deploy publishes to the
+# site bucket (data/apps.json `static`). Pose extraction runs in the browser, so this Lambda
 # only does the numpy comparison and writes numeric feedback — a small zip, no
 # OpenCV/MediaPipe, no container. The app can optionally call an LLM for
 # feedback (SRM_ENABLE_LLM_FEEDBACK, customer-configurable); this deployment
@@ -14,13 +15,13 @@
 #   required TOTP MFA, OAuth2 PKCE Hosted-UI login. The API Gateway HTTP API
 #   gates the data plane: the ANY /api/{proxy+} route carries a Cognito JWT
 #   authorizer (POAM-022 closed) and the stage enforces rate-limit throttling
-#   (POAM-023 closed); the $default route serves the SPA unauthenticated so the
-#   login page can load. The app ALSO validates the JWT in-Lambda so it stays
+#   (POAM-023 closed). It is the only route: no request reaches the Lambda
+#   without a token. The app ALSO validates the JWT in-Lambda so it stays
 #   standalone-deployable. (API Gateway replaces a Lambda Function URL, which this
-#   account blocks for public access.) The CloudFront distribution (managed
-#   OUTSIDE this config) fronts it for the /silk-reeling/* path, no-cache,
-#   forwarding `Authorization` (the JWT Bearer header), with a prefix-strip
-#   function — manual wiring in outputs.tf. (POAM-021 closed — MFA via Cognito;
+#   account blocks for public access.) The CloudFront distribution (managed in
+#   bootstrap/cloudfront.tf) fronts it for the /silk-reeling/api/* path,
+#   no-cache, forwarding `Authorization` (the JWT Bearer header), with a
+#   prefix-strip function. (POAM-021 closed — MFA via Cognito;
 #   SAML/OIDC federation to a customer IdP remains the upgrade path on request.)
 #
 # The app holds no secrets: the HTTP Basic Auth secret was removed in Task 3
@@ -216,15 +217,12 @@ resource "aws_lambda_function" "silk_reeling" {
       # standalone-deployable.
       SRM_COGNITO_ISSUER    = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.silk_reeling[0].id}"
       SRM_COGNITO_CLIENT_ID = aws_cognito_user_pool_client.silk_reeling[0].id
-      # Served to the SPA at runtime via the public /auth-config endpoint so the
-      # frontend resolves the LIVE client_id at startup instead of baking it in
-      # at build time (a recreated client can no longer strand the deployed SPA).
-      # All three are public values (they appear in the Hosted-UI authorize URL).
+      # Reported by the app's /auth-config route, which the deploy's runtime
+      # check invokes to confirm the running function took this environment
+      # (POAM-038). All three are public values (they appear in the Hosted-UI
+      # authorize URL).
       SRM_COGNITO_DOMAIN       = "${aws_cognito_user_pool_domain.silk_reeling[0].domain}.auth.${var.aws_region}.amazoncognito.com"
       SRM_COGNITO_REDIRECT_URI = "https://${var.domain_name}/silk-reeling/"
-      # Built SPA bundled into the Lambda package at /var/task/spa (see the CI
-      # packaging step). The app serves it from "/"; /api/* is gated.
-      SRM_SPA_DIR = "/var/task/spa"
     }
   }
 
@@ -243,11 +241,12 @@ resource "aws_lambda_function" "silk_reeling" {
 # API Gateway HTTP API in front of the Lambda (replaces the Function URL, which
 # this account blocks for public/NONE access). Access control is enforced at the
 # GATEWAY: the ANY /api/{proxy+} route carries a Cognito JWT authorizer (POAM-022
-# closed) and the stage enforces rate-limit throttling (POAM-023 closed); the
-# $default route serves the SPA unauthenticated so the login page can load. The
+# closed) and the stage enforces rate-limit throttling (POAM-023 closed). It is
+# the only route, so no request reaches the Lambda without a token. The
 # viewer's Authorization (JWT Bearer) header passes through unchanged, and the app
 # ALSO validates the JWT in-Lambda so it stays standalone-deployable. CloudFront
-# fronts it for /silk-reeling/* (no-cache, forward Authorization, prefix-strip).
+# fronts it for /silk-reeling/api/* (no-cache, forward Authorization,
+# prefix-strip); the app's pages come from the site bucket.
 # -----------------------------------------------------------------------------
 resource "aws_apigatewayv2_api" "silk_reeling" {
   count         = local.silk_create
@@ -264,15 +263,6 @@ resource "aws_apigatewayv2_integration" "silk_reeling" {
   integration_uri        = aws_lambda_function.silk_reeling[0].invoke_arn
   integration_method     = "POST"
   payload_format_version = "2.0"
-}
-
-# Catch-all route → serves the SPA (and the OAuth callback at /). No authorizer,
-# so the login page can load.
-resource "aws_apigatewayv2_route" "silk_reeling" {
-  count     = local.silk_create
-  api_id    = aws_apigatewayv2_api.silk_reeling[0].id
-  route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.silk_reeling[0].id}"
 }
 
 # Cognito JWT authorizer (POAM-022). For Cognito access tokens the authorizer

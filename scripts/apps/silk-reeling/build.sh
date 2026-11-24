@@ -63,7 +63,6 @@ fi
 cp -r "$src/backend" _pkg/backend
 cp "$src/lambda_handler.py" _pkg/lambda_handler.py
 cp -r "$src/reference_data" _pkg/reference_data
-cp -r "$src/frontend/dist" _pkg/spa
 rm -rf _pkg/backend/__pycache__
 "$here/../../zip-deterministic.sh" _pkg silk-reeling.zip
 echo "silk-reeling.zip size: $(du -h silk-reeling.zip | cut -f1)"

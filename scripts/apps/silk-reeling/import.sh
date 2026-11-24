@@ -38,9 +38,6 @@ if [ -n "$SILK_API_ID" ] && [ "$SILK_API_ID" != "None" ]; then
   SILK_INT_ID=$(aws apigatewayv2 get-integrations --api-id "$SILK_API_ID" --query 'Items[0].IntegrationId' --output text 2>/dev/null || true)
   [ -n "$SILK_INT_ID" ] && [ "$SILK_INT_ID" != "None" ] && \
     import_silk 'aws_apigatewayv2_integration.silk_reeling[0]' "$SILK_API_ID/$SILK_INT_ID"
-  SILK_ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "$SILK_API_ID" --query "Items[?RouteKey=='\$default'].RouteId | [0]" --output text 2>/dev/null || true)
-  [ -n "$SILK_ROUTE_ID" ] && [ "$SILK_ROUTE_ID" != "None" ] && \
-    import_silk 'aws_apigatewayv2_route.silk_reeling[0]' "$SILK_API_ID/$SILK_ROUTE_ID"
   aws apigatewayv2 get-stage --api-id "$SILK_API_ID" --stage-name '$default' >/dev/null 2>&1 && \
     import_silk 'aws_apigatewayv2_stage.silk_reeling[0]' "$SILK_API_ID/\$default"
   # Cognito JWT authorizer + the /api route (Task 3).
