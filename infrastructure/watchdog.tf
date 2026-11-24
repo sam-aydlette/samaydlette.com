@@ -231,8 +231,10 @@ resource "aws_lambda_function" "evidence_watchdog" {
 
   depends_on = [aws_cloudwatch_log_group.evidence_watchdog, aws_kms_alias.at_rest]
 
+  # ReceivesFrom (see aws_s3_bucket.website): the hourly schedule that invokes it.
   tags = merge(local.cls.security_tooling, local.watchdog_tags, {
-    Name = local.watchdog_name
+    Name         = local.watchdog_name
+    ReceivesFrom = "${aws_cloudwatch_event_rule.evidence_watchdog[0].arn}:public"
   })
 }
 
