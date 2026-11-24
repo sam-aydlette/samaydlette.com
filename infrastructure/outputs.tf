@@ -254,7 +254,12 @@ output "silk_reeling_api_endpoint" {
 #      FORWARDS the Authorization header (the JWT authorizer reads it),
 #      viewer-protocol-policy = redirect-to-https, and associate the
 #      strip-prefix function (viewer-request).
+output "silk_reeling_function_name" {
+  description = "The Silk Reeling function, which the deploy's runtime check invokes directly"
+  value       = var.create_silk_reeling ? aws_lambda_function.silk_reeling[0].function_name : ""
+}
+
 output "silk_reeling_cloudfront_setup" {
   description = "Pointer to the manual CloudFront wiring for /silk-reeling/*"
-  value       = var.create_silk_reeling ? "API Gateway HTTP API (SPA on $default no-auth; /api/* behind a Cognito JWT authorizer). Wire CloudFront: publish cloudfront/silk-reeling-strip-prefix.js (viewer-request), add origin (API endpoint host) + /silk-reeling/* behavior (CachingDisabled, forward Authorization for the JWT authorizer, attach the function)." : "Not created"
+  value       = var.create_silk_reeling ? "API Gateway HTTP API with one route, /api/* behind a Cognito JWT authorizer. CloudFront (bootstrap/cloudfront.tf) sends /silk-reeling/api/* to it (CachingDisabled, forwards Authorization, prefix-strip function) and serves /silk-reeling/* from the site bucket." : "Not created"
 }

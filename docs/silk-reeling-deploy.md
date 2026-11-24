@@ -18,9 +18,10 @@ scanned only once it is deployed.
 
 - `infrastructure/silk-reeling.tf` — the gated app:
   - App **Lambda** (Python zip — browser does the ML, so no OpenCV/MediaPipe).
-  - **API Gateway HTTP API** in front of the Lambda (AWS_PROXY integration). Two
-    routes: `ANY /api/{proxy+}` carries a **Cognito JWT authorizer**; `$default`
-    serves the SPA unauthenticated so the login page can load. The stage enforces
+  - **API Gateway HTTP API** in front of the Lambda (AWS_PROXY integration). One
+    route, `ANY /api/{proxy+}`, with a **Cognito JWT authorizer**: no request
+    reaches the Lambda without a token (the pages come from the site bucket). The
+    deploy's runtime check confirms it from outside. The stage enforces
     **throttling** and writes **access logs** to a CMK-encrypted CloudWatch log
     group. This replaces a Lambda **Function URL**, which this AWS account blocks
     for public access.
