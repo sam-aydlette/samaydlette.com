@@ -104,6 +104,13 @@ require-tools:
 	    echo "   policies and will fail with rego_parse_error."; \
 	    exit 1; \
 	  }
+	@command -v regal >/dev/null 2>&1 \
+	  || { \
+	    echo "❌ 'regal' not found on PATH, and 'make check' lints the policies as CI does."; \
+	    echo "   Install the version pinned in .github/workflows/deploy-with-opa.yml"; \
+	    echo "   (REGAL_VERSION / REGAL_SHA256)."; \
+	    exit 1; \
+	  }
 
 # ---------------------------------------------------------------------------
 # The gate
@@ -172,9 +179,12 @@ test:
 	$(PY) -m pytest tests/ -q
 
 # Delegated to infrastructure/Makefile: opa fmt + coverage floor + policy tests.
+# Then Regal over infrastructure/policy, as the CI unit-test job lints it.
 test-policies:
 	@echo "==> test-policies (opa)"
 	@$(MAKE) --no-print-directory -C infrastructure test-policies
+	@echo "==> lint-policies (regal, same scope as CI)"
+	regal lint infrastructure/policy
 	@echo "==> test-policies (triage: the VDR's decisions)"
 	opa fmt --fail --list policies/
 	opa check --strict policies/
