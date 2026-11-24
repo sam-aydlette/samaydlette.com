@@ -2,7 +2,7 @@
 # Stop hook: Claude can't end a turn while `make check` fails.
 #
 # - Clean working tree: nothing changed, so nothing to check. Exit 0.
-# - Missing tools (no .venv tools or no opa): the gate can't run here. Exit 1,
+# - Missing tools (no .venv tools, no opa or no regal): the gate can't run here. Exit 1,
 #   a non-blocking error the operator sees as a hook notice. A missing tool is
 #   not Claude's failure to fix, and blocking on it would only loop.
 # - `make check` fails: exit 2. The tail of its output goes back to Claude on
