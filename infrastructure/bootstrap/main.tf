@@ -521,6 +521,8 @@ data "aws_iam_policy_document" "cloudtrail_management" {
       "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls",
       "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning", "s3:PutLifecycleConfiguration",
       "s3:PutBucketPolicy", "s3:PutBucketTagging",
+      # Server access logging to the log bucket (infrastructure/cloudtrail.tf).
+      "s3:PutBucketLogging",
     ]
     resources = ["arn:aws:s3:::${local.domain_dashed}-cloudtrail"]
   }

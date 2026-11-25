@@ -32,12 +32,10 @@ resource "aws_s3_bucket" "tfstate" {
   # private, TLS-only, and reachable only by the deploy role and operator, so a
   # CMK is defense-in-depth rather than required, and is declined to avoid an
   # extra key to manage. SC-28 at-rest encryption is met by AES256. Tracked as
-  # POAM-029 (same posture as the log bucket). Access logging and event
-  # notifications are likewise dispositioned (POAM-028 / POAM-004): a private
-  # internal state bucket needs no S3 access-log target (deploy-role access is in
-  # account CloudTrail) and no event-notification consumer exists.
+  # POAM-029 (same posture as the log bucket). Server access logging goes to the
+  # log bucket (aws_s3_bucket_logging.tfstate below). Event notifications are
+  # dispositioned (POAM-004): no event-notification consumer exists.
   # checkov:skip=CKV_AWS_145:SSE-S3/AES256 at rest by design; CMK declined given strict access controls (POAM-029).
-  # checkov:skip=CKV_AWS_18:Internal state bucket; deploy-role access is captured by account CloudTrail, no separate S3 access-log target (POAM-028).
   # checkov:skip=CKV2_AWS_62:S3 event notifications are an integration feature, not an audit control; none is configured (POAM-004).
 
   tags = merge(local.bootstrap_tags, local.bootstrap_cls.state_backend, { Name = local.tfstate_bucket })
@@ -71,6 +69,16 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# Server access logging to the application stack's log bucket, so every read
+# and write of the state is recorded (Security Hub S3.9, Checkov CKV_AWS_18).
+# The log bucket's policy (infrastructure/logging.tf) admits this bucket as a
+# source; logs for this bucket land under s3-access/tfstate/.
+resource "aws_s3_bucket_logging" "tfstate" {
+  bucket        = aws_s3_bucket.tfstate.id
+  target_bucket = "${local.domain_dashed}-logs"
+  target_prefix = "s3-access/tfstate/"
 }
 
 # Lifecycle: abort incomplete multipart uploads and expire non-current state
